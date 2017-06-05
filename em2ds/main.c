@@ -11,8 +11,8 @@
 #include "timer.h"
 
 // Include Simulation parameters here
-//#include "weibel.c"
-#include "lwfa.c"
+#include "weibel.c"
+//#include "laser.c"
 
 int main (int argc, const char * argv[]) {
     
@@ -33,18 +33,20 @@ int main (int argc, const char * argv[]) {
 		printf("n = %i, t = %f\n",n,t);
 
 		if ( report ( n , sim.ndump ) ) 
-			sim_report( &sim.emf, &sim.current, sim.species );
-		
+			sim_report( &sim );
+
 		// Advance particles and deposit current
 		current_zero( &sim.current );
+		charge_zero( &sim.charge );
 		for (i = 0; i<sim.n_species; i++) 
-			spec_advance(&sim.species[i], &sim.emf, &sim.current );
+			spec_advance(&sim.species[i], &sim.emf, &sim.charge, &sim.current );
 		
-		// Update current boundary conditions and advance iteration
+		// Update charge and current boundary conditions and get fourier transforms
 		current_update( &sim.current );
+		charge_update( &sim.charge );
 		
 		// Advance EM fields
-		emf_advance( &sim.emf, &sim.current );		
+		emf_advance( &sim.emf, &sim.charge, &sim.current );		
 	}
 
 	t1 = timer_ticks();

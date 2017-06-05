@@ -431,7 +431,7 @@ int zdf_add_dataset( t_zdf_file* zdf, char* name, t_zdf_dataset* dataset ){
 	 	if ( !xdr_u_int64_t( &zdf -> xdrs, &dataset -> nx[i] ) ) return(-1);
     }
 
-	printf("adding dataset %s, count = %d \n",name, count);
+	// printf("adding dataset %s, count = %d \n",name, count);
 
  	switch ( dataset -> data_type ) {
     	case zdf_float32: 

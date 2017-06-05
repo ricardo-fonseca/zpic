@@ -16,7 +16,7 @@
 	Scalar grids
  ****************************************************************************************/
 
-int scalar_grid2d_init( t_scalar_grid2d *grid, const unsigned int nx[], const unsigned int gc[2][] )
+int scalar_grid2d_init( t_scalar_grid2d *grid, const unsigned int nx[], const unsigned int gc[][2] )
 {
 
 	// store nx and gc values
@@ -74,11 +74,19 @@ void scalar_grid2d_zero( t_scalar_grid2d *grid ) {
 	memset( grid -> buffer, 0, size );
 }
 
-void scalar_grid_copy( t_scalar_grid2d *dst, const t_scalar_grid2d *src ){
-	size_t size = (grid->gc[0][0] + grid->nx[0] + grid->gc[0][1]) *
-				  (grid->gc[1][0] + grid->nx[1] + grid->gc[1][1]) *
+void scalar_grid2d_copy( t_scalar_grid2d * restrict dst, const t_scalar_grid2d * restrict src ){
+	size_t size = (src->gc[0][0] + src->nx[0] + src->gc[0][1]) *
+				  (src->gc[1][0] + src->nx[1] + src->gc[1][1]) *
 				  sizeof(float);
-	memcpy( dst->buffer, src->buffer, n);
+	memcpy( dst->buffer, src->buffer, size);
+}
+
+void scalar_grid2d_add( t_scalar_grid2d *dst, const t_scalar_grid2d *src ){
+	unsigned long size = (src->gc[0][0] + src->nx[0] + src->gc[0][1]) *
+				         (src->gc[1][0] + src->nx[1] + src->gc[1][1]);
+
+	unsigned long i;
+	for( i = 0; i < size; i++) dst->buffer[i] += src->buffer[i];
 }
 
 
@@ -86,8 +94,7 @@ void scalar_grid_copy( t_scalar_grid2d *dst, const t_scalar_grid2d *src ){
 	Complex Scalar grids
  ****************************************************************************************/
 
-int cscalar_grid_init( t_cscalar_grid2d *grid, const unsigned int nx, const unsigned int * gc )
- const unsigned int nx[], const unsigned int gc[2][] )
+int cscalar_grid2d_init( t_cscalar_grid2d *grid, const unsigned int nx[], const unsigned int gc[][2] )
 {
 
 	// store nx and gc values
@@ -125,7 +132,7 @@ int cscalar_grid_init( t_cscalar_grid2d *grid, const unsigned int nx, const unsi
 }
 
 
-int cscalar_grid_cleanup( t_cscalar_grid *grid )
+int cscalar_grid2d_cleanup( t_cscalar_grid2d *grid )
 {
 	free( grid -> buffer );
 
@@ -139,18 +146,26 @@ int cscalar_grid_cleanup( t_cscalar_grid *grid )
 	return 0;
 }
 
-void cscalar_grid_zero( t_cscalar_grid *grid ) {
+void cscalar_grid2d_zero( t_cscalar_grid2d *grid ) {
 	size_t size = (grid->gc[0][0] + grid->nx[0] + grid->gc[0][1]) *
 				  (grid->gc[1][0] + grid->nx[1] + grid->gc[1][1]) * 
 				  sizeof(float complex);
 	memset( grid -> buffer, 0, size );
 }
 
+void cscalar_grid2d_add( t_cscalar_grid2d *dst, const t_cscalar_grid2d *src ){
+	unsigned long size = (src->gc[0][0] + src->nx[0] + src->gc[0][1]) *
+				         (src->gc[1][0] + src->nx[1] + src->gc[1][1]);
+
+	unsigned long i;
+	for( i = 0; i < size; i++) dst->buffer[i] += src->buffer[i];
+}
+
 /****************************************************************************************
 	Vector field grids
  ****************************************************************************************/
 
-int vfld_grid_init( t_vfld_grid2d *grid, const unsigned int nx[], const unsigned int gc[2][] )
+int vfld_grid2d_init( t_vfld_grid2d *grid, const unsigned int nx[], const unsigned int gc[][2] )
 {
 
 	// store nx and gc values
@@ -178,6 +193,7 @@ int vfld_grid_init( t_vfld_grid2d *grid, const unsigned int nx[], const unsigned
 		return(-1);
 	}
 
+	grid -> nrow = grid->gc[0][0] + grid->nx[0] + grid->gc[0][1];
 	
 	// Make x, y and z point to cell [0]
 	grid -> x = grid -> buffer + grid->gc[0][0] + grid->gc[1][0] * grid -> nrow;
@@ -188,7 +204,7 @@ int vfld_grid_init( t_vfld_grid2d *grid, const unsigned int nx[], const unsigned
 }
 
 
-int vfld_grid_cleanup( t_vfld_grid *grid )
+int vfld_grid2d_cleanup( t_vfld_grid2d *grid )
 {
 	free( grid -> buffer );
 
@@ -201,18 +217,26 @@ int vfld_grid_cleanup( t_vfld_grid *grid )
 	return 0;
 }
 
-void vfld_grid_zero( t_vfld_grid *grid ) {
+void vfld_grid2d_zero( t_vfld_grid2d *grid ) {
 	size_t size = (grid->gc[0][0] + grid->nx[0] + grid->gc[0][1]) *
 				  (grid->gc[1][0] + grid->nx[1] + grid->gc[1][1]) *
 				  3 * sizeof(float);
 	memset( grid -> buffer, 0, size );
 }
 
+void vfld_grid2d_add( t_vfld_grid2d * restrict dst, const t_vfld_grid2d * restrict src ){
+	unsigned long size = (src->gc[0][0] + src->nx[0] + src->gc[0][1]) *
+				         (src->gc[1][0] + src->nx[1] + src->gc[1][1]) * 3;
+
+	unsigned long i;
+	for( i = 0; i < size; i++) dst->buffer[i] += src->buffer[i];
+}
+
 /****************************************************************************************
 	Complex Vector field grids
  ****************************************************************************************/
 
-int cvfld_grid_init( t_cvfld_grid2d *grid, const unsigned int nx[], const unsigned int gc[2][] )
+int cvfld_grid2d_init( t_cvfld_grid2d *grid, const unsigned int nx[], const unsigned int gc[][2] )
 {
 
 	// store nx and gc values
@@ -239,6 +263,8 @@ int cvfld_grid_init( t_cvfld_grid2d *grid, const unsigned int nx[], const unsign
 		fprintf(stderr, "(*error*) Unable to allocate memory for fld_grid variable\n");
 		return(-1);
 	}
+
+	grid -> nrow = grid->gc[0][0] + grid->nx[0] + grid->gc[0][1];
 	
 	// Make x, y and z point to cell [0]
 	grid -> x = grid -> buffer + grid->gc[0][0] + grid->gc[1][0] * grid -> nrow;
@@ -249,7 +275,7 @@ int cvfld_grid_init( t_cvfld_grid2d *grid, const unsigned int nx[], const unsign
 }
 
 
-int cvfld_grid_cleanup( t_cvfld_grid *grid )
+int cvfld_grid2d_cleanup( t_cvfld_grid2d *grid )
 {
 	free( grid -> buffer );
 
@@ -264,10 +290,19 @@ int cvfld_grid_cleanup( t_cvfld_grid *grid )
 
 }
 
-void cvfld_grid_zero( t_cvfld_grid *grid ) {
+void cvfld_grid2d_zero( t_cvfld_grid2d *grid ) {
 	size_t size =  (grid->gc[0][0] + grid->nx[0] + grid->gc[0][1]) *
 				   (grid->gc[1][0] + grid->nx[1] + grid->gc[1][1]) * 
 				   3 * sizeof(float complex);
 	memset( grid -> buffer, 0, size );
 }
+
+void cvfld_grid2d_add( t_cvfld_grid2d * restrict dst, const t_cvfld_grid2d * restrict src ){
+	unsigned long size = (src->gc[0][0] + src->nx[0] + src->gc[0][1]) *
+				         (src->gc[1][0] + src->nx[1] + src->gc[1][1]) * 3;
+
+	unsigned long i;
+	for( i = 0; i < size; i++) dst->buffer[i] += src->buffer[i];
+}
+
 

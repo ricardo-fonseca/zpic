@@ -21,13 +21,13 @@ enum emf_diag { EFLD, BFLD };
 typedef struct {
 
 	// E and B fields
-	t_vfld_grid E;
-	t_vfld_grid B;
+	t_vfld_grid2d E;
+	t_vfld_grid2d B;
 
 	// Fourier transform of El, Et and B
-	t_cvfld_grid fEl;
-	t_cvfld_grid fEt;
-	t_cvfld_grid fB;
+	t_cvfld_grid2d fEl;
+	t_cvfld_grid2d fEt;
+	t_cvfld_grid2d fB;
 
 
 	// Simulation box info
@@ -41,7 +41,7 @@ typedef struct {
 	int iter;
 
 	// FFT configurations
-	t_fftr2d_cfg *fft_forward, *fft_backward;
+	t_fftr2d_cfg fft_forward, fft_backward;
 
 } t_emf;
 
@@ -66,15 +66,15 @@ typedef struct {
 } t_emf_laser;
 
 
-void emf_new( t_emf *emf, int nx[], t_fld box[], const float dt );
+void emf_new( t_emf *emf, const unsigned int nx[], t_fld box[], const float dt );
 void emf_delete( t_emf *emf );
 void emf_report( const t_emf *emf, const char field, const char fc );
 
 void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser );
 
-void emf_advance( t_emf *emf, const t_current *current );
+void emf_advance( t_emf *emf, const t_charge *charge, const t_current *current );
 
-void emf_move_window( t_emf *emf );
+void emf_update_gc( t_emf *emf );
 
 double emf_time();
 

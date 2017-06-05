@@ -31,7 +31,7 @@ double emf_time()
  *********************************************************************************************/
 
 
-void emf_new( t_emf *emf, int nx[], t_fld box[], const float dt )
+void emf_new( t_emf *emf, const unsigned int nx[], t_fld box[], const float dt )
 {
 	unsigned int i;
 
@@ -42,14 +42,14 @@ void emf_new( t_emf *emf, int nx[], t_fld box[], const float dt )
 
 	// Number of guard cells for linear interpolation
 	const unsigned int gc[2][2] = {{0,1},
-		                             {0,1}};
+		                           {0,1}};
 
 	// The FFT result will be transposed
 	const unsigned int fnx[2] = { nx[1], nx[0]/2+1 };
 
 	// Initialize grids
-	vfld_grid2d_init( &emf->E, nx, (const unsigned int *) gc );
-	vfld_grid2d_init( &emf->B, nx, (const unsigned int *) gc );
+	vfld_grid2d_init( &emf->E, nx, gc );
+	vfld_grid2d_init( &emf->B, nx, gc );
 
 	cvfld_grid2d_init( &emf->fEl, fnx, NULL );
 	cvfld_grid2d_init( &emf->fEt, fnx, NULL );
@@ -64,10 +64,8 @@ void emf_new( t_emf *emf, int nx[], t_fld box[], const float dt )
 	cvfld_grid2d_zero( &emf->fB  );
 
 	// Initializ FFT transforms
-	fftr2d_init_cfg( &emf -> fft_forward, nx[0], nx[1],
-	    emf -> E.nrow, FFT_FORWARD );
-	fftr2d_init_cfg( &emf -> fft_forward, nx[0], nx[1],
-			emf -> E.nrow, FFT_BACKWARD );
+	fftr2d_init_cfg( &emf -> fft_forward,  nx[0], nx[1], emf -> E.nrow, FFT_FORWARD );
+	fftr2d_init_cfg( &emf -> fft_backward, nx[0], nx[1], emf -> E.nrow, FFT_BACKWARD );
 
 	// Set cell sizes and box limits
 	for(i = 0; i<2; i++){
@@ -75,11 +73,8 @@ void emf_new( t_emf *emf, int nx[], t_fld box[], const float dt )
 		emf -> dx[i] = box[i] / nx[i];
 	}
 
-  // store time step values
-  emf -> dt = dt;
-
-	// Set time step
-	emf -> dt = dt;
+    // store time step values
+    emf -> dt = dt;
 
 	// Reset iteration number
 	emf -> iter = 0;
@@ -94,6 +89,10 @@ void emf_delete( t_emf *emf )
 	cvfld_grid2d_cleanup( &emf->fEl );
 	cvfld_grid2d_cleanup( &emf->fEt );
 	cvfld_grid2d_cleanup( &emf->fB );
+
+	fftr2d_cleanup_cfg( &emf -> fft_backward );
+	fftr2d_cleanup_cfg( &emf -> fft_forward );
+
 
 }
 
@@ -128,45 +127,48 @@ t_fld lon_env( const t_emf_laser* const laser, const t_fld z )
 	}
 }
 
-void div_corr_x( t_emf *emf )
+void div_corr_x( t_cvfld_grid2d *fld, const float dk[] )
 {
 	int i, j;
 
-	double ex, bx;
+    float complex * const restrict fldx = fld->x;
+    float complex * const restrict fldy = fld->y;
 
-	t_vfld* restrict E = emf -> E;
-	t_vfld* restrict B = emf -> B;
-	const int nrow = emf -> nrow;
-	const double dx_dy = emf -> dx[0]/emf -> dx[1];
+	const int fnrow = fld -> nrow;
 
-	for (j=0; j<emf->nx[1]; j++) {
-		ex = 0.0;
-		bx = 0.0;
-		for (i = emf->nx[0]-1; i>=0; i--) {
-			ex += dx_dy * (E[i+1 + j*nrow].y - E[i+1 + (j-1)*nrow ].y);
-			E[i+j*nrow].x = ex;
+	// Calculates the x component of the field by enforcing div(fld) = 0
 
-			bx += dx_dy * (B[i + (j+1)*nrow].y - B[i + j*nrow ].y);
-			B[i+j*nrow].x = bx;
+	// no work is required for kx = 0
+	for ( i = 1; i < fld->nx[1]; i++) {
+		float kx = i * dk[0];
+		for( j = 0; j < fld->nx[0]; j++) {
+			float ky = ((j <= fld->nx[0]/2) ? j : (j - (int) fld->nx[0]) ) * dk[1];
+
+			fldx[ i * fnrow + j ] = - ky * fldy[ i * fnrow + j ] / kx;
 		}
-
 	}
-}
 
+
+
+}
 
 void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
 {
+	printf("Adding laser...\n");
+
 	int i, j, nrow;
 
-	t_fld z_center, r_center, z, z_2, r, r_2;
-	t_fld amp, lenv, lenv_2, k;
+	t_fld z_center, r_center, z, r;
+	t_fld amp, lenv, k;
 	t_fld dx, dy;
 	t_fld cos_pol, sin_pol;
 
-	t_vfld* restrict E = emf -> E;
-	t_vfld* restrict B = emf -> B;
+	float* Ey = (float *) malloc( emf->E.nx[0] * emf->E.nx[1] * sizeof(float));
+	float* Ez = (float *) malloc( emf->E.nx[0] * emf->E.nx[1] * sizeof(float));
+	float* By = (float *) malloc( emf->E.nx[0] * emf->E.nx[1] * sizeof(float));
+	float* Bz = (float *) malloc( emf->E.nx[0] * emf->E.nx[1] * sizeof(float));
 
-	nrow = emf -> nrow;
+	nrow = emf -> E.nx[0];
 	dx = emf -> dx[0];
 	dy = emf -> dx[1];
 
@@ -181,21 +183,19 @@ void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
 		case PLANE:
 			k = laser -> omega0;
 
-			for (i = 0; i < emf->nx[0]; i++) {
+			for (i = 0; i < emf->E.nx[0]; i++) {
 				z = i * dx - z_center;
-				z_2 = z + dx/2;
 
 				lenv   = amp*lon_env( laser, z );
-				lenv_2 = amp*lon_env( laser, z_2 );
 
-				for (j = 0; j < emf->nx[1]; j++) {
+				for (j = 0; j < emf->E.nx[1]; j++) {
 					// E[i + j*nrow].x += 0.0
-					E[i + j*nrow].y += +lenv * cos( k * z ) * cos_pol;
-					E[i + j*nrow].z += +lenv * cos( k * z ) * sin_pol;
+					Ey[i + j*nrow] = +lenv * cos( k * z ) * cos_pol;
+					Ez[i + j*nrow] = +lenv * cos( k * z ) * sin_pol;
 
 					// E[i + j*nrow].x += 0.0
-					B[i + j*nrow].y += -lenv_2 * cos( k * z_2 ) * sin_pol;
-					B[i + j*nrow].z += +lenv_2 * cos( k * z_2 ) * cos_pol;
+					By[i + j*nrow] = -lenv * cos( k * z ) * sin_pol;
+					Bz[i + j*nrow] = +lenv * cos( k * z ) * cos_pol;
 
 				}
 			}
@@ -203,36 +203,114 @@ void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
 
 		case GAUSSIAN:
 
-			for (i = 0; i < emf->nx[0]; i++) {
+			for (i = 0; i < emf->E.nx[0]; i++) {
 				z = i * dx - z_center;
-				z_2 = z + dx/2;
 
 				lenv   = amp*lon_env( laser, z );
-				lenv_2 = amp*lon_env( laser, z_2 );
 
-				for (j = 0; j < emf->nx[1]; j++) {
+				for (j = 0; j < emf->E.nx[1]; j++) {
 					r = j * dy - r_center;
-					r_2 = r + dy/2;
 
 					// E[i + j*nrow].x += 0.0
-					E[i + j*nrow].y += +lenv * gauss_phase( laser, z  , r_2 ) * cos_pol;
-					E[i + j*nrow].z += +lenv * gauss_phase( laser, z  , r   ) * sin_pol;
+					Ey[i + j*nrow] = +lenv * gauss_phase( laser, z, r ) * cos_pol;
+					Ez[i + j*nrow] = +lenv * gauss_phase( laser, z, r ) * sin_pol;
 
 					// B[i + j*nrow].x += 0.0
-					B[i + j*nrow].y += -lenv_2 * gauss_phase( laser, z_2, r   ) * sin_pol;
-					B[i + j*nrow].z += +lenv_2 * gauss_phase( laser, z_2, r_2 ) * cos_pol;
+					By[i + j*nrow] = -lenv * gauss_phase( laser, z, r ) * sin_pol;
+					Bz[i + j*nrow] = +lenv * gauss_phase( laser, z, r ) * cos_pol;
 
 				}
 			}
-			div_corr_x(emf);
 
 			break;
 		default:
 			break;
 	}
 
-	// Set guard cell values
-	emf_update_gc( emf );
+	// Buffer to hold Fourier transform of laser field
+	t_cvfld_grid2d buffer;
+	cvfld_grid2d_init( &buffer, emf->fEt.nx, NULL);
+	cvfld_grid2d_zero( &buffer );
+
+	t_fftr2d_cfg fft_forward;
+	fftr2d_init_cfg( &fft_forward, emf->E.nx[0], emf->E.nx[1],
+	                 0, FFT_FORWARD );
+
+	const int nrowfEt = emf->fEt.nrow;
+	const int nrowbuf = emf->fEt.nx[0];
+
+	const float dk[2] = { fft_dk( emf->E.nx[0], emf->dx[0] ),
+		                  fft_dk( emf->E.nx[1], emf->dx[1] ) };
+
+	const int kx1 = (emf->fEt.nx[1]-1)/2;
+	const int ky1 = emf->fEt.nx[0]/4;
+	const int ky2 = emf->fEt.nx[0] - ky1;
+
+	// Transform transverse components of laser E-field
+	fftr2d_r2c( &fft_forward, Ey, buffer.y );
+	fftr2d_r2c( &fft_forward, Ez, buffer.z );
+
+	if ( laser->type != PLANE ) {
+		// Solve for Ex using div E = 0
+		div_corr_x( &buffer, dk );
+	}
+
+	// Add to transverse E field
+	for(i = 0; i < kx1; i++) {
+		for( j = 0; j < ky1; j++) {
+			emf->fEt.x[ i * nrowfEt + j ] += buffer.x[ i * nrowbuf + j ];
+			emf->fEt.y[ i * nrowfEt + j ] += buffer.y[ i * nrowbuf + j ];
+			emf->fEt.z[ i * nrowfEt + j ] += buffer.z[ i * nrowbuf + j ];
+		}
+		for( j = ky2; j < emf->fEt.nx[0]; j++) {
+			emf->fEt.x[ i * nrowfEt + j ] += buffer.x[ i * nrowbuf + j ];
+			emf->fEt.y[ i * nrowfEt + j ] += buffer.y[ i * nrowbuf + j ];
+			emf->fEt.z[ i * nrowfEt + j ] += buffer.z[ i * nrowbuf + j ];
+		}
+	}
+
+	// Transform transverse components of laser B-field
+	fftr2d_r2c( &fft_forward, By, buffer.y );
+	fftr2d_r2c( &fft_forward, Bz, buffer.z );
+
+	if ( laser->type != PLANE ) {
+		// Solve for Ex using div E = 0
+		div_corr_x( &buffer, dk );
+	}
+
+	for(i = 0; i < kx1; i++) {
+		for( j = 0; j < ky1; j++) {
+			emf->fB.x[ i * nrowfEt + j ] += buffer.x[ i * nrowbuf + j ];
+			emf->fB.y[ i * nrowfEt + j ] += buffer.y[ i * nrowbuf + j ];
+			emf->fB.z[ i * nrowfEt + j ] += buffer.z[ i * nrowbuf + j ];
+		}
+		for( j = ky2; j < emf->fEt.nx[0]; j++) {
+			emf->fB.x[ i * nrowfEt + j ] += buffer.x[ i * nrowbuf + j ];
+			emf->fB.y[ i * nrowfEt + j ] += buffer.y[ i * nrowbuf + j ];
+			emf->fB.z[ i * nrowfEt + j ] += buffer.z[ i * nrowbuf + j ];
+		}
+	}
+
+	// Cleanup fft configuration
+	fftr2d_cleanup_cfg( &fft_forward );
+
+	// Cleanup temporary values
+	cvfld_grid2d_cleanup( &buffer );
+
+	free( Bz );
+	free( By );
+	free( Ez );
+	free( Ey );
+
+
+	// Transform to real fields for diagnostics
+   	fftr2d_c2r( &emf -> fft_backward, emf -> fEt.x, emf ->E.x );
+   	fftr2d_c2r( &emf -> fft_backward, emf -> fEt.y, emf ->E.y );
+   	fftr2d_c2r( &emf -> fft_backward, emf -> fEt.z, emf ->E.z );
+
+   	fftr2d_c2r( &emf -> fft_backward, emf -> fB.x, emf ->B.x );
+   	fftr2d_c2r( &emf -> fft_backward, emf -> fB.y, emf ->B.y );
+   	fftr2d_c2r( &emf -> fft_backward, emf -> fB.z, emf ->B.z );
 
 }
 
@@ -249,14 +327,14 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 	char vfname[3];
 
 	// Choose field to save
-	t_vfld * restrict f;
+	const t_vfld_grid2d * vfld;
 	switch (field) {
 		case EFLD:
-			f = emf->E;
+			vfld = &emf->E;
 			vfname[0] = 'E';
 			break;
 		case BFLD:
-			f = emf->B;
+			vfld = &emf->B;
 			vfname[0] = 'B';
 			break;
 		default:
@@ -265,41 +343,34 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 	}
 
 	// Pack the information
-	float * restrict const buf = malloc( emf->nx[0]*emf->nx[1]*sizeof(float) );
+	float * restrict const buf = malloc( vfld->nx[0]*vfld->nx[1]*sizeof(float) );
     float * restrict p = buf;
+    float * f;
+
 	switch (fc) {
 		case 0:
-			for( j = 0; j < emf->nx[1]; j++) {
-				for ( i = 0; i < emf->nx[0]; i++ ) {
-					p[i] = f[i].x;
-				}
-				p += emf->nx[0];
-				f += emf->nrow;
-			}
+			f = vfld->x;
 			vfname[1] = '1';
 			break;
 		case 1:
-			for( j = 0; j < emf->nx[1]; j++) {
-				for ( i = 0; i < emf->nx[0]; i++ ) {
-					p[i] = f[i].y;
-				}
-				p += emf->nx[0];
-				f += emf->nrow;
-			}
+			f = vfld->y;
 			vfname[1] = '2';
 			break;
 		case 2:
-			for( j = 0; j < emf->nx[1]; j++) {
-				for ( i = 0; i < emf->nx[0]; i++ ) {
-					p[i] = f[i].z;
-				}
-				p += emf->nx[0];
-				f += emf->nrow;
-			}
+			f = vfld->z;
 			vfname[1] = '3';
 			break;
 	}
 	vfname[2] = 0;
+
+	for( j = 0; j < vfld->nx[1]; j++) {
+		for ( i = 0; i < vfld->nx[0]; i++ ) {
+			p[i] = f[i];
+		}
+		p += vfld->nx[0];
+		f += vfld->nrow;
+	}
+
 
     t_zdf_grid_axis axis[2];
     axis[0] = (t_zdf_grid_axis) {
@@ -323,8 +394,8 @@ void emf_report( const t_emf *emf, const char field, const char fc )
     	.axis = axis
     };
 
-    info.nx[0] = emf->nx[0];
-    info.nx[1] = emf->nx[1];
+    info.nx[0] = vfld->nx[0];
+    info.nx[1] = vfld->nx[1];
 
     t_zdf_iteration iter = {
     	.n = emf->iter,
@@ -346,187 +417,245 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 
  *********************************************************************************************/
 
-void yee_b( t_emf *emf, const float dt )
+
+void advance_fB( t_emf *emf, const float dt )
 {
-	// these must not be unsigned because we access negative cell indexes
 	int i,j;
-	t_fld dt_dx, dt_dy;
 
-    t_vfld* const restrict B = emf -> B;
-    const t_vfld* const restrict E = emf -> E;
+    float complex * const restrict fBx = emf -> fB.x;
+    float complex * const restrict fBy = emf -> fB.y;
+    float complex * const restrict fBz = emf -> fB.z;
 
-	dt_dx = dt / emf->dx[0];
-	dt_dy = dt / emf->dx[1];
+    float complex * const restrict fEtx = emf -> fEt.x;
+    float complex * const restrict fEty = emf -> fEt.y;
+    float complex * const restrict fEtz = emf -> fEt.z;
+
+    const float dkx = fft_dk( emf->E.nx[0], emf->dx[0] );
+    const float dky = fft_dk( emf->E.nx[1], emf->dx[1] );
+
+	const int fnrow = emf->fB.nrow;
 
 	// Canonical implementation
-	const int nrow = emf->nrow;
-	for (j=-1; j<=emf->nx[1]; j++) {
-		for (i=-1; i<=emf->nx[0]; i++) {
-			B[ i + j*nrow ].x += ( - dt_dy * ( E[i+(j+1)*nrow].z - E[i+j*nrow].z) );
-			B[ i + j*nrow ].y += (   dt_dx * ( E[(i+1)+j*nrow].z - E[i+j*nrow].z) );
-			B[ i + j*nrow ].z += ( - dt_dx * ( E[(i+1)+j*nrow].y - E[i+j*nrow].y) +
-									 dt_dy * ( E[i+(j+1)*nrow].x - E[i+j*nrow].x) );
+	for (i = 0; i < emf -> fB.nx[1]; i++) {
+		float kx = i * dkx;
+		for (j = 0; j < emf -> fB.nx[0]; j++) {
+			float ky = ((j <= emf -> fB.nx[0]/2) ? j : ( j - (int) emf -> fB.nx[0] ) ) * dky;
+			const unsigned int idx = i * fnrow + j;
+
+			fBx[idx] +=  - dt * I * ky * fEtz[idx];
+			fBy[idx] +=  + dt * I * kx * fEtz[idx];
+			fBz[idx] +=  + dt * I * ( -kx * fEty[idx] + ky * fEtx[idx] );
 		}
 	}
 }
 
-
-void yee_e( t_emf *emf, const t_current *current, const float dt )
+void advance_fEt( t_emf *emf, const t_current *current, const float dt )
 {
-	// these must not be unsigned because we access negative cell indexes
+
+	float complex * const restrict fEtx = emf -> fEt.x;
+	float complex * const restrict fEty = emf -> fEt.y;
+	float complex * const restrict fEtz = emf -> fEt.z;
+
+	float complex * const restrict fBx = emf -> fB.x;
+	float complex * const restrict fBy = emf -> fB.y;
+	float complex * const restrict fBz = emf -> fB.z;
+
+	float complex * const restrict fJtx = current -> fJt.x;
+	float complex * const restrict fJty = current -> fJt.y;
+	float complex * const restrict fJtz = current -> fJt.z;
+
+	const float dkx = fft_dk( emf->E.nx[0], emf->dx[0] );
+	const float dky = fft_dk( emf->E.nx[1], emf->dx[1] );
+
+	const int fnrow = emf->fEt.nrow;
 	int i,j;
-	t_fld dt_dx, dt_dy;
-
-	dt_dx = dt / emf->dx[0];
-	dt_dy = dt / emf->dx[1];
-
-    t_vfld* const restrict E = emf -> E;
-    const t_vfld* const restrict B = emf -> B;
-    const t_vfld* const restrict J = current -> J;
 
 	// Canonical implementation
-	const int nrow_e = emf->nrow;
-	const int nrow_j = current->nrow;
+	for (i = 0; i < emf -> fEt.nx[1]; i++) {
+		float kx = i * dkx;
+		for (j = 0; j < emf -> fEt.nx[0]; j++) {
+			float ky = ((j <= emf -> fEt.nx[0]/2) ? j : (j - (int) emf -> fEt.nx[0]) ) * dky;
 
-	for (j=0; j<=emf->nx[1]+1; j++) {
-		for (i=0; i<=emf->nx[0]+1; i++) {
-			E[i+j*nrow_e].x += ( + dt_dy * ( B[i+j*nrow_e].z - B[i+(j-1)*nrow_e].z) )
-			                     - dt * J[i+j*nrow_j].x;
+			const unsigned int idx = i * fnrow + j;
 
-			E[i+j*nrow_e].y += ( - dt_dx * ( B[i+j*nrow_e].z - B[(i-1)+j*nrow_e].z) )
-								 - dt * J[i+j*nrow_j].y;
-
-			E[i+j*nrow_e].z += ( + dt_dx * ( B[i+j*nrow_e].y - B[(i-1)+j*nrow_e].y) -
-								   dt_dy * ( B[i+j*nrow_e].x - B[i+(j-1)*nrow_e].x) )
-									  - dt * J[i+j*nrow_j].z;
+			fEtx[idx] += dt * ( +I *   ky * fBz[idx]                   - fJtx[idx] );
+			fEty[idx] += dt * ( -I *   kx * fBz[idx]                   - fJty[idx] );
+			fEtz[idx] += dt * ( +I * ( kx * fBy[idx] - ky * fBx[idx] ) - fJtz[idx] );
 
 		}
 	}
+}
+
+void update_fEl( t_emf *emf, const t_charge *charge )
+{
+  float complex * const restrict frho = charge -> frho.s;
+
+  float complex * const restrict fElx = emf -> fEl.x;
+  float complex * const restrict fEly = emf -> fEl.y;
+  float complex * const restrict fElz = emf -> fEl.z;
+
+  const float dkx = fft_dk( emf->E.nx[0], emf->dx[0] );
+  const float dky = fft_dk( emf->E.nx[1], emf->dx[1] );
+
+	const int fnrow = emf->fEl.nrow;
+	int i,j;
+
+	// Calculates the longitudinal component of E from the
+	// charge density:
+	// $E_L(\mathbf{k}) = - i \frac{ \mathbf{k} \rho(\mathbf{k})}{k^2}$
+
+	// Take care of special case k = 0
+	fElx[0] = 0;
+	fEly[0] = 0;
+	fElz[0] = 0;
+
+	// Take care of special cases kx = 0
+	for (j = 1; j < emf -> fEl.nx[0]; j++) {
+		const float ky = ((j <= emf -> fEl.nx[0]/2) ? j : (j - (int) emf -> fEl.nx[0]) ) * dky;
+
+		fElx[j] = 0;
+		fEly[j] = -I * frho[j] / ky;
+		fElz[j] = 0 ;
+	}
+
+	// Solve remaining cases
+	for (i = 1; i < emf -> fEl.nx[1]; i++) {
+		float kx = i * dkx;
+		for (j = 0; j < emf -> fEl.nx[0]; j++) {
+			const float ky = ((j <= emf -> fEl.nx[0]/2) ? j : (j - (int) emf -> fEl.nx[0] )) * dky;
+			const float k2 = kx*kx + ky*ky;
+
+			const unsigned int idx = i * fnrow + j;
+
+			fElx[idx] = -I * kx * frho[idx] / k2;
+			fEly[idx] = -I * ky * frho[idx] / k2;
+			fElz[idx] = 0 ;
+
+		}
+	}
+
+
 }
 
 
 // This code operates with periodic boundaries
-void emf_update_gc( t_emf *emf )
+void emf_update( t_emf *emf )
 {
 	int i,j;
-	const int nrow = emf->nrow;
 
-    t_vfld* const restrict E = emf -> E;
-    t_vfld* const restrict B = emf -> B;
+	// Update E field
 
-	// For moving window don't update x boundaries
-	if ( ! emf -> moving_window ) {
-		// x
-		for (j = -emf->gc[1][0]; j < emf->nx[1] + emf->gc[1][1]; j++) {
+	// Add transverse and longitudinal components
+	cvfld_grid2d_add( &emf -> fEl, &emf -> fEt );
 
-			// lower
-			for (i=-emf->gc[0][0]; i<0; i++) {
-				E[ i + j*nrow ].x = E[ emf->nx[0] + i + j*nrow ].x;
-				E[ i + j*nrow ].y = E[ emf->nx[0] + i + j*nrow ].y;
-				E[ i + j*nrow ].z = E[ emf->nx[0] + i + j*nrow ].z;
+   	// Transform to real fields
+   	fftr2d_c2r( &emf -> fft_backward, emf -> fEl.x, emf -> E.x );
+   	fftr2d_c2r( &emf -> fft_backward, emf -> fEl.y, emf -> E.y );
+   	fftr2d_c2r( &emf -> fft_backward, emf -> fEl.z, emf -> E.z );
 
-				B[ i + j*nrow ].x = B[ emf->nx[0] + i + j*nrow ].x;
-				B[ i + j*nrow ].y = B[ emf->nx[0] + i + j*nrow ].y;
-				B[ i + j*nrow ].z = B[ emf->nx[0] + i + j*nrow ].z;
-			}
+   	// Update B field
+   	fftr2d_c2r( &emf -> fft_backward, emf -> fB.x, emf -> B.x );
+   	fftr2d_c2r( &emf -> fft_backward, emf -> fB.y, emf -> B.y );
+   	fftr2d_c2r( &emf -> fft_backward, emf -> fB.z, emf -> B.z );
 
-			// upper
-			for (i=0; i<emf->gc[0][1]; i++) {
-				E[ emf->nx[0] + i + j*nrow ].x = E[ i  + j*nrow ].x;
-				E[ emf->nx[0] + i + j*nrow ].y = E[ i  + j*nrow ].y;
-				E[ emf->nx[0] + i + j*nrow ].z = E[ i  + j*nrow ].z;
+	// Update guard cells
+	const int nrow = emf->E.nrow;
 
-				B[ emf->nx[0] + i + j*nrow ].x = B[ i  + j*nrow ].x;
-				B[ emf->nx[0] + i + j*nrow ].y = B[ i  + j*nrow ].y;
-				B[ emf->nx[0] + i + j*nrow ].z = B[ i  + j*nrow ].z;
-			}
+	float* restrict const Ex = emf -> E.x;
+	float* restrict const Ey = emf -> E.y;
+	float* restrict const Ez = emf -> E.z;
 
-		}
-	}
+	float* restrict const Bx = emf -> B.x;
+	float* restrict const By = emf -> B.y;
+	float* restrict const Bz = emf -> B.z;
 
-	// y
-	for (i = -emf->gc[0][0]; i < emf->nx[0]+emf->gc[0][1]; i++) {
+	int const nx0  = emf -> E.nx[0];
+	int const nx1  = emf -> E.nx[1];
+
+	int const gc00 = emf -> E.gc[0][0];
+	int const gc01 = emf -> E.gc[0][1];
+	int const gc10 = emf -> E.gc[1][0];
+	int const gc11 = emf -> E.gc[1][1];
+
+	// x
+	for (j = -gc10; j < nx1 + gc11; j++) {
 
 		// lower
-		for (j=-emf->gc[1][0]; j<0; j++) {
-			E[ i + j*nrow ].x = E[ i + (emf->nx[1]+j)*nrow ].x;
-			E[ i + j*nrow ].y = E[ i + (emf->nx[1]+j)*nrow ].y;
-			E[ i + j*nrow ].z = E[ i + (emf->nx[1]+j)*nrow ].z;
+		for (i = -gc00; i < 0; i++) {
+			Ex[ i + j*nrow ] = Ex[ nx0 + i + j*nrow ];
+			Ey[ i + j*nrow ] = Ey[ nx0 + i + j*nrow ];
+			Ez[ i + j*nrow ] = Ez[ nx0 + i + j*nrow ];
 
-			B[ i + j*nrow ].x = B[ i + (emf->nx[1]+j)*nrow ].x;
-			B[ i + j*nrow ].y = B[ i + (emf->nx[1]+j)*nrow ].y;
-			B[ i + j*nrow ].z = B[ i + (emf->nx[1]+j)*nrow ].z;
+			Bx[ i + j*nrow ] = Bx[ nx0 + i + j*nrow ];
+			By[ i + j*nrow ] = By[ nx0 + i + j*nrow ];
+			Bz[ i + j*nrow ] = Bz[ nx0 + i + j*nrow ];
 		}
 
 		// upper
-		for (j=0; j<emf->gc[1][1]; j++) {
-			E[ i + (emf->nx[1]+j)*nrow ].x = E[ i + j*nrow ].x;
-			E[ i + (emf->nx[1]+j)*nrow ].y = E[ i + j*nrow ].y;
-			E[ i + (emf->nx[1]+j)*nrow ].z = E[ i + j*nrow ].z;
+		for (i = 0; i < gc01; i++) {
+			Ex[ nx0 + i + j*nrow ] = Ex[ i + j*nrow ];
+			Ey[ nx0 + i + j*nrow ] = Ey[ i + j*nrow ];
+			Ez[ nx0 + i + j*nrow ] = Ez[ i + j*nrow ];
 
-			B[ i + (emf->nx[1]+j)*nrow ].x = B[ i + j*nrow ].x;
-			B[ i + (emf->nx[1]+j)*nrow ].y = B[ i + j*nrow ].y;
-			B[ i + (emf->nx[1]+j)*nrow ].z = B[ i + j*nrow ].z;
+			Bx[ nx0 + i + j*nrow ] = Bx[ i + j*nrow ];
+			By[ nx0 + i + j*nrow ] = By[ i + j*nrow ];
+			Bz[ nx0 + i + j*nrow ] = Bz[ i + j*nrow ];
+		}
+
+	}
+
+
+	// y
+	for (i = -gc00; i < nx0 + gc01; i++) {
+
+		// lower
+		for (j=-gc10; j<0; j++) {
+			Ex[ i + j*nrow ] = Ex[ i + (nx1+j)*nrow ];
+			Ey[ i + j*nrow ] = Ey[ i + (nx1+j)*nrow ];
+			Ez[ i + j*nrow ] = Ez[ i + (nx1+j)*nrow ];
+
+			Bx[ i + j*nrow ] = Bx[ i + (nx1+j)*nrow ];
+			By[ i + j*nrow ] = By[ i + (nx1+j)*nrow ];
+			Bz[ i + j*nrow ] = Bz[ i + (nx1+j)*nrow ];
+		}
+
+		// upper
+		for (j=0; j<gc11; j++) {
+			Ex[ i + (nx1+j)*nrow ] = Ex[ i + j*nrow ];
+			Ey[ i + (nx1+j)*nrow ] = Ey[ i + j*nrow ];
+			Ez[ i + (nx1+j)*nrow ] = Ez[ i + j*nrow ];
+
+			Bx[ i + (nx1+j)*nrow ] = Bx[ i + j*nrow ];
+			By[ i + (nx1+j)*nrow ] = By[ i + j*nrow ];
+			Bz[ i + (nx1+j)*nrow ] = Bz[ i + j*nrow ];
 		}
 
 	}
 
 }
 
-void emf_move_window( t_emf *emf ){
 
-	if ( ( emf -> iter * emf -> dt ) > emf->dx[0]*( emf -> n_move + 1 ) ) {
-		int i,j;
-		const int nrow = emf->nrow;
-
-	    t_vfld* const restrict E = emf -> E;
-	    t_vfld* const restrict B = emf -> B;
-
-	    const t_vfld zero_fld = {0.,0.,0.};
-
-		// Shift data left 1 cell and zero rightmost cell
-		for (j = -emf->gc[1][0]; j < emf->nx[1] + emf->gc[1][1]; j++) {
-
-			for (i = -emf->gc[0][0]; i < emf->nx[0]+emf->gc[0][1] - 1; i++) {
-				E[ i + j*nrow ] = E[ i + j*nrow + 1 ];
-				B[ i + j*nrow ] = B[ i + j*nrow + 1 ];
-			}
-
-			i = emf->nx[0]+emf->gc[0][1] - 1;
-			E[ i + j*nrow ] = zero_fld;
-			B[ i + j*nrow ] = zero_fld;
-		}
-
-		// Increase moving window counter
-		emf -> n_move++;
-
-	}
-
-}
-
-
-void emf_advance( t_emf *emf, const t_current *current )
+void emf_advance( t_emf *emf, const t_charge *charge, const t_current *current )
 {
 	uint64_t t0 = timer_ticks();
 	const float dt = emf->dt;
 
-	// Advance EM field using Yee algorithm modified for having E and B time centered
-	yee_b( emf, dt/2.0f );
 
-	yee_e( emf, current, dt );
+	// Advance fB, fEt
+	advance_fB( emf, dt/2.0f );
 
-	yee_b( emf, dt/2.0f );
+	advance_fEt( emf, current, dt );
 
-	// Update guard cells with new values
-	emf_update_gc( emf );
+	advance_fB( emf, dt/2.0f );
+
+	// Calculate fEl
+	update_fEl( emf, charge );
+
+	// Update (real) E, B (also updates guard cells)
+	emf_update( emf );
 
 	// Advance internal iteration number
     emf -> iter += 1;
-
-    // Move simulation window if needed
-    if ( emf -> moving_window ) {
-    	emf_move_window( emf );
-    }
 
     // Update timing information
 	_emf_time += timer_interval_seconds(t0, timer_ticks());

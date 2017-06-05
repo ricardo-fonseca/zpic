@@ -1,10 +1,12 @@
 # GCC options
-#CC = gcc-6.3.0
-#CFLAGS = -Ofast 
+CC = gcc-6.3.0
+CFLAGS = -Ofast 
+
+#CFLAGS = -Og -g
 
 # Intel icc compiler
-CC = icc
-CFLAGS = -restrict -Ofast 
+#CC = icc
+#CFLAGS = -restrict -Ofast 
 
 # Clang options
 #CC = clang
@@ -13,7 +15,8 @@ CFLAGS = -restrict -Ofast
 LDFLAGS = 
 
 
-SOURCE = current.c emf.c particles.c random.c timer.c main.c simulation.c zdf.c
+SOURCE = charge.c current.c emf.c particles.c grid2d.c fft.c filter.c random.c timer.c \
+		main.c simulation.c zdf.c
 
 TARGET = zpic
 

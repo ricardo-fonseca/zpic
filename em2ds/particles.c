@@ -12,6 +12,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "grid2d.h"
+
 #include "particles.h"
 
 #include "random.h"
@@ -55,20 +57,18 @@ void spec_set_x( t_species* spec, const int range[][2] )
 
 	int i, j, k, ip;
 	
-	t_part_data* poscell;
-	t_part_data edge;
+	float* poscell;
+	float edge, start, end;
 	
 	// Calculate particle positions inside the cell
 	const int npc = spec->ppc[0]*spec->ppc[1];
-	t_part_data const dpcx = 1.0f/spec->ppc[0];
-	t_part_data const dpcy = 1.0f/spec->ppc[1];
 	
-	poscell = malloc( 2 * npc * sizeof( t_part_data ) );
+	poscell = malloc( 2 * npc * sizeof( float ) );
 	ip = 0;
 	for (j =0; j<spec->ppc[1]; j++) {
 		for (i=0; i<spec->ppc[0]; i++) {
-			poscell[ip]   = dpcx * ( i + 0.5 );
-			poscell[ip+1] = dpcy * ( j + 0.5 );
+			poscell[ip]   = (1 + 2*i - spec->ppc[0]) / (2.0*spec->ppc[0]);
+			poscell[ip+1] = (1 + 2*j - spec->ppc[1]) / (2.0*spec->ppc[1]);
 			ip+=2;
 		}
 	}
@@ -80,13 +80,35 @@ void spec_set_x( t_species* spec, const int range[][2] )
 	case STEP: // Step like density profile
 		
 		// Get edge position normalized to cell size;
-		edge = spec -> density.edge / spec -> dx[0] - spec -> n_move;
+		edge = spec -> density.edge / spec -> dx[0];
 
 		for (j = range[1][0]; j <= range[1][1]; j++) {
 			for (i = range[0][0]; i <= range[0][1]; i++) {
 
 				for (k=0; k<npc; k++) {
 					if ( i + poscell[2*k] > edge ) {
+						spec->part[ip].ix = i;
+						spec->part[ip].iy = j;
+						spec->part[ip].x = poscell[2*k];
+						spec->part[ip].y = poscell[2*k+1];
+						ip++;
+					}
+				}
+			}
+		}
+		break;
+
+	case SLAB: // Step like density profile
+		
+		// Get edge position normalized to cell size;
+		start = spec -> density.start / spec -> dx[0] - 0.5;
+		end   = spec -> density.end / spec -> dx[0] - 0.5;
+
+		for (j = range[1][0]; j <= range[1][1]; j++) {
+			for (i = range[0][0]; i <= range[0][1]; i++) {
+
+				for (k=0; k<npc; k++) {
+					if ( i + poscell[2*k] > start &&  i + poscell[2*k] < end ) {
 						spec->part[ip].ix = i;
 						spec->part[ip].iy = j;
 						spec->part[ip].x = poscell[2*k];
@@ -141,9 +163,9 @@ void spec_inject_particles( t_species* spec, const int range[][2] )
 
 }
 
-void spec_new( t_species* spec, char name[], const t_part_data m_q, const int ppc[], 
-			  const t_part_data *ufl, const t_part_data * uth,
-			  const int nx[], t_part_data box[], const float dt, t_density* density )
+void spec_new( t_species* spec, char name[], const float m_q, const int ppc[], 
+			  const float *ufl, const float * uth,
+			  const unsigned int nx[], float box[], const float dt, t_density* density )
 {
 
 	int i, npc;
@@ -195,10 +217,6 @@ void spec_new( t_species* spec, char name[], const t_part_data m_q, const int pp
 	// Reset iteration number
 	spec -> iter = 0;
 
-	// Reset moving window information
-	spec -> moving_window = 0;
-	spec -> n_move = 0;
-
     // Inject initial particle distribution
     spec -> np = 0;
     
@@ -206,29 +224,6 @@ void spec_new( t_species* spec, char name[], const t_part_data m_q, const int pp
                             {0, nx[1]-1}};
 
     spec_inject_particles( spec, range );
-
-}
-
-void spec_move_window( t_species *spec ){
-
-	if ((spec->iter * spec->dt ) > (spec->dx[0] * (spec->n_move + 1)))  {
-        
-        // shift all particles left
-        // particles leaving the box will be removed later
-        int i;
-        for( i = 0; i < spec->np; i++ ) {
-        	spec->part[i].ix--;
-        }
-
-		// Increase moving window counter
-		spec -> n_move++;
-
-        // Inject particles in the right edge of the simulation box
-	    const int range[][2] = {{spec->nx[0]-1,spec->nx[0]-1},
-	                            {            0,spec->nx[1]-1}};
-	    spec_inject_particles( spec, range );
-
-	}
 
 }
 
@@ -241,245 +236,90 @@ void spec_delete( t_species* spec )
 
 /*********************************************************************************************
  
- Cuurent deposition
+ Charge / Current deposition
  
  *********************************************************************************************/
 
-void dep_current_esk( int ix0, int iy0, int di, int dj,
-							 t_part_data x0, t_part_data y0, t_part_data x1, t_part_data y1, 
-							 t_part_data qvx, t_part_data qvy, t_part_data qvz, 
-							 t_current *current )
+int ltrim( float x )
 {
-
-	int i, j;
-	t_fld S0x[4], S0y[4], S1x[4], S1y[4], DSx[4], DSy[4];
-	t_fld Wx[16], Wy[16], Wz[16];
-	
-	S0x[0] = 0.0f;
-	S0x[1] = 1.0f - x0;
-	S0x[2] = x0;
-	S0x[3] = 0.0f;
-
-	S0y[0] = 0.0f;
-	S0y[1] = 1.0f - y0;
-	S0y[2] = y0;
-	S0y[3] = 0.0f;
-	
-	for (i=0; i<4; i++) {
-		S1x[i] = 0.0f;
-		S1y[i] = 0.0f;
-	}
-	
-	S1x[ 1 + di ] = 1.0f - x1;
-	S1x[ 2 + di ] = x1;
-
-	S1y[ 1 + dj ] = 1.0f - y1;
-	S1y[ 2 + dj ] = y1;
-
-	for (i=0; i<4; i++) {
-		DSx[i] = S1x[i] - S0x[i];
-		DSy[i] = S1y[i] - S0y[i];
-	}
-	
-	for (j=0; j<4; j++) {
-		for (i=0; i<4; i++) {
-			Wx[i + 4*j] = DSx[i] * ( S0y[j] + DSy[j]/2.0f );
-			Wy[i + 4*j] = DSy[j] * ( S0x[i] + DSx[i]/2.0f );
-			Wz[i + 4*j] = S0x[i] * S0y[j] + DSx[i]*S0y[j]/2.0f +
-			              S0x[i]*DSy[j]/2.0f + DSx[i]*DSy[j]/3.0f;
-		}
-	}
-		
-	// jx
-	const int nrow = current -> nrow;
-	t_vfld* restrict const J = current -> J;
-	
-	for (j=0; j<4; j++) {
-		t_fld c;
-		
-		c = -qvx * Wx[4*j];
-		J[ ix0 - 1 + (iy0 - 1 + j)*nrow ].x += c;
-		for (i=1; i<4; i++) {
-			c -= qvx * Wx[i+4*j];
-			J[ ix0 + i - 1 + (iy0 -1 + j)*nrow ].x += c;
-		}
-	}
-
-	// jy
-	for (i=0; i<4; i++) {
-		t_fld c;
-
-		c = -qvy * Wy[i];
-		J[ ix0 + i - 1 + (iy0 - 1)*nrow ].y += c;
-		for (j=1; j<4; j++) {
-			c -= qvy * Wy[i+4*j];
-			J[ ix0 + i - 1 + (iy0 -1 + j)*nrow ].y += c;
-		}
-	}
-	
-	// jz
-	for (j=0; j<4; j++) {
-		for (i=0; i<4; i++) {
-			J[ ix0 + i - 1 + (iy0 -1 + j)*nrow ].z += qvz * Wz[ i + 4*j ];
-		}
-	}
-	
-	
+	return (( x >= 0.5f )?1:0) - (( x < -0.5f )?1:0);
 }
 
-void dep_current_zamb(int ix, int iy, int di, int dj, 
-				      float x0, float y0, float dx, float dy,
-					  float qnx, float qny, float qvz,
-					  t_current *current)
+
+void deposit_charge( t_scalar_grid2d * rho, const t_part* restrict const part, const float q )
 {
-	// Split the particle trajectory
+	float s0x, s1x;
+	float s0y, s1y;
+
+	const int nrow = rho -> nrow;
+	const int idx  = part->ix + part->iy * nrow;
 	
-	typedef struct {
-		float x0, x1, y0, y1, dx, dy, qvz;
-		int ix, iy;
-	} t_vp;
-	
-	t_vp vp[3];
-	int vnp = 1;
-	
-	// split 
-	vp[0].x0 = x0;
-	vp[0].y0 = y0;
+	s0x = 0.5f - part->x;
+	s1x = 0.5f + part->x; 
 
-	vp[0].dx = dx;
-	vp[0].dy = dy;
-	
-	vp[0].x1 = x0+dx;
-	vp[0].y1 = y0+dy;
-	
-	vp[0].qvz = qvz/2.0;
+	s0y = 0.5f - part->y;
+	s1y = 0.5f + part->y; 
 
-	vp[0].ix = ix;
-	vp[0].iy = iy;
-		
-	// x split
-	if ( di != 0 ) {
-		
-		//int ib = ( di+1 )>>1;
-		int ib = ( di == 1 );
-		
-		float delta = (x0+dx-ib)/dx;
-		
-		// Add new particle
-		vp[1].x0 = 1-ib;
-		vp[1].x1 = (x0 + dx) - di;
-		vp[1].dx = dx*delta;
-		vp[1].ix = ix + di;
-		
-		float ycross = y0 + dy*(1.0f-delta);
+	rho->s[ idx            ] += s0y * s0x * q;
+	rho->s[ idx        + 1 ] += s0y * s1x * q;
+	rho->s[ idx + nrow     ] += s1y * s0x * q;
+	rho->s[ idx + nrow + 1 ] += s1y * s1x * q;
 
-		vp[1].y0 = ycross; 
-		vp[1].y1 = vp[0].y1;
-		vp[1].dy = dy*delta;	
-		vp[1].iy = iy;
-		
-		vp[1].qvz = vp[0].qvz*delta;
-		
-		// Correct previous particle
-		vp[0].x1 = ib;
-		vp[0].dx *= (1.0f-delta);
-		
-		vp[0].dy *= (1.0f-delta);
-		vp[0].y1  = ycross;
-		
-		vp[0].qvz *= (1.0f-delta);
-		
-        vnp++;		
-	}
-	
-	// ysplit
-	if ( dj != 0 ) {
-		int isy = 1 - ( vp[0].y1<0.0f || vp[0].y1>=1.0f );
-		
-		// int jb = ( dj+1 )>>1; 
-		int jb = (dj == 1);
-		
-		// The static analyser gets confused by this but it is correct
-		float delta = (vp[isy].y1-jb)/vp[isy].dy;
-		
-		// Add new particle
-		vp[vnp].y0 = 1-jb;
-		vp[vnp].y1 = vp[isy].y1 - dj;
-		vp[vnp].dy = vp[isy].dy*delta;
-		vp[vnp].iy = vp[isy].iy + dj;
-		
-		float xcross = vp[isy].x0 + vp[isy].dx*(1.0f-delta); 
-		
-		vp[vnp].x0 = xcross;
-		vp[vnp].x1 = vp[isy].x1;
-		vp[vnp].dx = vp[isy].dx*delta;
-		vp[vnp].ix = vp[isy].ix;
-
-		vp[vnp].qvz = vp[isy].qvz*delta;
-		
-		// Correct previous particle
-		vp[isy].y1  = jb;
-		vp[isy].dy *= (1.0f-delta);
-		
-		vp[isy].dx *= (1.0f-delta);
-		vp[isy].x1  = xcross;
-		
-		vp[isy].qvz *= (1.0f-delta);
-		
-		// Correct extra vp if needed
- 		if ( isy < vnp -1) {
-			vp[1].y0 -= dj;
-			vp[1].y1 -= dj;
-			vp[1].iy += dj;
-		} 
-		vnp++;		
-	}
-
-	// Deposit virtual particle currents
-	int k;
-	const int nrow = current -> nrow;
-	t_vfld* restrict const J = current -> J;
-
-	for (k = 0; k < vnp; k++) {
-		float S0x[2], S1x[2], S0y[2], S1y[2];
-		float wl1, wl2;
-		float wp1[2],wp2[2];
-		
-		S0x[0] = 1.0f - vp[k].x0;
-		S0x[1] = vp[k].x0;
-
-		S1x[0] = 1.0f - vp[k].x1;
-		S1x[1] = vp[k].x1;
-
-		S0y[0] = 1.0f - vp[k].y0;
-		S0y[1] = vp[k].y0;
-
-		S1y[0] = 1.0f - vp[k].y1;
-		S1y[1] = vp[k].y1;
-
-		wl1 = qnx * vp[k].dx;
-		wl2 = qny * vp[k].dy;
-		
-		wp1[0] = 0.5f*(S0y[0] + S1y[0]);
-		wp1[1] = 0.5f*(S0y[1] + S1y[1]);
-		
-		wp2[0] = 0.5f*(S0x[0] + S1x[0]);
-		wp2[1] = 0.5f*(S0x[1] + S1x[1]);
-		
-		J[ vp[k].ix + nrow*vp[k].iy     ].x += wl1 * wp1[0];
-		J[ vp[k].ix + nrow*(vp[k].iy+1) ].x += wl1 * wp1[1];
-
-		J[ vp[k].ix   + nrow*vp[k].iy ].y += wl2 * wp2[0];
-		J[ vp[k].ix+1 + nrow*vp[k].iy ].y += wl2 * wp2[1];
-
-		J[ vp[k].ix   + nrow*vp[k].iy    ].z += vp[k].qvz * (S0x[0]*S0y[0]+S1x[0]*S1y[0]+(S0x[0]*S1y[0]-S1x[0]*S0y[0])/2.0f);
-		J[ vp[k].ix+1 + nrow*vp[k].iy    ].z += vp[k].qvz * (S0x[1]*S0y[0]+S1x[1]*S1y[0]+(S0x[1]*S1y[0]-S1x[1]*S0y[0])/2.0f);
-		J[ vp[k].ix   + nrow*(vp[k].iy+1)].z += vp[k].qvz * (S0x[0]*S0y[1]+S1x[0]*S1y[1]+(S0x[0]*S1y[1]-S1x[0]*S0y[1])/2.0f);
-		J[ vp[k].ix+1 + nrow*(vp[k].iy+1)].z += vp[k].qvz * (S0x[1]*S0y[1]+S1x[1]*S1y[1]+(S0x[1]*S1y[1]-S1x[1]*S0y[1])/2.0f);
-	}
-	
 }
 
+void deposit_current( t_vfld_grid2d* J, const t_part* restrict const part, const float q, const float rg, 
+	const float dx, const float dy )
+{
+	int i, di;
+	int j, dj;
+	float x, y;
+	float s0x, s1x, s0y, s1y; 
+	float jx, jy, jz;
+
+	const int nrow = J -> nrow;
+	
+	// Find position time centered with velocity
+	i = part->ix;
+	x = part->x + 0.5f * dx;
+	di = ltrim(x);
+	i += di;
+	x -= di;
+
+	j = part->iy;
+	y = part->y + 0.5f * dy;
+	dj = ltrim(y);
+	j += dj;
+	y -= dj;
+	
+	s0x = 0.5f - x;
+	s1x = 0.5f + x; 
+
+	s0y = 0.5f - y;
+	s1y = 0.5f + y; 
+
+	jx = q * part -> ux * rg;
+	jy = q * part -> uy * rg;
+	jz = q * part -> uz * rg;
+
+	int idx = i + j * nrow;
+
+	J->x[idx           ] += s0y * s0x * jx;
+	J->y[idx           ] += s0y * s0x * jy;
+	J->z[idx           ] += s0y * s0x * jz;
+
+	J->x[idx        + 1] += s0y * s1x * jx;
+	J->y[idx        + 1] += s0y * s1x * jy;
+	J->z[idx        + 1] += s0y * s1x * jz;
+
+	J->x[idx + nrow    ] += s1y * s0x * jx;
+	J->y[idx + nrow    ] += s1y * s0x * jy;
+	J->z[idx + nrow    ] += s1y * s0x * jz;
+
+	J->x[idx + nrow + 1] += s1y * s1x * jx;
+	J->y[idx + nrow + 1] += s1y * s1x * jy;
+	J->z[idx + nrow + 1] += s1y * s1x * jz;
+
+}
 
 /*********************************************************************************************
  
@@ -521,15 +361,6 @@ void spec_sort( t_species* spec )
 	
 	// free temp. array
 	free(npic);
-/*
-	// Rearrange particle buffer
-	t_part *tmp = malloc( spec->np * sizeof( t_part ) );
-	for (i=0; i< spec->np; i++) {
-        tmp[idx[i]] = spec->part[i];
-	}
-	free(spec->part);
-	spec->part = tmp;
-*/
 
 	// low mem
 	for (i=0; i < spec->np; i++) {
@@ -562,83 +393,79 @@ void spec_sort( t_species* spec )
  *********************************************************************************************/
 
 
-void interpolate_fld( const t_vfld* restrict const E, const t_vfld* restrict const B, const int nrow, 
+void interpolate_fld( t_vfld_grid2d * E, t_vfld_grid2d * B, 
 	          const t_part* restrict const part, t_vfld* restrict const Ep, t_vfld* restrict const Bp )
 {
-	register int i, j, ih, jh;
-	register t_fld w1, w2, w1h, w2h;
-	
-	i = part->ix;
-	j = part->iy;
-	
-	w1 = part->x;
-	w2 = part->y;
-	
-	ih = (w1 <0.5f)? -1 : 0;
-	jh = (w2 <0.5f)? -1 : 0;
-	
-	// w1h = w1 - 0.5f - ih;
-	// w2h = w2 - 0.5f - jh;
-	w1h = w1 + ((w1 <0.5f)?0.5f:-0.5f);
-	w2h = w2 + ((w2 <0.5f)?0.5f:-0.5f);
+	float s0x, s0y, s1x, s1y;
 
+	const int nrow = E -> nrow;
 	
-	ih += i;
-	jh += j;
+	const int idx = part->ix + part->iy * nrow;
 	
-	Ep->x = ( E[ih +     j *nrow].x * (1.0f - w1h) + E[ih+1 +     j*nrow].x * w1h ) * (1.0f -  w2 ) +
-	        ( E[ih + (j +1)*nrow].x * (1.0f - w1h) + E[ih+1 + (j+1)*nrow].x * w1h ) * w2;
+	s0x = 0.5f - part->x;
+	s1x = 0.5f + part->x;
 
-	Ep->y = ( E[i  +     jh*nrow].y * (1.0f -  w1) + E[i+1  +     jh*nrow].y * w1 ) * (1.0f - w2h ) +
-	        ( E[i  + (jh+1)*nrow].y * (1.0f -  w1) + E[i+1  + (jh+1)*nrow].y * w1 ) * w2h;
+	s0y = 0.5f - part->y;
+	s1y = 0.5f + part->y;
 
-	Ep->z = ( E[i  +     j *nrow].z * (1.0f - w1) + E[i+1 +     j*nrow].z * w1 ) * (1.0f - w2 ) +
-	        ( E[i  + (j +1)*nrow].z * (1.0f - w1) + E[i+1 + (j+1)*nrow].z * w1 ) * w2;
+	Ep -> x = s0y * s0x * E->x[idx           ] + 
+	          s0y * s1x * E->x[idx        + 1] + 
+	          s1y * s0x * E->x[idx + nrow    ] + 
+	          s1y * s1x * E->x[idx + nrow + 1];
 
-	Bp->x = ( B[i  +     jh*nrow].x * (1.0f - w1) + B[i+1 +     jh*nrow].x * w1 ) * (1.0f - w2h ) +
-	        ( B[i  + (jh+1)*nrow].x * (1.0f - w1) + B[i+1 + (jh+1)*nrow].x * w1 ) * w2h;
+	Ep -> y = s0y * s0x * E->y[idx           ] +
+	          s0y * s1x * E->y[idx        + 1] + 
+	          s1y * s0x * E->y[idx + nrow    ] + 
+	          s1y * s1x * E->y[idx + nrow + 1];
 
-	Bp->y = ( B[ih +     j*nrow].y * (1.0f - w1h) + B[ih+1 +     j*nrow].y * w1h ) * (1.0f - w2 ) +
-	        ( B[ih + (j +1)*nrow].y * (1.0f - w1h) + B[ih+1 + (j+1)*nrow].y * w1h ) * w2;
+	Ep -> z = s0y * s0x * E->z[idx           ] + 
+	          s0y * s1x * E->z[idx        + 1] + 
+	          s1y * s0x * E->z[idx + nrow    ] +
+	          s1y * s1x * E->z[idx + nrow + 1];
 
-	Bp->z = ( B[ih +     jh*nrow].z * (1.0f - w1h) + B[ih+1 +     jh*nrow].z * w1h ) * (1.0f - w2h ) +
-	        ( B[ih + (jh+1)*nrow].z * (1.0f - w1h) + B[ih+1 + (jh+1)*nrow].z * w1h ) * w2h;
+	Bp -> x = s0y * s0x * B->x[idx           ] + 
+	          s0y * s1x * B->x[idx        + 1] + 
+	          s1y * s0x * B->x[idx + nrow    ] + 
+	          s1y * s1x * B->x[idx + nrow + 1];
+
+	Bp -> y = s0y * s0x * B->y[idx           ] + 
+	          s0y * s1x * B->y[idx        + 1] + 
+	          s1y * s0x * B->y[idx + nrow    ] + 
+	          s1y * s1x * B->y[idx + nrow + 1];
+
+	Bp -> z = s0y * s0x * B->z[idx           ] + 
+	          s0y * s1x * B->z[idx        + 1] + 
+	          s1y * s0x * B->z[idx + nrow    ] +
+	          s1y * s1x * B->z[idx + nrow + 1];
 
 }	
 
-int ltrim( t_part_data x )
-{
-	return ( x >= 1.0f ) - ( x < 0.0f );
-}	
 
-void spec_advance( t_species* spec, t_emf* emf, t_current* current )
+void spec_advance( t_species* spec, t_emf* emf, t_charge* charge, t_current* current )
 {
 	int i;
-	t_part_data qnx, qny, qvz;
 	
 	uint64_t t0;
 	t0 = timer_ticks();
 	
-	const t_part_data tem   = 0.5 * spec->dt/spec -> m_q;
-	const t_part_data dt_dx = spec->dt / spec->dx[0]; 
-	const t_part_data dt_dy = spec->dt / spec->dx[1]; 
-
-	// Auxiliary values for current deposition
-	qnx = spec -> q *  spec->dx[0] / spec->dt;
-	qny = spec -> q *  spec->dx[1] / spec->dt;
+	const float tem   = 0.5 * spec->dt/spec -> m_q;
+	const float dt_dx = spec->dt / spec->dx[0]; 
+	const float dt_dy = spec->dt / spec->dx[1]; 
 
 	const int nx0 = spec -> nx[0];
 	const int nx1 = spec -> nx[1];
+
+	double energy = 0;
 
 	// Advance particles
 	for (i=0; i<spec->np; i++) {
 				
 		t_vfld Ep, Bp;
-		t_part_data utx, uty, utz;
-		t_part_data ux, uy, uz, rg;
-		t_part_data gtem, otsq;
+		float utx, uty, utz;
+		float ux, uy, uz, u2;
+		float gamma, rg, gtem, otsq;
 		
-		t_part_data x1, y1;
+		float x1, y1;
 		
 		int di, dj;
 		float dx, dy; 
@@ -649,7 +476,7 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 		uz = spec -> part[i].uz;
 
 		// interpolate fields
-		interpolate_fld( emf -> E, emf -> B, emf -> nrow, &spec -> part[i], &Ep, &Bp );
+		interpolate_fld( &emf -> E, &emf -> B, &spec -> part[i], &Ep, &Bp );
 		
 		// advance u using Boris scheme
 		Ep.x *= tem;
@@ -661,12 +488,19 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 		utz = uz + Ep.z;
 
 		// Perform first half of the rotation
-		gtem = tem / sqrtf( 1.0f + utx*utx + uty*uty + utz*utz );
+
+		// Get time centered gamma
+		u2 = utx*utx + uty*uty + utz*utz;
+		gamma = sqrtf( 1 + u2 );
+
+		// Accumulate time centered energy
+		energy += u2 / ( 1 + gamma );
+
+		gtem = tem / gamma;
 		
 		Bp.x *= gtem;
 		Bp.y *= gtem;
 		Bp.z *= gtem;
-
 		otsq = 2.0f / ( 1.0f + Bp.x*Bp.x + Bp.y*Bp.y + Bp.z*Bp.z );
 
 		ux = utx + uty*Bp.z - utz*Bp.y;
@@ -698,6 +532,9 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 				
 		dx = dt_dx * rg * ux;
 		dy = dt_dy * rg * uy;
+
+		// Deposit current for the particle (t+1/2)
+		deposit_current( &current -> J, &spec -> part[i], spec->q, rg, dx, dy );
 		
 		x1 = spec -> part[i].x + dx; 
 		y1 = spec -> part[i].y + dy;
@@ -708,61 +545,33 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 		x1 -= di;
 		y1 -= dj;
 		
-		qvz = spec->q * uz * rg;
 		
-		// deposit current using Eskirepov method
-		// dep_current_esk( spec -> part[i].ix, spec -> part[i].iy, di, dj, 
-		// 				 spec -> part[i].x, spec -> part[i].y, x1, y1, 
-		// 				 qnx, qny, qvz, 
-		// 				 current );
-
-		dep_current_zamb( spec -> part[i].ix, spec -> part[i].iy, di, dj, 
-						 spec -> part[i].x, spec -> part[i].y, dx, dy, 
-						 qnx, qny, qvz, 
-						 current );
-
 		// Store results
 		spec -> part[i].x = x1;
 		spec -> part[i].y = y1;
 		spec -> part[i].ix += di;
 		spec -> part[i].iy += dj;
+
+		// Deposit charge for the particle (t+1)
+		deposit_charge( &charge -> rho, &spec -> part[i], spec->q );
+
 		
 	}
+
+	// Store energy
+	spec -> energy = spec-> q * spec -> m_q * energy * spec -> dx[0] * spec -> dx[1];
 
 	// Advance internal iteration number
     spec -> iter += 1;
 
-    // Check for particles leaving the box
-	if ( spec -> moving_window ){
-
-        // Move simulation window if needed
-		spec_move_window( spec );
-
-		// Use absorbing boundaries along x, periodic along y
-		i = 0;
-		while ( i < spec -> np ) {
-			if (( spec -> part[i].ix < 0 ) || ( spec -> part[i].ix >= nx0 )) {
-				spec -> part[i] = spec -> part[ -- spec -> np ];
-				continue; 
-			}
-			spec -> part[i].iy += (( spec -> part[i].iy < 0 ) ? nx1 : 0 ) - (( spec -> part[i].iy >= nx1 ) ? nx1 : 0);
-			i++;
-		}
-
-	} else {
-		// Use periodic boundaries in both directions
-		for (i=0; i<spec->np; i++) {
-			spec -> part[i].ix += (( spec -> part[i].ix < 0 ) ? nx0 : 0 ) - (( spec -> part[i].ix >= nx0 ) ? nx0 : 0);
-			spec -> part[i].iy += (( spec -> part[i].iy < 0 ) ? nx1 : 0 ) - (( spec -> part[i].iy >= nx1 ) ? nx1 : 0);
-		}
+	// Use periodic boundaries in both directions
+	for (i=0; i<spec->np; i++) {
+		spec -> part[i].ix += (( spec -> part[i].ix < 0 ) ? nx0 : 0 ) - (( spec -> part[i].ix >= nx0 ) ? nx0 : 0);
+		spec -> part[i].iy += (( spec -> part[i].iy < 0 ) ? nx1 : 0 ) - (( spec -> part[i].iy >= nx1 ) ? nx1 : 0);
 	}
 	
 	// Sort species at every 16 time steps
 	if ( ! (spec -> iter % 16) ) spec_sort( spec );
-
-
-    // Move simulation window if needed
-    if ( spec -> moving_window )
     	
 	
 	_spec_time += timer_interval_seconds( t0, timer_ticks() );
@@ -776,34 +585,34 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
  *********************************************************************************************/
 
 
-void spec_deposit_charge( const t_species* spec, t_part_data* charge )
+void spec_deposit_charge( const t_species* spec, float* charge )
 {
 	int i,j;
 	
 	// Charge array is expected to have 1 guard cell at the upper boundary
-	int nrow = spec -> nx[0] + 1;
-	t_part_data q = spec -> q;
+	const int nrow = spec -> nx[0] + 1;
+	const float q = spec -> q;
 	
 	for (i=0; i<spec->np; i++) {
 		int idx = spec->part[i].ix + nrow*spec->part[i].iy;
-		t_fld w1, w2;
+
+		float s0x = 0.5f - spec->part[i].x;
+		float s1x = 0.5f + spec->part[i].x; 
+
+		float s0y = 0.5f - spec->part[i].y;
+		float s1y = 0.5f + spec->part[i].y; 
 		
-		w1 = spec->part[i].x;
-		w2 = spec->part[i].y;
-		
-		charge[ idx            ] += ( 1.0f - w1 ) * ( 1.0f - w2 ) * q;
-		charge[ idx + 1        ] += (        w1 ) * ( 1.0f - w2 ) * q;
-		charge[ idx     + nrow ] += ( 1.0f - w1 ) * (        w2 ) * q;
-		charge[ idx + 1 + nrow ] += (        w1 ) * (        w2 ) * q;
+		charge[ idx            ] += s0y * s0x * q;
+		charge[ idx + 1        ] += s0y * s1x * q;
+		charge[ idx     + nrow ] += s1y * s0x * q;
+		charge[ idx + 1 + nrow ] += s1y * s1x * q;
 	}
 
 	// Correct boundary values
 
-	// x
-	if ( ! spec -> moving_window ){
-		for (j = 0; j < spec -> nx[1] + 1; j++) {
-			charge[ 0 + j*nrow ] += charge[ spec -> nx[0] + j*nrow ];
-		}
+	// x - Periodic boundaries
+	for (j = 0; j < spec -> nx[1] + 1; j++) {
+		charge[ 0 + j*nrow ] += charge[ spec -> nx[0] + j*nrow ];
 	}
 	
 	// y - Periodic boundaries
@@ -861,12 +670,12 @@ void spec_rep_particles( const t_species *spec )
 
 	// x1
 	for( i = 0; i < spec ->np; i++ )
-		data[i] = ( spec -> n_move + spec -> part[i].ix + spec -> part[i].x ) * spec -> dx[0];
+		data[i] = ( spec -> part[i].ix + (spec -> part[i].x +0.5f ) ) * spec -> dx[0];
 	zdf_part_file_add_quant( &part_file, quants[0], data, spec ->np );
 
 	// x2
 	for( i = 0; i < spec ->np; i++ )
-		data[i] = (spec -> part[i].iy + spec -> part[i].y ) * spec -> dx[1];
+		data[i] = ( spec -> part[i].iy + (spec -> part[i].y + 0.5f ) ) * spec -> dx[1];
 	zdf_part_file_add_quant( &part_file, quants[1], data, spec ->np );
 
 	// ux
@@ -889,12 +698,12 @@ void spec_rep_particles( const t_species *spec )
 
 void spec_rep_charge( const t_species *spec )
 {
-	t_part_data *buf, *charge, *b, *c;
+	float *buf, *charge, *b, *c;
 	size_t size;
 	int i, j;
 	
 	// Add 1 guard cell to the upper boundary
-	size = ( spec -> nx[0] + 1 ) * ( spec -> nx[1] + 1 ) * sizeof( t_part_data );
+	size = ( spec -> nx[0] + 1 ) * ( spec -> nx[1] + 1 ) * sizeof( float );
 	charge = malloc( size );
 	memset( charge, 0, size );
 	
@@ -962,11 +771,11 @@ void spec_pha_axis( const t_species *spec, int i0, int np, int quant, float *axi
 	switch (quant) {
 		case X1:
 			for (i = 0; i < np; i++) 
-				axis[i] = ( spec -> part[i0+i].x + spec -> part[i0+i].ix ) * spec -> dx[0];
+				axis[i] = ( (spec -> part[i0+i].x + 0.5f) + spec -> part[i0+i].ix ) * spec -> dx[0];
 			break;
 		case X2:
 			for (i = 0; i < np; i++) 
-				axis[i] = ( spec -> part[i0+i].y + spec -> part[i0+i].iy ) * spec -> dx[1];
+				axis[i] = ( (spec -> part[i0+i].y + 0.5f) + spec -> part[i0+i].iy ) * spec -> dx[1];
 			break;
 		case U1:
 			for (i = 0; i < np; i++) 

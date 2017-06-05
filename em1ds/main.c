@@ -42,7 +42,7 @@ int main (int argc, const char * argv[]) {
 		for (i = 0; i<sim.n_species; i++) 
 			spec_advance(&sim.species[i], &sim.emf, &sim.charge, &sim.current );
 		
-		// Update cahrge and current boundary conditions and get fourier transforms
+		// Update charge and current boundary conditions and get fourier transforms
 		current_update( &sim.current );
 		charge_update( &sim.charge );
 		

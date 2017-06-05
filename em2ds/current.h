@@ -35,11 +35,11 @@ typedef struct {
 	int iter;
 
 	// FFT configuration
-	t_fftr2d_cfg fft_forward;
+	t_fftr2d_cfg fft_forward, fft_backward;
 
 } t_current;
 
-void current_new( t_current *current, const unsigned  nx[], t_fld box[], float dt );
+void current_new( t_current *current, const unsigned nx[], t_fld box[], float dt);
 void current_delete( t_current *current );
 void current_zero( t_current *current );
 void current_update( t_current *current );
