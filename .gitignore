@@ -26,6 +26,7 @@
 *.exe
 *.out
 *.app
+zpic
 
 # . (dot) files that various editors leak out
 .*
