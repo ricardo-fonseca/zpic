@@ -16,6 +16,7 @@
 #include "current.h"
 
 enum emf_diag { EFLD, BFLD };
+enum emf_boundary { EMF_BC_NONE, EMF_BC_PERIODIC, EMF_BC_OPEN };
 
 typedef struct {
 	
@@ -40,6 +41,10 @@ typedef struct {
 	// Moving window
 	int moving_window;
 	int n_move;
+
+	// Boundary conditions
+	int bc_type;
+	t_vfld mur_fld[2], mur_tmp[2];
 	
 } t_emf;
 

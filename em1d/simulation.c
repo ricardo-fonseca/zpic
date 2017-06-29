@@ -70,6 +70,8 @@ void sim_set_smooth( t_simulation* sim,  t_smooth* smooth ){
 void sim_set_moving_window( t_simulation* sim ){
 
 	sim -> emf.moving_window = 1;
+    sim -> emf.bc_type = EMF_BC_NONE;
+
 	sim -> current.moving_window = 1;
 
     int i;

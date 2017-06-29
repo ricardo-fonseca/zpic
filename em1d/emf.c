@@ -73,6 +73,16 @@ void emf_new( t_emf *emf, int nx, t_fld box, const float dt )
 	// Reset moving window information
 	emf -> moving_window = 0;
 	emf -> n_move = 0;
+
+	// Default to periodic boundary condtions
+	emf -> bc_type = EMF_BC_PERIODIC;
+	
+	emf -> mur_fld[0].x = emf -> mur_fld[0].y = emf -> mur_fld[0].z = 0;
+	emf -> mur_fld[1].x = emf -> mur_fld[1].y = emf -> mur_fld[1].z = 0;
+
+	emf -> mur_tmp[0].x = emf -> mur_tmp[0].y = emf -> mur_tmp[0].z = 0;
+	emf -> mur_tmp[1].x = emf -> mur_tmp[1].y = emf -> mur_tmp[1].z = 0;
+
 	
 }
 
@@ -143,8 +153,8 @@ void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
 	}
 
     
-	// Set guard cell values
-	emf_update_gc( emf );
+	// Set guard cell values for periodic boundaries
+	if ( emf -> bc_type[0] == EMF_BC_PERIODIC )	emf_update_gc( emf );
 	
 }
 
@@ -227,6 +237,45 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 		
 }
 
+/*********************************************************************************************
+ 
+ Absorbing boundaries
+ 1st order MUR absorbing boundary conditions
+ 
+ *********************************************************************************************/
+
+void mur_abc( t_emf *emf ) {
+
+    const int nx = emf->nx;
+    float const S = (emf->dt - emf->dx) / (emf->dt + emf->dx);
+
+	// lower boundary
+	if ( emf -> bc_type[0] == EMF_BC_OPEN) {
+        emf -> mur_fld[0].y = emf -> mur_tmp[0].y + S * (emf -> E[0].y - emf -> mur_fld[0].y);
+        emf -> mur_fld[0].z = emf -> mur_tmp[0].z + S * (emf -> E[0].z - emf -> mur_fld[0].z);
+        
+        emf ->  E[-1].y = emf -> mur_fld[0].y;
+        emf ->  E[-1].z = emf -> mur_fld[0].z;
+
+        // Store Eperp for next iteration
+        emf -> mur_tmp[0].y = emf -> E[0].y;
+        emf -> mur_tmp[0].z = emf -> E[0].z;
+	}
+
+	// upper boundary
+	if ( emf -> bc_type[1 == EMF_BC_OPEN ]) {
+        emf -> mur_fld[1].y = emf -> mur_tmp[1].y + S * (emf -> E[nx-1].y - emf -> mur_fld[1].y);
+        emf -> mur_fld[1].z = emf -> mur_tmp[1].z + S * (emf -> E[nx-1].z - emf -> mur_fld[1].z);
+        
+        emf ->  E[nx].y = emf -> mur_fld[1].y;
+        emf ->  E[nx].z = emf -> mur_fld[1].z;
+
+        // Store Eperp for next iteration
+        emf -> mur_tmp[1].y = emf -> E[nx-1].y;
+        emf -> mur_tmp[1].z = emf -> E[nx-1].z;
+	}    
+
+}
 
 /*********************************************************************************************
  
@@ -265,9 +314,10 @@ void yee_e( t_emf *emf, const t_current *current, const float dt )
     t_vfld* const restrict E = emf -> E;
     const t_vfld* const restrict B = emf -> B;
     const t_vfld* const restrict J = current -> J;
+    const int nx = emf->nx;
 	
 	// Canonical implementation	
-	for (i=0; i<=emf->nx+1; i++) {
+	for (i=0; i<=nx+1; i++) {
 		E[i].x += (                                - dt * J[i].x );  
 		
 		E[i].y += ( - dt_dx * ( B[i].z - B[i-1].z) - dt * J[i].y );  
@@ -275,6 +325,7 @@ void yee_e( t_emf *emf, const t_current *current, const float dt )
 		E[i].z += ( + dt_dx * ( B[i].y - B[i-1].y) - dt * J[i].z );  
  
 	}
+
 }
 
 
@@ -285,33 +336,33 @@ void emf_update_gc( t_emf *emf )
 
     t_vfld* const restrict E = emf -> E;
     t_vfld* const restrict B = emf -> B;
+    const int nx = emf->nx;
 
-	// For moving window don't update x boundaries
-	if ( ! emf -> moving_window ) {
+	if ( emf -> bc_type[0] == EMF_BC_PERIODIC ) {
 		// x
 			
 		// lower
 		for (i=-emf->gc[0]; i<0; i++) {
-			E[ i ].x = E[ emf->nx + i ].x;
-			E[ i ].y = E[ emf->nx + i ].y;
-			E[ i ].z = E[ emf->nx + i ].z;
+			E[ i ].x = E[ nx + i ].x;
+			E[ i ].y = E[ nx + i ].y;
+			E[ i ].z = E[ nx + i ].z;
 
-			B[ i ].x = B[ emf->nx + i ].x;
-			B[ i ].y = B[ emf->nx + i ].y;
-			B[ i ].z = B[ emf->nx + i ].z;
+			B[ i ].x = B[ nx + i ].x;
+			B[ i ].y = B[ nx + i ].y;
+			B[ i ].z = B[ nx + i ].z;
 		}
 
 		// upper
 		for (i=0; i<emf->gc[0]; i++) {
-			E[ emf->nx + i ].x = E[ i ].x;
-			E[ emf->nx + i ].y = E[ i ].y;
-			E[ emf->nx + i ].z = E[ i ].z;
+			E[ nx + i ].x = E[ i ].x;
+			E[ nx + i ].y = E[ i ].y;
+			E[ nx + i ].z = E[ i ].z;
 			
-			B[ emf->nx + i ].x = B[ i ].x;
-			B[ emf->nx + i ].y = B[ i ].y;
-			B[ emf->nx + i ].z = B[ i ].z;
+			B[ nx + i ].x = B[ i ].x;
+			B[ nx + i ].y = B[ i ].y;
+			B[ nx + i ].z = B[ i ].z;
 		}
-	}
+	} 
 	
 }
 
@@ -354,19 +405,20 @@ void emf_advance( t_emf *emf, const t_current *current )
 	
 	yee_e( emf, current, dt );
 
+    // Process open boundaries if needed
+    if ( emf->bc_type == EMF_BC_OPEN ) mur_abc( emf );
+
 	yee_b( emf, dt/2.0f );
 	
-	// Update guard cells with new values
+	// Update guard cells
 	emf_update_gc( emf );
 
 	// Advance internal iteration number
     emf -> iter += 1;
 
     // Move simulation window if needed
-    if ( emf -> moving_window ) {
-    	emf_move_window( emf );
-    }
-	
+    if ( emf -> moving_window ) emf_move_window( emf );
+ 	
     // Update timing information
 	_emf_time += timer_interval_seconds(t0, timer_ticks());
 }
