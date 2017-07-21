@@ -14,8 +14,8 @@
 //#include "lwfa.c"
 //#include "beam.c"
 //#include "twostream.c"
-#include "absorbing.c"
-
+//#include "absorbing.c"
+#include "density.c"
 
 int main (int argc, const char * argv[]) {
     
