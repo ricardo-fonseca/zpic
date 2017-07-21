@@ -12,6 +12,7 @@
 
 // Include Simulation parameters here
 #include "twostream.c"
+//#include "density.c"
 
 int main (int argc, const char * argv[]) {
     
@@ -32,7 +33,7 @@ int main (int argc, const char * argv[]) {
 		printf("n = %i, t = %f\n",n,t);
 
 		if ( report ( n , sim.ndump ) ) 
-			sim_report( &sim.field, &sim.charge, sim.species );
+			sim_report( &sim );
 		
 		// Advance particles and deposit charge
 		charge_zero( &sim.charge );

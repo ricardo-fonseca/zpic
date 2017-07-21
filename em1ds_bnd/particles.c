@@ -28,11 +28,6 @@ static double _spec_time = 0.0;
 
 void spec_sort( t_species *spec );
 
-int ltrim( float x )
-{
-	return (( x >= 0.5f )?1:0) - (( x < -0.5f )?1:0);
-}
-
 /*********************************************************************************************
  
  Initialization
@@ -58,17 +53,118 @@ void spec_set_u( t_species* spec, const int start, const int end )
 
 }	
 
+/**
+ * Number of particles to be injected.
+ *
+ * Calculates the number of particles to be injected in the specified range according
+ * to the specified density profile. The returned value is not exact but it is 
+ * guaranteed to be larger than the actual number of particles to be injected
+ * 
+ * @param spec Particle species
+ * @param range[] Range of cells in which to inject
+ * @return Number of particles to be injected
+ */
+int spec_np_inj( t_species* spec, const int range[] )
+{
+	int np_inj;
+
+	switch ( spec -> density.type ) {
+	case STEP: // Step like density profile
+		{
+			int i0 = spec -> density.start / spec -> dx;
+
+			if ( i0 > range[1] ) {
+				np_inj = 0;
+			} else {
+				if ( i0 < range[0] ) i0 = range[0];
+				np_inj = ( range[1] - i0 + 1 ) * spec -> ppc;
+			}
+		}
+		break;
+
+	case SLAB: // Slab like density profile
+		{
+			int i0 = spec -> density.start / spec -> dx;
+			int i1 = spec -> density.end / spec -> dx;
+
+			if ( (i0 > range[1]) || (i1 < range[0]) ) {
+				np_inj = 0;
+			} else {
+				if ( i0 < range[0] ) i0 = range[0];
+				if ( i1 > range[1] ) i1 = range[1];
+				np_inj = ( i1 - i0 + 1 ) * spec -> ppc;
+			}
+		}
+		break;
+
+	case RAMP: // ramp density profile
+		{
+			// Ramp start / finish
+			float x0 = spec -> density.start;
+			float x1 = spec -> density.end;
+
+			// Injection start / finish positions (in simulation units)
+			float a = range[0] * spec->dx;
+			float b = (range[1] + 1) * spec->dx;
+
+			// If outside of ramp (or invalid ramp) return 0
+			if ( (x1 <= x0) || (a > x1) || (b < x0) ) {
+				np_inj = 0;
+			} else {
+				// limit integration boundaries to ramp start/end
+				if ( a < x0 ) a = x0;
+				if ( b > x1 ) b = x1;
+
+				// Get total injected charge
+				float n0 = spec -> density.ramp[0];
+				float n1 = spec -> density.ramp[1];
+				float q = (b-a)*( n0 + 0.5 * (a+b-2*x0)*(n1-n0)/(x1-x0));
+				
+				// Get corresponding number of simulation particles
+				np_inj = q * spec -> ppc / spec -> dx;
+
+			}
+		}
+		break;
+
+	case CUSTOM: // custom density profile
+		{
+			
+			// Integrate total charge
+			double q = 0.5 * ( (*spec -> density.custom)(range[0] * spec->dx) + 
+				               (*spec -> density.custom)(range[1] * spec->dx) );
+
+			for( int i = range[0]+1; i < range[1]; i++) {
+				q += (*spec -> density.custom)(i * spec->dx);
+			}
+
+			// Get corresponding number of simulation particles
+			// The +0.5 is a protection against rounding errors
+			np_inj = q * spec -> ppc + 0.5;
+		}
+		break;
+
+	default: // Uniform density
+		np_inj = ( range[1] - range[0] + 1 ) * spec -> ppc;
+	}
+
+	// printf("Predicts injecting %d particles\n", np_inj);
+	return np_inj;
+}
+
+
 void spec_set_x( t_species* spec, const int range[] )
 {
 
 	int i, k, ip;
 	
-	float edge, start, end;
+	float start, end;
 	
 	// Calculate particle positions inside the cell
 	const int npc = spec->ppc;
 	
 	float poscell[npc];
+
 	for (i=0; i<spec->ppc; i++) {
 		poscell[i]   = (1 + 2*i - npc) / (2.0*npc);
 	}
@@ -79,13 +175,13 @@ void spec_set_x( t_species* spec, const int range[] )
 	switch ( spec -> density.type ) {
 	case STEP: // Step like density profile
 		
-		// Get edge position normalized to cell size;
-		edge = spec -> density.edge / spec -> dx - 0.5;
+		// Get start position normalized to cell size;
+		start = spec -> density.start / spec -> dx - 0.5;
 
 		for (i = range[0]; i <= range[1]; i++) {
 
 			for (k=0; k<npc; k++) {
-				if ( i + poscell[k] > edge ) {
+				if ( i + poscell[k] > start ) {
 					spec->part[ip].ix = i;
 					spec->part[ip].x = poscell[k];
 					ip++;
@@ -112,6 +208,125 @@ void spec_set_x( t_species* spec, const int range[] )
 		}
 		break;
 
+	case RAMP: // ramp like density profile
+		
+		{
+			// Ramp start/finish in cell units
+			double r0 = spec -> density.start / spec -> dx;
+			double r1 = spec -> density.end / spec -> dx;
+
+			// If outside ramp return
+			if ((range[0] > r1 ) || (range[1] < r0 )) break;
+
+			double n0 = spec -> density.ramp[0];
+			double n1 = spec -> density.ramp[1];
+
+			// Only consider the ramp for x > 0
+			if ( r0 < 0 ) {
+				n0 += - r0 * (n1-n0) / (r1-r0);
+				r0 = 0;
+			}
+
+            // Charge per simulation particle
+			double cpp = 1.0 / spec->ppc;
+
+			for( k = spec -> density.total_np_inj; ; k++ ) {
+				// Desired cumulative density, normalized to the [0,1] interval
+				double Rs = (k+0.5) * cpp / (r1 - r0);
+
+				// Position normalized to the [0,1] interval
+				// double pos = (-a + sqrt( a*a + 2 * b * Rs ))/b;
+				double pos = 2 * Rs / (sqrt( n0*n0 + 2 * (n1-n0) * Rs ) + n0);
+
+				// If outside of ramp interval we are done
+				if ( pos > 1 ) break;
+
+				// Position in simulation cell units
+				pos = r0 + (r1-r0) * pos;
+
+				// Injection cell
+				int ix = pos;
+
+				// (*debug*) This must never happen
+				if ( ix < range[0] ) {
+					fprintf(stderr, "(*error*) attempting to inject outside of valid range.\n");
+					break;
+				}
+
+				// If outside injection range we are done
+				if ( ix > range[1] ) break;
+				
+				// Inject particle
+				spec->part[ip].ix = ix;
+				spec->part[ip].x = (pos - ix) - 0.5;
+				ip++;
+
+			}
+        }
+
+		// printf("Injected %d particles with ramp injection \n", ip - spec -> np );
+		break;
+
+	case CUSTOM: // ramp like density profile
+		
+		{
+			
+			const double dx = spec -> dx;
+
+			// Charge per simulation particle
+			const double cpp = 1.0 / spec->ppc;
+
+			// Injected particles
+			k = spec -> density.total_np_inj;
+
+			int ix = range[0];
+
+			// Density on cell edges
+			double n0;
+			double n1 = (*spec -> density.custom)(ix * dx);
+			
+			// Accumulated density on cell edges
+			double d0;
+			double d1 = spec -> density.custom_q_inj;
+
+			double Rs;
+
+			while( ix <= range[1] ){
+				
+				// Get density on the edges of current cell
+				n0 = n1;
+				n1 = (*spec -> density.custom)((ix + 1)*dx);
+				
+				// Get cumulative density on the edges of current cell
+				d0 = d1;
+				d1 += 0.5 * (n0+n1);
+
+				while( ( Rs =  (k+0.5) * cpp ) < d1 ) {
+					
+					// Quadratic formula
+					// double pos = (-n0 + sqrt( n0*n0 + 2 * (n1-n0) * (Rs-d0) ))/(n1-n0);
+					
+					// This version avoids a division by 0 if n1 = n0
+					double pos = 2 * (Rs-d0) /( sqrt( n0*n0 + 2 * (n1-n0) * (Rs-d0) ) + n0 );
+
+					spec->part[ip].ix = ix;
+					spec->part[ip].x = pos - 0.5;
+					ip++;
+
+					k++;
+				}
+
+				// Move to next cell
+				ix++;
+			}
+
+			spec -> density.custom_q_inj = d1;
+        }
+
+		// printf("Injected %d particles with custom injection \n", ip - spec -> np );
+		break;
+
+
 	default: // Uniform density
 		for (i = range[0]; i <= range[1]; i++) {
 
@@ -123,8 +338,11 @@ void spec_set_x( t_species* spec, const int range[] )
 		}
 	}
 	
-	spec -> np = ip;
-		
+	// Update total number of injected particles
+	spec -> density.total_np_inj += ip - spec -> np;
+	
+	// Update number of particles in buffer
+	spec -> np = ip;	
 }
 
 void spec_inject_particles( t_species* spec, const int range[] )
@@ -132,7 +350,7 @@ void spec_inject_particles( t_species* spec, const int range[] )
 	int start = spec -> np;
 
 	// Get maximum number of particles to inject
-	int np_inj = ( range[1] - range[0] + 1 ) * spec -> ppc;
+	int np_inj = spec_np_inj( spec, range );
 
 	// Check if buffer is large enough and if not reallocate
 	if ( spec -> np + np_inj > spec -> np_max ) {
@@ -175,13 +393,18 @@ void spec_new( t_species* spec, char name[], const float m_q, const int ppc,
 	spec->np_max = 0;
 	spec->part = NULL;
 	
-	
 	// Initialize density profile
 	if ( density ) {
 		spec -> density = *density;
 	} else {
 		spec -> density.type = UNIFORM;
 	}
+	if ( spec -> density.n == 0. ) spec -> density.n = 1.0;
+	spec -> density.total_np_inj = 0;
+	spec -> density.custom_q_inj = 0.;
+
+	// Density multiplier
+	spec ->q *= fabsf( spec -> density.n );
 
 	// Initialize temperature profile
 	if ( ufl ) {
@@ -220,6 +443,12 @@ void spec_delete( t_species* spec )
  Charge / Current deposition
  
  *********************************************************************************************/
+
+int ltrim( float x )
+{
+	return (( x >= 0.5f )?1:0) - (( x < -0.5f )?1:0);
+}
+
 
 void deposit_charge( t_scalar_grid * rho, const t_part* restrict const part, const float q )
 {

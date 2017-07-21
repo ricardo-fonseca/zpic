@@ -3,8 +3,6 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "emf.h"
-
 float custom_n0( float x ) {
 
 	return 1.0 + 0.5*sin(x/M_PI)*sin(x/M_PI);
@@ -42,9 +40,6 @@ void sim_init( t_simulation* sim ){
 
 	// Initialize Simulation data
 	sim_new( sim, nx, box, dt, tmax, ndump, species, n_species );
-
-	// Set moving window (this must come after sim_new)
-	sim_set_moving_window( sim );
 
 }
 
