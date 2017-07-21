@@ -154,7 +154,7 @@ void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
 
     
 	// Set guard cell values for periodic boundaries
-	if ( emf -> bc_type[0] == EMF_BC_PERIODIC )	emf_update_gc( emf );
+	if ( emf -> bc_type == EMF_BC_PERIODIC )	emf_update_gc( emf );
 	
 }
 
@@ -249,8 +249,8 @@ void mur_abc( t_emf *emf ) {
     const int nx = emf->nx;
     float const S = (emf->dt - emf->dx) / (emf->dt + emf->dx);
 
-	// lower boundary
-	if ( emf -> bc_type[0] == EMF_BC_OPEN) {
+	if ( emf -> bc_type == EMF_BC_OPEN) {
+		// lower boundary
         emf -> mur_fld[0].y = emf -> mur_tmp[0].y + S * (emf -> E[0].y - emf -> mur_fld[0].y);
         emf -> mur_fld[0].z = emf -> mur_tmp[0].z + S * (emf -> E[0].z - emf -> mur_fld[0].z);
         
@@ -260,10 +260,8 @@ void mur_abc( t_emf *emf ) {
         // Store Eperp for next iteration
         emf -> mur_tmp[0].y = emf -> E[0].y;
         emf -> mur_tmp[0].z = emf -> E[0].z;
-	}
 
-	// upper boundary
-	if ( emf -> bc_type[1 == EMF_BC_OPEN ]) {
+		// upper boundary
         emf -> mur_fld[1].y = emf -> mur_tmp[1].y + S * (emf -> E[nx-1].y - emf -> mur_fld[1].y);
         emf -> mur_fld[1].z = emf -> mur_tmp[1].z + S * (emf -> E[nx-1].z - emf -> mur_fld[1].z);
         
@@ -338,7 +336,7 @@ void emf_update_gc( t_emf *emf )
     t_vfld* const restrict B = emf -> B;
     const int nx = emf->nx;
 
-	if ( emf -> bc_type[0] == EMF_BC_PERIODIC ) {
+	if ( emf -> bc_type == EMF_BC_PERIODIC ) {
 		// x
 			
 		// lower
