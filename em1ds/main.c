@@ -14,7 +14,7 @@
 // Include Simulation parameters here
 //#include "lwfa.c"
 //#include "twostream.c"
-#include "twostream_meu.c"
+#include "density.c"
 
 int main (int argc, const char * argv[]) {
     
@@ -62,3 +62,4 @@ int main (int argc, const char * argv[]) {
     
 	return 0;
 }
+

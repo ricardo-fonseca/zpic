@@ -31,7 +31,7 @@ typedef struct {
 
 
 void sim_init( t_simulation* sim );
-void sim_report( t_field* field, t_charge* charge, t_species species[] );
+void sim_report( t_simulation* sim );
 
 void sim_add_neutral_bkg( t_simulation* sim );
 

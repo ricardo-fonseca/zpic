@@ -39,17 +39,17 @@ void sim_init( t_simulation* sim ){
 }
 
 
-void sim_report( t_field* field, t_charge* charge, t_species species[] ){
+void sim_report( t_simulation* sim ){
 
 	// Electric field components
-	field_report( field );
+	field_report( &sim -> field );
 
 	// Global charge
-	charge_report( charge );
+	charge_report( &sim -> charge );
 
 	// Species particles
-	spec_report( &species[0], PARTICLES, NULL, NULL );
-	spec_report( &species[1], PARTICLES, NULL, NULL );
+	spec_report( &sim->species[0], PARTICLES, NULL, NULL );
+	spec_report( &sim->species[1], PARTICLES, NULL, NULL );
 		
 			
 }
