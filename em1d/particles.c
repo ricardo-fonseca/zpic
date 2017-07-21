@@ -155,16 +155,15 @@ void spec_set_x( t_species* spec, const int range[] )
 
 	int i, k, ip;
 	
-	t_part_data edge, start, end;
+	float start, end;
 	
 	// Calculate particle positions inside the cell
 	const int npc = spec->ppc;
-	t_part_data const dpcx = 1.0f/spec->ppc;
 	
-	t_part_data poscell[npc];
-	ip = 0;
+	float poscell[npc];
+
 	for (i=0; i<spec->ppc; i++) {
-		poscell[i]   = dpcx * ( i + 0.5 );
+		poscell[i]   = ( i + 0.5 ) / npc;
 	}
 
 	ip = spec -> np;
@@ -174,12 +173,12 @@ void spec_set_x( t_species* spec, const int range[] )
 	case STEP: // Step like density profile
 		
 		// Get edge position normalized to cell size;
-		edge = spec -> density.start / spec -> dx - spec -> n_move;
+		start = spec -> density.start / spec -> dx - spec -> n_move;
 
 		for (i = range[0]; i <= range[1]; i++) {
 
 			for (k=0; k<npc; k++) {
-				if ( i + poscell[k] > edge ) {
+				if ( i + poscell[k] > start ) {
 					spec->part[ip].ix = i;
 					spec->part[ip].x = poscell[k];
 					ip++;
@@ -373,9 +372,9 @@ void spec_inject_particles( t_species* spec, const int range[] )
 
 }
 
-void spec_new( t_species* spec, char name[], const t_part_data m_q, const int ppc, 
-			  const t_part_data *ufl, const t_part_data * uth,
-			  const int nx, t_part_data box, const float dt, t_density* density )
+void spec_new( t_species* spec, char name[], const float m_q, const int ppc, 
+			  const float *ufl, const float * uth,
+			  const int nx, float box, const float dt, t_density* density )
 {
 
 	int i, npc;
@@ -479,8 +478,8 @@ void spec_delete( t_species* spec )
  *********************************************************************************************/
 
 void dep_current_esk( int ix0, int di, 
-						t_part_data x0, t_part_data x1, 
-						t_part_data qnx, t_part_data qvy, t_part_data qvz, 
+						float x0, float x1, 
+						float qnx, float qvy, float qvz, 
 						t_current *current )
 {
 
@@ -531,8 +530,8 @@ void dep_current_esk( int ix0, int di,
 }
 
 void dep_current_zamb( int ix0, int di, 
-						t_part_data x0, t_part_data dx, 
-						t_part_data qnx, t_part_data qvy, t_part_data qvz, 
+						float x0, float dx, 
+						float qnx, float qvy, float qvz, 
 						t_current *current )
 {
 	// Split the particle trajectory
@@ -710,7 +709,7 @@ void interpolate_fld( const t_vfld* restrict const E, const t_vfld* restrict con
 
 }	
 
-int ltrim( t_part_data x )
+int ltrim( float x )
 {
 	return ( x >= 1.0f ) - ( x < 0.0f );
 }	
@@ -718,13 +717,13 @@ int ltrim( t_part_data x )
 void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 {
 	int i;
-	t_part_data qnx, qvy, qvz;
+	float qnx, qvy, qvz;
 	
 	uint64_t t0;
 	t0 = timer_ticks();
 	
-	const t_part_data tem   = 0.5 * spec->dt/spec -> m_q;
-	const t_part_data dt_dx = spec->dt / spec->dx; 
+	const float tem   = 0.5 * spec->dt/spec -> m_q;
+	const float dt_dx = spec->dt / spec->dx; 
 
 	// Auxiliary values for current deposition
 	qnx = spec -> q *  spec->dx / spec->dt;
@@ -737,11 +736,11 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 	for (i=0; i<spec->np; i++) {
 				
 		t_vfld Ep, Bp;
-		t_part_data utx, uty, utz;
-		t_part_data ux, uy, uz, u2;
-		t_part_data gamma, rg, gtem, otsq;
+		float utx, uty, utz;
+		float ux, uy, uz, u2;
+		float gamma, rg, gtem, otsq;
 		
-		t_part_data x1;
+		float x1;
 		
 		int di;
 		float dx; 
@@ -880,13 +879,13 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
  *********************************************************************************************/
 
 
-void spec_deposit_charge( const t_species* spec, t_part_data* charge )
+void spec_deposit_charge( const t_species* spec, float* charge )
 {
 	int i;
 	
 	// Charge array is expected to have 1 guard cell at the upper boundary
 
-	t_part_data q = spec -> q;
+	float q = spec -> q;
 	
 	for (i=0; i<spec->np; i++) {
 		int idx = spec->part[i].ix;

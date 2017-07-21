@@ -18,8 +18,8 @@
 
 typedef struct {
 	int ix;
-	t_part_data x;
-	t_part_data ux, uy, uz;
+	float x;
+	float ux, uy, uz;
 } t_part;
 
 enum density_type {UNIFORM, STEP, SLAB, RAMP, CUSTOM};
@@ -52,13 +52,13 @@ typedef struct {
 	int np_max;
 
 	// mass over charge ratio
-	t_part_data m_q;
+	float m_q;
 
 	// total kinetic energy
 	double energy;
 	
 	// charge of individual particle
-	t_part_data q;
+	float q;
 	
 	// Number of particles per cell
 	int ppc;
@@ -67,13 +67,13 @@ typedef struct {
 	t_density density;
 
 	// Initial momentum of particles
-	t_part_data ufl[3];
-	t_part_data uth[3];
+	float ufl[3];
+	float uth[3];
 
 	// Simulation box info
 	int nx;
-	t_part_data dx;
-	t_part_data box;
+	float dx;
+	float box;
 
 	// Time step
 	float dt;
@@ -90,9 +90,9 @@ typedef struct {
 	
 } t_species;
 
-void spec_new( t_species* spec, char name[], const t_part_data m_q, const int ppc, 
-			  const t_part_data ufl[], const t_part_data uth[],
-			  const int nx, t_part_data box, const float dt, t_density* density );
+void spec_new( t_species* spec, char name[], const float m_q, const int ppc, 
+			  const float ufl[], const float uth[],
+			  const int nx, float box, const float dt, t_density* density );
 
 void spec_move_window( t_species *spec );
 

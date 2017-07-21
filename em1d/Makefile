@@ -1,14 +1,14 @@
 # GCC options
 #CC = gcc-6.3.0
-#CFLAGS = -Ofast 
+#CFLAGS = -Ofast -std=c99 -pedantic 
 
 # Intel icc compiler
 #CC = icc
-#CFLAGS = -restrict -Ofast 
+#CFLAGS = -restrict -Ofast -std=c99 -pedantic
 
 # Clang options
 CC = clang
-CFLAGS = -Ofast
+CFLAGS = -Ofast -std=c99 -pedantic
 
 LDFLAGS = 
 
