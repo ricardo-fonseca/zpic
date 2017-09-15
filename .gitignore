@@ -35,3 +35,4 @@ zpic
 # ignore test directories
 test*/
 
+/zdf/__pycache__

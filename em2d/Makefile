@@ -4,7 +4,7 @@
 
 # Intel icc compiler
 CC = icc
-CFLAGS = -restrict -Ofast 
+CFLAGS = -restrict -Ofast -std=c99 -pedantic
 
 # Clang options
 #CC = clang

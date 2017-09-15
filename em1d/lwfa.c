@@ -22,7 +22,7 @@ void sim_init( t_simulation* sim ){
 	int ppc = 128;
 
 	// Density profile
-	t_density density = { .type = STEP, .edge = 20.0 };
+	t_density density = { .type = STEP, .start = 20.0 };
 
 	t_species* species = (t_species *) malloc( n_species * sizeof( t_species ));
 	spec_new( &species[0], "electrons", -1.0, ppc, NULL, NULL, nx, box, dt, &density );

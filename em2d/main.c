@@ -11,8 +11,8 @@
 #include "timer.h"
 
 // Include Simulation parameters here
-//#include "weibel.c"
-#include "lwfa.c"
+#include "weibel.c"
+//#include "lwfa.c"
 
 int main (int argc, const char * argv[]) {
     

@@ -1,6 +1,24 @@
+"""
+Copyright (C) 2017 Instituto Superior Tecnico
+
+This file is part of the ZPIC Educational code suite
+
+The ZPIC Educational code suite is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+The ZPIC Educational code suite is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with the ZPIC Educational code suite. If not, see <http://www.gnu.org/licenses/>.
+"""
+
 #!/usr/bin/python
 import sys
-import xdrlib
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -11,54 +29,47 @@ class ZDFfile:
 
         # Check magic number
         magic = self.__file.read(4)
-        if (magic != b'ZDF0'):
+        if (magic != b'ZDF1'):
             print('File is not a proper ZDF file, aborting', file=sys.stderr)
             self.__file.close
 
-        self.__xdr = xdrlib.Unpacker("")
-
     def close(self):
-        self.__xdr.done
         self.__file.close
 
-    def __read_xdr_uint(self):
-        self.__xdr.reset(self.__file.read(4))
-        return self.__xdr.unpack_uint()
+    def __read_uint32(self):
+        data = np.fromfile(self.__file,dtype='<u4',count=1)
+        if ( data.size == 0 ):
+            return False
+        else:
+            return data[0]
 
-    def __read_xdr_int(self):
-        self.__xdr.reset(self.__file.read(4))
-        return self.__xdr.unpack_int()
+    def __read_int32(self):
+        return np.fromfile(self.__file,dtype='<i4',count=1)[0]
 
-    def __read_xdr_uint64(self):
-        self.__xdr.reset(self.__file.read(8))
-        return self.__xdr.unpack_uhyper()
+    def __read_uint64(self):
+        return np.fromfile(self.__file,dtype='<u8',count=1)[0]
 
-    def __read_xdr_int64(self):
-        self.__xdr.reset(self.__file.read(8))
-        return self.__xdr.unpack_hyper()
+    def __read_int64(self):
+        return np.fromfile(self.__file,dtype='<i8',count=1)[0]
 
-    def __read_xdr_float(self):
-        self.__xdr.reset(self.__file.read(4))
-        return self.__xdr.unpack_float()
+    def __read_float32(self):
+        return np.fromfile(self.__file,dtype='<f4',count=1)[0]
 
-    def __read_xdr_double(self):
-        self.__xdr.reset(self.__file.read(8))
-        return self.__xdr.unpack_double()
+    def __read_float64(self):
+        return np.fromfile(self.__file,dtype='<f8',count=1)[0]
 
-    def __read_xdr_string(self):
+    def __read_string(self):
 
-        length = self.__read_xdr_uint()
+        length = self.__read_uint32()
 
         if (length > 0):
-            # Since strings are packed as xdr_bytes there is an additional
-            # length value that must be skipped
-            self.__read_xdr_uint()
-
-            # Round size up to the next multiple of 4
-            size = ((length - 1) // 4 + 1) * 4
-            data = self.__file.read(size)
-            self.__xdr.reset(data)
-            fstring = self.__xdr.unpack_fstring(length).decode()
+            data = self.__file.read(length)
+            fstring = data.decode()
+ 
+            # Data is always written in blocks of 4 byt
+            pad = ((length - 1) // 4 + 1) * 4 - length
+            if ( pad > 0 ):
+                self.__file.seek(pad,1)
         else:
             fstring = ""
 
@@ -81,23 +92,27 @@ class ZDFfile:
         else:
             return "unknown"
 
+# -----------------------------------------------------------------------------
+# Low level interfaces
+# -----------------------------------------------------------------------------
+
     def read_record(self, skip=False):
 
         pos = self.__file.tell()
 
         # Read record id and check for EOF
-        data = self.__file.read(4)
-        if (data == b''):
+        id = self.__read_uint32()
+
+        if (id is False):
             # If end of file return false
             return False
 
-        # Unpack XDR record ID
+        # Read record ID
         rec = dict()
         rec['pos'] = pos
-        self.__xdr.reset(data)
-        rec['id'] = self.__xdr.unpack_uint()
-        rec['name'] = self.__read_xdr_string()
-        rec['len'] = self.__read_xdr_uint64()
+        rec['id']  = id
+        rec['name'] = self.__read_string()
+        rec['len']  = self.__read_uint64()
 
         if (skip):
             self.__file.seek(rec['len'], 1)
@@ -106,40 +121,40 @@ class ZDFfile:
 
     def read_string(self):
         rec = self.read_record()
-        fstring = self.__read_xdr_string()
+        fstring = self.__read_string()
         return fstring
 
     def read_iteration(self):
         rec = self.read_record()
         iteration = dict()
-        iteration['n'] = self.__read_xdr_uint()
-        iteration['t'] = self.__read_xdr_double()
-        iteration['tunits'] = self.__read_xdr_string()
+        iteration['n'] = self.__read_int32()
+        iteration['t'] = self.__read_float64()
+        iteration['tunits'] = self.__read_string()
         return iteration
 
     def read_grid_info(self):
         rec = self.read_record()
         info = dict()
-        info['ndims'] = self.__read_xdr_uint()
+        info['ndims'] = self.__read_uint32()
 
         nx = []
         for i in range(info['ndims']):
-            nx.append(self.__read_xdr_uint64())
+            nx.append(self.__read_uint64())
 
         info['nx'] = nx
-        info['label'] = self.__read_xdr_string()
-        info['units'] = self.__read_xdr_string()
-        info['has_axis'] = self.__read_xdr_uint()
+        info['label'] = self.__read_string()
+        info['units'] = self.__read_string()
+        info['has_axis'] = self.__read_int32()
 
         if (info['has_axis']):
             axis = []
             for i in range(info['ndims']):
                 ax = dict()
-                ax['type'] = self.__read_xdr_uint()
-                ax['min'] = self.__read_xdr_double()
-                ax['max'] = self.__read_xdr_double()
-                ax['label'] = self.__read_xdr_string()
-                ax['units'] = self.__read_xdr_string()
+                ax['type']  = self.__read_int32()
+                ax['min']   = self.__read_float64()
+                ax['max']   = self.__read_float64()
+                ax['label'] = self.__read_string()
+                ax['units'] = self.__read_string()
                 axis.append(ax)
             info['axis'] = axis
 
@@ -149,46 +164,41 @@ class ZDFfile:
         rec = self.read_record()
 
         info = dict()
-        info['name'] = self.__read_xdr_string()
-        info['nquants'] = self.__read_xdr_uint()
+        info['name'] = self.__read_string()
+        info['nquants'] = self.__read_uint32()
 
         quants = []
         for i in range(info['nquants']):
-            quants.append(self.__read_xdr_string())
+            quants.append(self.__read_string())
         info['quants'] = quants
 
         units = dict()
         for q in quants:
-            units[q] = self.__read_xdr_string()
+            units[q] = self.__read_string()
 
         info['units'] = units
-        info['nparts'] = self.__read_xdr_uint64()
+        info['nparts'] = self.__read_uint64()
 
         return info
 
     def read_dataset(self):
         rec = self.read_record()
 
-        data_type = self.__read_xdr_uint()
-        ndims = self.__read_xdr_uint()
+        data_type = self.__read_int32()
+        ndims = self.__read_uint32()
         nx = []
-        size = 1
+        size = np.uint64(1)
+
         for i in range(ndims):
-            nx.append(self.__read_xdr_uint64())
+            nx.append(self.__read_uint64())
             size *= nx[i]
 
         # Read dataset and convert it to a numpy array
         # 9 - float32, 10 - float64
         if (data_type == 9):
-            self.__xdr.reset(self.__file.read(size * 4))
-            data = np.array(self.__xdr.unpack_farray(size,
-                self.__xdr.unpack_float),
-                dtype=np.float)
+            data = np.fromfile(self.__file,dtype='float32',count=size)
         elif (data_type == 10):
-            self.__xdr.reset(self.__file.read(size * 8))
-            data = np.array(self.__xdr.unpack_farray(size,
-                self.__xdr.unpack_double),
-                dtype=np.double)
+            data = np.fromfile(self.__file,dtype='float64',count=size)
         else:
             print('Unsupported datatype', file=sys.stderr)
             return False
@@ -225,7 +235,7 @@ class ZDFfile:
 # -----------------------------------------------------------------------------
 
 
-def zdf_info_grid(file_name):
+def info_grid(file_name):
     # Open file
     zdf = ZDFfile(file_name)
     # Check file type
@@ -243,7 +253,7 @@ def zdf_info_grid(file_name):
     return info
 
 
-def zdf_read_grid(file_name):
+def read_grid(file_name):
     # Open file
     zdf = ZDFfile(file_name)
     # Check file type
@@ -263,7 +273,7 @@ def zdf_read_grid(file_name):
     return (data, info)
 
 
-def zdf_info_particles(file_name):
+def info_particles(file_name):
     # Open file
     zdf = ZDFfile(file_name)
     # Check file type
@@ -281,7 +291,7 @@ def zdf_info_particles(file_name):
     return info
 
 
-def zdf_read_particles(file_name):
+def read_particles(file_name):
     # Open file
     zdf = ZDFfile(file_name)
     # Check file type
@@ -302,99 +312,8 @@ def zdf_read_particles(file_name):
 
     return (data, info)
 
-
-def zdf_list(file_name, printRec=False):
+def list(file_name, printRec=False):
     zdf = ZDFfile(file_name)
     zdf.list(printRec)
     zdf.close()
 
-
-# -----------------------------------------------------------------------------
-# 2D Plotting routine
-# - This is not part of this module
-# -----------------------------------------------------------------------------
-def plot_dataset2D(dataset, grid_info, iteration):
-    fig = plt.figure()
-    fig.subplots_adjust(top=0.85)
-    fig.set_facecolor("#FFFFFF")
-
-    timeLabel = r'$\sf{t = ' + str(iteration['t']) + \
-        ' [' + iteration['tunits'] + r']}$'
-    plotTitle = r'$\sf{' + grid_info['label'] + r'}$' + '\n' + timeLabel
-
-    plotArea = fig.add_subplot(1, 1, 1)
-    plotArea.set_title(plotTitle, fontsize=16)
-
-    colorMap = plotArea.imshow(dataset, cmap=plt.cm.jet, 
-        interpolation='nearest', origin='lower')
-
-    colorBar = fig.colorbar(colorMap)
-    colorBar.set_label(r'$\sf{' + grid_info['label'] + \
-        ' [' + grid_info['units'] + r']}$', fontsize=14)
-
-    xlabel = grid_info['axis'][0]['label'] + '[' + \
-        grid_info['axis'][0]['units'] + ']'
-    ylabel = grid_info['axis'][1]['label'] + '[' + \
-        grid_info['axis'][1]['units'] + ']'
-
-    plt.xlabel(r'$\sf{' + xlabel + r'}$', fontsize=14)
-    plt.ylabel(r'$\sf{' + ylabel + r'}$', fontsize=14)
-
-    return plt
-
-# -----------------------------------------------------------------------------
-# 2D Plotting routine
-# - This is not part of this module
-# -----------------------------------------------------------------------------
-
-
-def plot_particles(dataset, info, quants):
-    fig = plt.figure()
-    fig.subplots_adjust(top=0.85)
-    fig.set_facecolor("#FFFFFF")
-
-    x = dataset[quants[1]]
-    y = dataset[quants[0]]
-
-    plt.plot(x, y, 'r.', alpha=0.5)
-
-    t = str(info["iteration"]["t"])
-    tunits = str(info["iteration"]["tunits"])
-
-    title = info['particles']['name'] + '  ' + quants[1] + ' ' + quants[0]
-
-    timeLabel = r'$\sf{t = ' + t + ' [' + tunits + r']}$'
-    plt.title(r'$\sf{' + title + r'}$' + '\n' + timeLabel)
-
-    xlabel = quants[1] + '[' + \
-        info['particles']['units'][quants[1]] + ']'
-    ylabel = quants[0] + '[' + \
-        info['particles']['units'][quants[0]] + ']'
-
-    plt.xlabel(r'$\sf{' + xlabel + r'}$', fontsize=14)
-    plt.ylabel(r'$\sf{' + ylabel + r'}$', fontsize=14)
-
-    return plt
-
-
-# -----------------------------------------------------------------------------
-# Main code
-# -----------------------------------------------------------------------------
-
-# List file contents
-# zdf_list( "J3-000500.zdf", printRec = True )
-
-# Print grid metadata
-# print( zdf_info_grid( "J3-000500.zdf" ) )
-
-# Plot grid
-
-
-# (data, info) = zdf_read_grid("J3-000500.zdf")
-# plt = plot_dataset2D(data, info['grid'], info['iteration'])
-# plt.show()
-
-# zdf_list("particles-electrons-001200.zdf", printRec = True)
-# (particles, info) = zdf_read_particles("particles-electrons-001200.zdf")
-# plt2 = plot_particles(particles, info, ('u1', 'x1'))
-# plt2.show()

@@ -8,23 +8,9 @@
 #define __ZDF__
 
 
-
-
-#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
-#error This version of ZDF does not (yet) support systems that are not little endian.
-#endif
-
-#if __SIZEOF_FLOAT__ != 4
-#error This version of ZDF only support systems were sizeof(float) = 4
-#endif
-
-#if __SIZEOF_DOUBLE__ != 8
-#error This version of ZDF only support systems were sizeof(double) = 8
-#endif
-
-
 #include <stdint.h>
 #include <stdio.h>
+#include <rpc/rpc.h>
 
 #define zdf_max_dims 3
 
@@ -32,6 +18,7 @@ enum zdf_file_access_mode {ZDF_WRITE, ZDF_READ};
 
 typedef struct {
 	FILE *fp;
+	XDR xdrs;
 	enum zdf_file_access_mode mode;
 } t_zdf_file;
 
