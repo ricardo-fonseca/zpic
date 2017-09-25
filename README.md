@@ -43,11 +43,12 @@ void sim_add_laser( t_simulation* sim, t_emf_laser* laser)
 
 This routine should be called inside sim\_init(), somewhere after the call to sim\_new(). Laser parameters are defined in the supplied _t\_emf\_laser_ structure.
 
-| Laser parameters||
+| Laser parameters| Description|
 |---|---|
 | type | PLANE for a plane wave or GAUSSIAN for a gaussian beam |
 | start | Front edge of the laser pulse |
 | fwhm  | FWHM of the laser pulse duration |
+| rise, flat, fall  | Rise / flat / fall time of the laser pulse |
 | a0  | Normalized peak vector potential of the pulse |
 | omega0 | Laser frequency |
 | polarization | Laser polarization angle, 0 aligns $E$ field along $x_2$ |
@@ -56,6 +57,8 @@ This routine should be called inside sim\_init(), somewhere after the call to si
 | axis | Position of the optical axis |
  
 All parameters are in normalized simulation units except for the normalized peak vector potential, $a_0$. In 1D only plane waves exist, so the _type_, _W0_, _focus_ and _axis_ parameters are not supported.
+
+Using the _fwhm_ parameter will override the _rise_, _flat_ and _fall_ parameters. Specifically, it sets _rise = fwhm/2_, _flat = 0_, and _fall = fwhm/2_.
 
 The following example launches a laser starting at position 17.0, with a (temporal) full width at half max of 2.0. The peak normalized vector potential is 2.0, and the laser frequency is 10.0. The polarization degree is $\pi/2$, which aligns the $E$ field along the $x_3$ direction. All values are in normalized simulation units. 
 

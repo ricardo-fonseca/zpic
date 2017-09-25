@@ -116,15 +116,29 @@ t_fld gauss_phase( const t_emf_laser* const laser, const t_fld z, const t_fld r 
 	cos( laser -> omega0*( z + curv ) - gouy_shift );
 }
 
-
 t_fld lon_env( const t_emf_laser* const laser, const t_fld z )
 {
-	if ( z > -2*laser->fwhm && z < 2*laser->fwhm ) {
-		t_fld e = cos( M_PI_4 * z / laser->fwhm );
-		return e*e;
-	} else {
+
+	if ( z > laser -> start ) {
+		// Ahead of laser
 		return 0.0;
+	} else if ( z > laser -> start - laser -> rise ) {
+		// Laser rise
+		t_fld csi = z - laser -> start;
+		t_fld e = sin( M_PI_2 * csi / laser->rise );
+		return e*e;
+	} else if ( z > laser -> start - (laser -> rise + laser -> flat) ) {
+		// Flat-top
+		return 1.0;
+	} else if ( z > laser -> start - (laser -> rise + laser -> flat + laser -> fall) ) {
+		// Laser fall
+		t_fld csi = z - (laser -> start - laser -> rise - laser -> flat - laser -> fall);
+		t_fld e = sin( M_PI_2 * csi / laser->fall );
+		return e*e;
 	}
+
+	// Before laser
+	return 0.0;
 }
 
 void div_corr_x( t_emf *emf )
@@ -153,8 +167,37 @@ void div_corr_x( t_emf *emf )
 }
 
 
-void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
+void emf_add_laser( t_emf* const emf,  t_emf_laser*  laser )
 {
+
+	// Validate laser parameters
+	if ( laser -> fwhm != 0 ) {
+		if ( laser -> fwhm <= 0 ) {
+			fprintf(stderr, "Invalid laser FWHM, must be > 0, aborting.\n" );
+			exit(-1);
+		}
+		// The fwhm parameter overrides the rise/flat/fall parameters
+		laser -> rise = laser -> fwhm;
+		laser -> fall = laser -> fwhm;
+		laser -> flat = 0.;
+	}
+
+	if ( laser -> rise <= 0 ) {
+		fprintf(stderr, "Invalid laser RISE, must be > 0, aborting.\n" );
+		exit(-1);
+	}
+
+	if ( laser -> flat < 0 ) {
+		fprintf(stderr, "Invalid laser FLAT, must be >= 0, aborting.\n" );
+		exit(-1);
+	}
+
+	if ( laser -> fall <= 0 ) {
+		fprintf(stderr, "Invalid laser FALL, must be > 0, aborting.\n" );
+		exit(-1);
+	}
+	
+	// Launch laser
 	int i, j, nrow;
 	
 	t_fld z_center, r_center, z, z_2, r, r_2;

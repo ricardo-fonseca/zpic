@@ -105,19 +105,61 @@ void emf_delete( t_emf *emf )
 
 t_fld lon_env( const t_emf_laser* const laser, const t_fld z )
 {
-	if ( z > -2*laser->fwhm && z < 2*laser->fwhm ) {
-		t_fld e = cos( M_PI_4 * z / laser->fwhm );
-		return e*e;
-	} else {
+
+	if ( z > laser -> start ) {
+		// Ahead of laser
 		return 0.0;
+	} else if ( z > laser -> start - laser -> rise ) {
+		// Laser rise
+		t_fld csi = z - laser -> start;
+		t_fld e = sin( M_PI_2 * csi / laser->rise );
+		return e*e;
+	} else if ( z > laser -> start - (laser -> rise + laser -> flat) ) {
+		// Flat-top
+		return 1.0;
+	} else if ( z > laser -> start - (laser -> rise + laser -> flat + laser -> fall) ) {
+		// Laser fall
+		t_fld csi = z - (laser -> start - laser -> rise - laser -> flat - laser -> fall);
+		t_fld e = sin( M_PI_2 * csi / laser->fall );
+		return e*e;
 	}
+
+	// Before laser
+	return 0.0;
 }
 
-void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
+void emf_add_laser( t_emf* const emf, t_emf_laser* laser )
 {
-	int i;
+	// Validate laser parameters
+	if ( laser -> fwhm != 0 ) {
+		if ( laser -> fwhm <= 0 ) {
+			fprintf(stderr, "Invalid laser FWHM, must be > 0, aborting.\n" );
+			exit(-1);
+		}
+
+		// The fwhm parameter overrides the rise/flat/fall parameters
+		laser -> rise = laser -> fwhm;
+		laser -> fall = laser -> fwhm;
+		laser -> flat = 0.;
+	}
+
+	if ( laser -> rise <= 0 ) {
+		fprintf(stderr, "Invalid laser RISE, must be > 0, aborting.\n" );
+		exit(-1);
+	}
+
+	if ( laser -> flat < 0 ) {
+		fprintf(stderr, "Invalid laser FLAT, must be >= 0, aborting.\n" );
+		exit(-1);
+	}
+
+	if ( laser -> fall <= 0 ) {
+		fprintf(stderr, "Invalid laser FALL, must be > 0, aborting.\n" );
+		exit(-1);
+	}
 	
-	t_fld z_center, z, z_2;
+	// Launch laser	
+	t_fld z, z_2;
 	t_fld amp, lenv, lenv_2, k;
 	t_fld dx;
 	t_fld cos_pol, sin_pol;
@@ -126,21 +168,20 @@ void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
 	t_vfld* restrict B = emf -> B;
 
 	dx = emf -> dx;
-	
-	z_center = laser->start - laser->fwhm/2;
-	amp = laser->omega0 * laser->a0;
+
+	amp = laser -> omega0 * laser -> a0;
 	
 	cos_pol = cos( laser -> polarization );
 	sin_pol = sin( laser -> polarization );
 		
 	k = laser -> omega0;
 
-	for (i = 0; i < emf->nx; i++) {
-		z = i * dx - z_center;
+	for (int i = 0; i < emf->nx; i++) {
+		z = i * dx;
 		z_2 = z + dx/2;
 		
-		lenv   = amp*lon_env( laser, z );
-		lenv_2 = amp*lon_env( laser, z_2 );
+		lenv   = amp * lon_env( laser, z );
+		lenv_2 = amp * lon_env( laser, z_2 );
 		
 		// E[i + j*nrow].x += 0.0
 		E[i].y += +lenv * cos( k * z ) * cos_pol;
@@ -151,10 +192,9 @@ void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
 		B[i].z += +lenv_2 * cos( k * z_2 ) * cos_pol;
 			
 	}
-
     
 	// Set guard cell values for periodic boundaries
-	if ( emf -> bc_type == EMF_BC_PERIODIC )	emf_update_gc( emf );
+	if ( emf -> bc_type == EMF_BC_PERIODIC ) emf_update_gc( emf );
 	
 }
 

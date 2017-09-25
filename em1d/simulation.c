@@ -47,7 +47,7 @@ void sim_new( t_simulation* sim, int nx, float box, float dt, float tmax, int nd
 	// Check time step
 	float cour = sim->emf.dx;
 	if ( dt >= cour ){
-		printf("Invalid timestep, courant condition violation, dtmax = %f \n", cour );
+		fprintf(stderr, "Invalid timestep, courant condition violation, dtmax = %f \n", cour );
 		exit(-1);
 	}
 
