@@ -374,16 +374,17 @@ void emf_move_window( t_emf *emf ){
 
 	    const t_vfld zero_fld = {0.,0.,0.};
 
-		// Shift data left 1 cell and zero rightmost cell
+		// Shift data left 1 cell and zero rightmost cells
 			
 		for (i = -emf->gc[0]; i < emf->nx+emf->gc[1] - 1; i++) {
 			E[ i ] = E[ i + 1 ];
 			B[ i ] = B[ i + 1 ];
 		}
 
-		i = emf->nx+emf->gc[1] - 1;
-		E[ i ] = zero_fld;
-		B[ i ] = zero_fld;
+		for( i = emf->nx - 1; i < emf->nx+emf->gc[1]; i ++) {
+			E[ i ] = zero_fld;
+			B[ i ] = zero_fld;
+		}
 
 		// Increase moving window counter
 		emf -> n_move++;
