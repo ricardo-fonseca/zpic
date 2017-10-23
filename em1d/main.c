@@ -1,3 +1,22 @@
+/*
+Copyright (C) 2017 Instituto Superior Tecnico
+
+This file is part of the ZPIC Educational code suite
+
+The ZPIC Educational code suite is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+The ZPIC Educational code suite is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with the ZPIC Educational code suite. If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -11,11 +30,11 @@
 #include "timer.h"
 
 // Include Simulation parameters here
-//#include "lwfa.c"
-//#include "beam.c"
-//#include "twostream.c"
-//#include "absorbing.c"
-#include "density.c"
+#include "input/twostream.c"
+//#include "input/lwfa.c"
+//#include "input/beam.c"
+//#include "input/absorbing.c"
+//#include "input/density.c"
 
 int main (int argc, const char * argv[]) {
     

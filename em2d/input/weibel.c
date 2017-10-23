@@ -1,6 +1,8 @@
-/*********************************************************************************************
-  Initialize simulation
- *********************************************************************************************/
+/**
+ * ZPIC - em2d
+ *
+ * Weibel instability
+ */
 
 void sim_init( t_simulation* sim ){
 
@@ -35,10 +37,6 @@ void sim_init( t_simulation* sim ){
 	sim_new( sim, nx, box, dt, tmax, ndump, species, n_species );
 
 }
-
-/*********************************************************************************************
-  Simulation diagnostics
- *********************************************************************************************/
 
 void sim_report( t_emf* emf, t_current* current, t_species species[] ){
 	

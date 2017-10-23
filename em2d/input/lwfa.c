@@ -1,3 +1,9 @@
+/**
+ * ZPIC - em2d
+ *
+ * Laser Wakefield Acceleration
+ */
+
 #include "simulation.h"
 #include <stdlib.h>
 #include <math.h>

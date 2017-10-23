@@ -31,8 +31,8 @@ along with the ZPIC Educational code suite. If not, see <http://www.gnu.org/lice
 #include "timer.h"
 
 // Include Simulation parameters here
-#include "weibel.c"
-//#include "laser.c"
+#include "input/weibel.c"
+//#include "input/laser.c"
 
 int main (int argc, const char * argv[]) {
     
