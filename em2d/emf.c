@@ -224,7 +224,7 @@ void emf_add_laser( t_emf* const emf,  t_emf_laser*  laser )
 			k = laser -> omega0;
 
 			for (i = 0; i < emf->nx[0]; i++) {
-				z = i * dx - z_center;
+				z = i * dx;
 				z_2 = z + dx/2;
 				
 				lenv   = amp*lon_env( laser, z );
@@ -246,7 +246,7 @@ void emf_add_laser( t_emf* const emf,  t_emf_laser*  laser )
 		case GAUSSIAN:
 						
 			for (i = 0; i < emf->nx[0]; i++) {
-				z = i * dx - z_center;
+				z = i * dx;
 				z_2 = z + dx/2;
 				
 				lenv   = amp*lon_env( laser, z );
