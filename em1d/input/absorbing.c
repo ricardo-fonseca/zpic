@@ -1,3 +1,9 @@
+/**
+ * ZPIC - em1d
+ * 
+ * Demonstration of the absorbing boundary conditions
+ */
+
 #include "simulation.h"
 #include <stdlib.h>
 #include <math.h>

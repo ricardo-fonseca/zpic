@@ -1,3 +1,9 @@
+/**
+ * ZPIC - em1d
+ *
+ * Initializing fluid velocity
+ */
+
 #include "simulation.h"
 #include <stdlib.h>
 

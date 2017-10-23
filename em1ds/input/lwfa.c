@@ -1,3 +1,8 @@
+/**
+ * ZPIC - em1ds
+ *
+ * Laser Wakefield Acceleration
+ */
 
 #include "simulation.h"
 

@@ -1,3 +1,9 @@
+/**
+ * ZPIC - em1d
+ * 
+ * Moving simulation window with different density profiles
+ */
+
 #include "simulation.h"
 #include <stdlib.h>
 #include <math.h>

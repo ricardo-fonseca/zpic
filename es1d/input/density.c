@@ -1,3 +1,9 @@
+/**
+ * ZPIC - es1d
+ *
+ * Initializing different density profiles
+ */
+
 #include "simulation.h"
 #include <stdlib.h>
 #include <math.h>
