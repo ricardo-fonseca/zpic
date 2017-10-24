@@ -4,7 +4,6 @@
  * Launch a laser pulse
  */
 
-#include "simulation.h"
 #include <stdlib.h>
 #include <math.h>
 

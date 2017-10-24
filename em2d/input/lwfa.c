@@ -4,7 +4,6 @@
  * Laser Wakefield Acceleration
  */
 
-#include "simulation.h"
 #include <stdlib.h>
 #include <math.h>
 

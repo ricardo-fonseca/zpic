@@ -4,8 +4,6 @@
  * Laser Wakefield Acceleration
  */
 
-#include "simulation.h"
-
 void sim_init( t_simulation* sim ){
 
 	// Time step

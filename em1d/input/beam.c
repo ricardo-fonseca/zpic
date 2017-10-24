@@ -4,7 +4,6 @@
  * Initializing fluid velocity
  */
 
-#include "simulation.h"
 #include <stdlib.h>
 
 void sim_init( t_simulation* sim ){

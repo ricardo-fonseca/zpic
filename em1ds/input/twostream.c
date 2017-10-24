@@ -4,7 +4,6 @@
  * Laser Wakefield Acceleration
  */
 
-#include "simulation.h"
 #include <stdlib.h>
 #include <math.h>
 
@@ -62,3 +61,4 @@ void sim_report( t_simulation* sim ){
 	emf_report( &sim->emf, EFLD, 0 );
 		
 }
+

@@ -4,7 +4,6 @@
  * Two-stream instability
  */
 
-#include "simulation.h"
 #include <stdlib.h>
 #include <math.h>
 
