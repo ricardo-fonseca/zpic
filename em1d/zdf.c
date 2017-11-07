@@ -27,6 +27,16 @@
 #include <string.h>
 #include <errno.h>
 
+// FRED
+// Do some slightly different things if on Windows
+#if defined(_MSC_VER) || defined(_WIN32) || defined(_WIN64)
+	//	The windows "mkdir" is strangely actually more standards compliant and takes only 1 argument
+	//		So we simply ignore the 2nd argument passed in.
+	#include <direct.h>
+	#define mkdir(a,b) _mkdir(a)
+#endif
+
+
 
 #define max_string_length 128
 

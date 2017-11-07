@@ -85,7 +85,10 @@ void sim_report_energy( t_simulation* sim )
 	unsigned i;
 
 	double emf_energy[6];
-	double part_energy[ sim -> n_species ];
+	// FRED
+	//double part_energy[ sim -> n_species ];
+	static double *part_energy = NULL;
+	if(!part_energy) part_energy = (double *)malloc( sim -> n_species * sizeof(double));
 
 	emf_get_energy( &sim -> emf, emf_energy );
 	double tot_emf = emf_energy[0];

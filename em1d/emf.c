@@ -227,7 +227,11 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 	}
 	
 	// Pack the information
-	float buf[ emf->nx ];
+	// FRED
+	//float buf[ emf->nx ];
+	static float* buf = NULL;
+	if(!buf) buf =(float *)malloc(emf->nx * sizeof(float));
+	
 	switch (fc) {
 		case 0:
 			for ( i = 0; i < emf->nx; i++ ) {

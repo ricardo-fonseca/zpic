@@ -160,7 +160,10 @@ void spec_set_x( t_species* spec, const int range[] )
 	// Calculate particle positions inside the cell
 	const int npc = spec->ppc;
 	
-	float poscell[npc];
+	//FRED
+	//float poscell[npc];
+	static float *poscell = NULL;
+	if(!poscell) poscell = (float *)malloc(npc*sizeof(float));
 
 	for (i=0; i<spec->ppc; i++) {
 		poscell[i]   = ( i + 0.5 ) / npc;
@@ -988,7 +991,10 @@ void spec_rep_charge( const t_species *spec )
 	spec_deposit_charge( spec, charge );
 	
 	// Compact the data to save the file (throw away guard cells)
-	float buffer[ spec -> nx ];
+	// FRED
+	//float buffer[ spec -> nx ];
+	float * buffer = NULL;
+	if(!buffer) buffer = (float *)malloc(spec -> nx * sizeof(float));
 
 	for ( i = 0; i < spec->nx; i++ ) {
 		buffer[i] = charge[i];
@@ -1066,7 +1072,12 @@ void spec_rep_pha( const t_species *spec, const int rep_type,
 			  const int pha_nx[], const float pha_range[][2] )
 {
 	const int BUF_SIZE = 1024;
-	float pha_x1[BUF_SIZE], pha_x2[BUF_SIZE];
+	//FRED... This one is just insane.. bad microsoft.
+	//float pha_x1[BUF_SIZE], pha_x2[BUF_SIZE];
+	static float* pha_x1 = NULL;
+	static float* pha_x2 = NULL;
+	if(!pha_x1) pha_x1 = (float *) malloc(BUF_SIZE * sizeof(float));
+	if(!pha_x2) pha_x2 = (float *) malloc(BUF_SIZE * sizeof(float));
 	
 	int i, nrow;
 	

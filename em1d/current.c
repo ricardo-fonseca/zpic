@@ -26,7 +26,9 @@ void current_new( t_current *current, int nx, t_fld box, float dt )
 	
 	size = gc[0] + nx + gc[1];
 	
-	current->J_buf = malloc( size * sizeof( t_vfld ) );
+	// FRED
+	//current->J_buf = malloc( size * sizeof( t_vfld ) );
+	current->J_buf = (t_vfld *)malloc( size * sizeof( t_vfld ) );
 	assert( current->J_buf );
 
 	// store nx and gc values
@@ -113,7 +115,11 @@ void current_report( const t_current *current, const char jc )
 	char vfname[3];
 		
 	// Pack the information
-	float buf[current->nx];
+	// FRED
+	//float buf[current->nx];
+	static float* buf = NULL;
+	if(!buf) buf = (float *)malloc(current->nx * sizeof( float ));
+	
 
 	f = current->J;
 	vfname[0] = 'J';
