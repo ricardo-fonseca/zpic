@@ -55,8 +55,8 @@ void spec_set_x( t_species* spec, const int range[][2] )
 
 	int i, j, k, ip;
 	
-	t_part_data* poscell;
-	t_part_data edge;
+	float* poscell;
+	float edge, start, end;
 	
 	// Calculate particle positions inside the cell
 	const int npc = spec->ppc[0]*spec->ppc[1];
@@ -87,6 +87,28 @@ void spec_set_x( t_species* spec, const int range[][2] )
 
 				for (k=0; k<npc; k++) {
 					if ( i + poscell[2*k] > edge ) {
+						spec->part[ip].ix = i;
+						spec->part[ip].iy = j;
+						spec->part[ip].x = poscell[2*k];
+						spec->part[ip].y = poscell[2*k+1];
+						ip++;
+					}
+				}
+			}
+		}
+		break;
+
+	case SLAB: // Slab like density profile
+		
+		// Get edge position normalized to cell size;
+		start = spec -> density.start / spec -> dx[0] - spec -> n_move;
+		end   = spec -> density.end / spec -> dx[0] - spec -> n_move;
+
+		for (j = range[1][0]; j <= range[1][1]; j++) {
+			for (i = range[0][0]; i <= range[0][1]; i++) {
+
+				for (k=0; k<npc; k++) {
+					if ( i + poscell[2*k] > start &&  i + poscell[2*k] < end ) {
 						spec->part[ip].ix = i;
 						spec->part[ip].iy = j;
 						spec->part[ip].x = poscell[2*k];
@@ -149,7 +171,7 @@ void spec_new( t_species* spec, char name[], const t_part_data m_q, const int pp
 	int i, npc;
 	
 	// Species name
-	strcpy( spec -> name, name );
+	strncpy( spec -> name, name, MAX_SPNAME_LEN );
 	
 	npc = 1;
 	// Store species data
@@ -533,12 +555,12 @@ void spec_sort( t_species* spec )
 
 	// low mem
 	for (i=0; i < spec->np; i++) {
-		register t_part tmp;
-		register int k;
+		t_part tmp;
+		int k;
 		
 		k = idx[i];
 		while ( k > i ) {
-			register int t;
+			int t;
 			
 			tmp = spec->part[k];
 			spec->part[k] = spec->part[i];

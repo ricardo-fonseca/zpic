@@ -14,18 +14,21 @@
 #include "emf.h"
 #include "current.h"
 
+#define MAX_SPNAME_LEN 32
+
 typedef struct {
 	int ix, iy;
 	t_part_data x, y;
 	t_part_data ux, uy, uz;
 } t_part;
 
-enum density_type {UNIFORM, STEP};
+enum density_type {UNIFORM, STEP, SLAB};
 
 typedef struct {
 
 	enum density_type type;		// Density profile type
 	float edge;	    // Position of the plasma edge, in simulation units
+	float start, end;		// Position of the plasma start/end, in simulation units
 	
 } t_density;
 

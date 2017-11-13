@@ -403,10 +403,11 @@ void spec_new( t_species* spec, char name[], const float m_q, const int ppc,
 	// Initialize density profile
 	if ( density ) {
 		spec -> density = *density;
+		if ( spec -> density.n == 0. ) spec -> density.n = 1.0;
 	} else {
-		spec -> density.type = UNIFORM;
+		// Default values
+		spec -> density = (t_density) { .type = UNIFORM, .n = 1.0 };
 	}
-	if ( spec -> density.n == 0. ) spec -> density.n = 1.0;
 	spec -> density.total_np_inj = 0;
 	spec -> density.custom_q_inj = 0.;
 
@@ -651,12 +652,12 @@ void spec_sort( t_species* spec )
 
 	// low mem
 	for (i=0; i < spec->np; i++) {
-		register t_part tmp;
-		register int k;
+		t_part tmp;
+		int k;
 		
 		k = idx[i];
 		while ( k > i ) {
-			register int t;
+			int t;
 			
 			tmp = spec->part[k];
 			spec->part[k] = spec->part[i];
@@ -683,8 +684,8 @@ void spec_sort( t_species* spec )
 void interpolate_fld( const t_vfld* restrict const E, const t_vfld* restrict const B, 
 	          const t_part* restrict const part, t_vfld* restrict const Ep, t_vfld* restrict const Bp )
 {
-	register int i, ih;
-	register t_fld w1, w1h;
+	int i, ih;
+	t_fld w1, w1h;
 	
 	i = part->ix;
 	

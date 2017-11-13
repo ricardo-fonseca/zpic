@@ -98,7 +98,7 @@ void spec_set_x( t_species* spec, const int range[][2] )
 		}
 		break;
 
-	case SLAB: // Step like density profile
+	case SLAB: // Slab like density profile
 		
 		// Get edge position normalized to cell size;
 		start = spec -> density.start / spec -> dx[0] - 0.5;
@@ -171,7 +171,7 @@ void spec_new( t_species* spec, char name[], const float m_q, const int ppc[],
 	int i, npc;
 	
 	// Species name
-	strcpy( spec -> name, name );
+	strncpy( spec -> name, name, MAX_SPNAME_LEN );
 	
 	npc = 1;
 	// Store species data
