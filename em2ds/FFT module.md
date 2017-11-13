@@ -2,7 +2,7 @@
 
 ## Frequency values
 
-The discrete Fourier transform of a signal sampled at $\Delta t$ intervals will hold frequencies in the $[-f_{Nyquist},+f_{Nyquist}]$ interval, where f_{Nyquist} is the Nyquist frequency, defined as half the sampling rate or:
+The discrete Fourier transform of a signal sampled at $\Delta t$ intervals will hold frequencies in the $[-f_{Nyquist},+f_{Nyquist}]$ interval, where $f_{Nyquist}$ is the Nyquist frequency, defined as half the sampling rate or:
 
 $f_{Nyquist} = \frac{1}{2 \Delta t}$
 
@@ -19,9 +19,9 @@ $\Delta \omega = \frac{2 \pi}{N \Delta t}$
 When transforming a complex dataset f of size {N} the output will be a complex dataset F of the same size. The output data is organized as follows:
 
 * F[ 0 ] : 0 frequency (DC) component
-* F[ 0 < j < N/2 ] : $ f = j \times \Delta f$
-* F[ N/2 ] : $ f = \pm f_{Nyquist}$
-* F[ N/2 < j < N ] : $ f = (j - N) \times \Delta f$
+* F[ 0 < j < N/2 ] : $f = j \times \Delta f$
+* F[ N/2 ] : $f = \pm f_{Nyquist}$
+* F[ N/2 < j < N ] : $f = (j - N) \times \Delta f$
 
 The frequency value can be easily calculated using the following code snippet:
 
@@ -59,11 +59,11 @@ F[-j] = conj(F[j])
 
 The 2D real to complex transform begins by doing a (1D) real to complex transform of every line along the first dimension, transposing the data and then doing a complex to complex transform of every line of the resulting dataset. This means the output of a real to complex 2D transform of a real {Nx,Ny} dataset f using fftr2d_r2c is a transposed complex array F of dimensions {Ny, Nx/2+1}. The data is organized as follows:
 
-* F[ *, kx ] : $ f_x = kx \times \Delta f_y$
-* F[ 0, * ]              : $ f_y = 0$
-* F[ 0 < ky < Ny/2, * ]  : $ f_y = ky \times \Delta f_y$
-* F[ Ny/2, * ]           : $ f_y = \pm f_{Ny}$
-* F[ Ny/2 < ky < Ny, * ] : $ f_y = (ky - Ny) \times \Delta f_y$
+* F[ \*, kx ] : $f_x = kx \times \Delta f_x$
+* F[ 0, \* ]              : $f_y = 0$
+* F[ 0 < ky < Ny/2, \* ]  : $f_y = ky \times \Delta f_y$
+* F[ Ny/2, \* ]           : $f_y = \pm f_{Ny}$
+* F[ Ny/2 < ky < Ny, \* ] : $f_y = (ky - Ny) \times \Delta f_y$
 
 The frequency values of element F[ ky, kx ] can then be easily calculated using:
 
@@ -76,6 +76,3 @@ float dfy = 1.0f / (Ny * dy);
 float fx = kx * dfx;
 float fy = ((ky <= Ny/2)? ky : ky - Ny)*dfy;
 ```
-
-
-$E_L(\mathbf{k}) = - i \frac{ \mathbf{k} \rho(\mathbf{k})}{k^2}$
