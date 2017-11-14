@@ -1,18 +1,16 @@
 # GCC options
-CC = gcc-6.3.0
-CFLAGS = -Ofast 
-
-#CFLAGS = -Og -g
+CC = gcc
+CFLAGS = -Ofast -std=c99 -pedantic
 
 # Intel icc compiler
 #CC = icc
-#CFLAGS = -restrict -Ofast 
+#CFLAGS = -restrict -Ofast -std=c99 -pedantic
 
 # Clang options
 #CC = clang
-#CFLAGS = -Ofast 
+#CFLAGS = -Ofast
 
-LDFLAGS = 
+LDFLAGS =
 
 
 SOURCE = charge.c current.c emf.c particles.c grid2d.c fft.c filter.c random.c timer.c \
