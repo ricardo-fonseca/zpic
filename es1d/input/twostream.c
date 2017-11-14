@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "../simulation.h"
+
 void sim_init( t_simulation* sim ){
 
 	// Time step
@@ -16,14 +18,14 @@ void sim_init( t_simulation* sim ){
 	// Simulation box
 	int   nx  = 120;
 	float box = 0.5 * M_PI;
-	
+
 	// Diagnostic frequency
 	int ndump = 1;
 //	int ndump = 0;
 
     // Initialize particles
 	const int n_species = 2;
-	
+
 	// Use 500 particles per cell
 	int ppc = 500;
 
@@ -55,6 +57,6 @@ void sim_report( t_simulation* sim ){
 	// Species particles
 	spec_report( &sim->species[0], PARTICLES, NULL, NULL );
 	spec_report( &sim->species[1], PARTICLES, NULL, NULL );
-		
-			
+
+
 }

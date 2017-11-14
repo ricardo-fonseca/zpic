@@ -8,13 +8,13 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "emf.h"
+#include "../simulation.h"
 
 float custom_n0( float x ) {
 
 	return 1.0 + 0.5*sin(x/M_PI)*sin(x/M_PI);
 
-} 
+}
 
 void sim_init( t_simulation* sim ){
 
@@ -25,13 +25,13 @@ void sim_init( t_simulation* sim ){
 	// Simulation box
 	int   nx  = 64;
 	float box = 20.0;
-	
+
 	// Diagnostic frequency
 	int ndump = 100;
 
     // Initialize particles
 	const int n_species = 1;
-	
+
 	// Use 128 particles per cell
 	int ppc = 128;
 
@@ -61,5 +61,5 @@ void sim_report( t_simulation* sim ){
 
 	// RAW dump
 	spec_report( &sim->species[0], PARTICLES, NULL, NULL );
-			
+
 }

@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "../simulation.h"
+
 void sim_init( t_simulation* sim ){
 
 	// Time step
@@ -18,7 +20,7 @@ void sim_init( t_simulation* sim ){
 	float box[2] = { 12.8, 12.8 };
 
 	// Diagnostic frequency
-	int ndump = 1;
+	int ndump = 10;
 
     // Initialize particles
 	const int n_species = 2;

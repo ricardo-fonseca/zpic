@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "../simulation.h"
+
 void sim_init( t_simulation* sim ){
 
 	// Time step
@@ -16,31 +18,31 @@ void sim_init( t_simulation* sim ){
 	// Simulation box
 	int   nx  = 120;
 	float box = 4*M_PI;
-	
+
 	// Diagnostic frequency
 	int ndump = 10;
 
     // Initialize particles
 	const int n_species = 2;
-	
+
 	// Use 1000 particles per cell
 	int ppc = 500;
 
 	t_species* species = (t_species *) malloc( n_species * sizeof( t_species ));
-	
+
 
 	// Initial fluid and thermal velocities
 	t_part_data ufl[] = { 0.2 , 0.0 , 0.0 };
 	t_part_data uth[] = { 0.001 , 0.001 , 0.001 };
 
 
-	spec_new( &species[0], "right", -1.0, ppc, 
+	spec_new( &species[0], "right", -1.0, ppc,
 		      ufl, uth, nx, box, dt, NULL );
 
-	ufl[0] = -ufl[0];	
-	spec_new( &species[1], "left", -1.0, ppc, 
+	ufl[0] = -ufl[0];
+	spec_new( &species[1], "left", -1.0, ppc,
 		      ufl, uth, nx, box, dt, NULL );
-	
+
 	// Initialize Simulation data
 	sim_new( sim, nx, box, dt, tmax, ndump, species, n_species );
 
@@ -59,6 +61,5 @@ void sim_report( t_simulation* sim ){
 
     // x1 electric field component
 	emf_report( &sim->emf, EFLD, 0 );
-		
-}
 
+}

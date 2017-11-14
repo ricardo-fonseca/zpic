@@ -1,13 +1,13 @@
 /**
  * ZPIC - em1d
- * 
+ *
  * Demonstration of the absorbing boundary conditions
  */
 
 #include <stdlib.h>
 #include <math.h>
 
-#include "emf.h"
+#include "../simulation.h"
 
 void sim_init( t_simulation* sim ){
 
@@ -19,13 +19,13 @@ void sim_init( t_simulation* sim ){
 	// Simulation box
 	int   nx  = 1000;
 	float box = 20.0;
-	
+
 	// Diagnostic frequency
 	int ndump = 50;
 
     // Initialize particles
 	const int n_species = 0;
-	
+
 	// Initialize Simulation data
 	sim_new( sim, nx, box, dt, tmax, ndump, NULL, n_species );
 
@@ -50,10 +50,10 @@ void sim_report( t_simulation* sim ){
 	emf_report( &sim->emf, EFLD, 0 );
 	emf_report( &sim->emf, EFLD, 1 );
 	emf_report( &sim->emf, EFLD, 2 );
-		
+
 
 	emf_report( &sim->emf, BFLD, 0 );
 	emf_report( &sim->emf, BFLD, 1 );
 	emf_report( &sim->emf, BFLD, 2 );
-			
+
 }

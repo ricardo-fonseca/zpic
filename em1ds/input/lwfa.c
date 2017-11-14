@@ -4,6 +4,8 @@
  * Laser Wakefield Acceleration
  */
 
+ #include "../simulation.h"
+
 void sim_init( t_simulation* sim ){
 
 	// Time step
@@ -13,14 +15,14 @@ void sim_init( t_simulation* sim ){
 	// Simulation box
 	int   nx  = 3000;
 	float box = 60.0;
-	
+
 	// Diagnostic frequency
 //	int ndump = 50;
 	int ndump = 1;
 
     // Initialize particles
 	const int n_species = 1;
-	
+
 	// Use 128 particles per cell
 	int ppc = 128;
 
@@ -63,13 +65,13 @@ void sim_report( t_simulation* sim ){
 	current_report( &sim->current, 0 );
 	current_report( &sim->current, 1 );
 	current_report( &sim->current, 2 );
-		
+
 	// Charge density - per species
 	spec_report( &sim->species[0], CHARGE, NULL, NULL );
-    
+
     // x1u1 phasespace
 	const int pha_nx[] = {1024,512};
 	const float pha_range[][2] = {{0.0,20.0}, {-2.0,+2.0}};
 	spec_report(&sim->species[0], PHASESPACE(X1,U1), pha_nx, pha_range);
-			
+
 }

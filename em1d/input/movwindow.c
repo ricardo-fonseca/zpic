@@ -1,6 +1,6 @@
 /**
  * ZPIC - em1d
- * 
+ *
  * Moving simulation window with different density profiles
  */
 
@@ -8,7 +8,7 @@
 #include <math.h>
 #include <stdio.h>
 
-#include "emf.h"
+#include "../simulation.h"
 
 void sim_init( t_simulation* sim ){
 	// Time step
@@ -18,13 +18,13 @@ void sim_init( t_simulation* sim ){
 	// Simulation box
 	int   nx  = 1024;
 	float box = 82.0;
-	
+
 	// Diagnostic frequency
 	int ndump = 50;
 
     // Initialize particles
 	const int n_species = 1;
-	
+
 	// Use 128 particles per cell
 	int ppc = 256;
 
@@ -49,7 +49,7 @@ void sim_init( t_simulation* sim ){
 	  .polarization = M_PI_2
 	};
 	sim_add_laser( sim, &laser );
-	
+
     t_emf_laser laser2 = {
         .start =50.0,
         .fwhm  = 15,
@@ -58,8 +58,8 @@ void sim_init( t_simulation* sim ){
         .polarization = M_PI_2
     };
     sim_add_laser( sim, &laser2 );
-    
-    
+
+
     t_emf_laser laser3 = {
         .start =50.0,
         .fwhm  = 15,
@@ -68,8 +68,8 @@ void sim_init( t_simulation* sim ){
         .polarization = M_PI_2
     };
     sim_add_laser( sim, &laser3 );
-    
-	
+
+
 	// Set moving window (this must come after sim_new)
 	sim_set_moving_window( sim );
 
@@ -88,5 +88,5 @@ void sim_report( t_simulation* sim ){
 
 	// RAW dump
 	//	spec_report( &sim->species[0], PARTICLES, NULL, NULL );
-			
+
 }

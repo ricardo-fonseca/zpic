@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "../simulation.h"
 
 void sim_init( t_simulation* sim ){
 
@@ -17,13 +18,13 @@ void sim_init( t_simulation* sim ){
 	// Simulation box
 	int   nx[2]  = { 1000, 128 };
 	float box[2] = { 20.0, 25.6 };
-	
+
 	// Diagnostic frequency
 	int ndump = 50;
 
     // Initialize particles
 	const int n_species = 1;
-	
+
 	// Use 4x2 particles per cell
 	int ppc[] = {4,2};
 
@@ -64,19 +65,19 @@ void sim_init( t_simulation* sim ){
 }
 
 
-void sim_report( t_emf* emf, t_current* current, t_species species[] ){
+void sim_report( t_simulation* sim ){
 
 	// All electric field components
-	emf_report( emf, EFLD, 0 );
-	emf_report( emf, EFLD, 1 );
-	emf_report( emf, EFLD, 2 );
-		
+	emf_report( &sim->emf, EFLD, 0 );
+	emf_report( &sim->emf, EFLD, 1 );
+	emf_report( &sim->emf, EFLD, 2 );
+
 	// Charge density
-	spec_report( &species[0], CHARGE, NULL, NULL );
-    
+	spec_report( &sim->species[0], CHARGE, NULL, NULL );
+
     // x1u1 phasespace
 	const int pha_nx[] = {1024,512};
 	const float pha_range[][2] = {{0.0,20.0}, {-2.0,+2.0}};
-	spec_report(&species[0], PHASESPACE(X1,U1), pha_nx, pha_range);
-			
+	spec_report(&sim->species[0], PHASESPACE(X1,U1), pha_nx, pha_range);
+
 }

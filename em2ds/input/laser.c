@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "../simulation.h"
 
 void sim_init( t_simulation* sim ){
 
@@ -17,7 +18,7 @@ void sim_init( t_simulation* sim ){
 	// Simulation box
 	unsigned int   nx[2]  = { 1000, 128 };
 	float box[2] = { 20.0, 25.6 };
-	
+
 	// Diagnostic frequency
 	int ndump = 100;
 
@@ -52,6 +53,6 @@ void sim_report( t_simulation* sim ){
 	emf_report( &sim->emf, BFLD, 0 );
 	emf_report( &sim->emf, BFLD, 1 );
 	emf_report( &sim->emf, BFLD, 2 );
-		
-			
+
+
 }
