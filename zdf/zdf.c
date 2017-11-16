@@ -22,7 +22,7 @@ along with the ZPIC Educational code suite. If not, see <http://www.gnu.org/lice
  * ZDF version 1
  *
  * This ZDF version is totally self contained. It does not depend on XDR.
- * Current implementation only works on little endian systems
+ * Current implementation should also work on big endian systems (untested)
  * This version is not compatible is version 0 (it has the opposite endianess)
  * 
  */
@@ -38,23 +38,45 @@ along with the ZPIC Educational code suite. If not, see <http://www.gnu.org/lice
 #include <string.h>
 #include <errno.h>
 
+/**
+ * On Windows we cannot use the POSIX.1 mkdir command, so use _mkdir instead
+ */
+#if defined(_MSC_VER) || defined(_WIN32) || defined(_WIN64)
+#include <direct.h>
+#define mkdir(path,mode) _mkdir(path)
+#endif
 
-#define max_string_length 128
-
+/**
+ * Number of bytes in each ZDF file unit
+ */
 #define BYTES_PER_ZDF_UNIT	(4)
+
+
+/**
+ * Number of bytes required for writing data to ZDF file
+ * (round up to multiple of BYTES_PER_ZDF_UNIT)
+ */
 #define RNDUP(x)  ((((x) + BYTES_PER_ZDF_UNIT - 1) / BYTES_PER_ZDF_UNIT) \
 		    * BYTES_PER_ZDF_UNIT)
 
 
-
+/**
+ * Magic byte sequence identifying ZDF files
+ */
 #define ZDF_MAGIC_LENGTH BYTES_PER_ZDF_UNIT
 const char zdf_magic[ZDF_MAGIC_LENGTH] = {'Z','D','F','1'};
 
+/**
+ * ZDF datatypes - Currently only float32 and float64 are supported
+ */
 enum zdf_data_type{ zdf_null,
 	                zdf_int8,  zdf_uint8,  zdf_int16, zdf_uint16, 
 	                zdf_int32, zdf_uint32, zdf_int64, zdf_uint64,
 	                zdf_float32, zdf_float64 };
 
+/**
+ * Buffer size for converting big endian to little endian data
+ */
 #define ENDIAN_CONV_BUF_SIZE 1024
 
 /**
@@ -66,6 +88,10 @@ const unsigned size_zdf_uint64  = 8;
 const unsigned size_zdf_double  = 8;
 const unsigned size_zdf_float   = 4;
 
+
+/**
+ * IDs of ZDF records
+ */
 #define ZDF_INT32_ID     0x00010000
 #define ZDF_DOUBLE_ID    0x00020000
 #define ZDF_STRING_ID    0x00030000
@@ -80,6 +106,11 @@ const unsigned size_zdf_float   = 4;
   recursively create path if required
 -------------------------------------------------------------------------------------------------- */
 
+/**
+ * Recursively creates a path if required
+ * @param  path path to create
+ * @return      returns 0 on success, otherwise returns the value returned by mkdir
+ */
 int create_path( const char path[] )
 {
 	char uppath[256], *p;
@@ -112,7 +143,11 @@ int create_path( const char path[] )
   Open / Close ZDF file
 -------------------------------------------------------------------------------------------------- */
 
-
+/**
+ * Closes ZDF file
+ * @param  zdf ZDF file to close
+ * @return     Returns 0 on success, -1 otherwise
+ */
 int zdf_close_file( t_zdf_file* zdf ) {
 
 	if ( fclose( zdf->fp ) ) {
@@ -123,6 +158,13 @@ int zdf_close_file( t_zdf_file* zdf ) {
 	return(0);
 }
 
+/**
+ * Opens ZDF file
+ * @param  zdf      ZDF file to open
+ * @param  filename Filename of the ZDF file to open, including path
+ * @param  mode     Can be one of ZDF_WRITE (for writing) or ZDF_READ (for reading)
+ * @return          Returns 0 on success, -1 otherwise
+ */
 int zdf_open_file( t_zdf_file* zdf, char* filename, enum zdf_file_access_mode mode ){
 
 	zdf -> mode = mode;
@@ -130,7 +172,8 @@ int zdf_open_file( t_zdf_file* zdf, char* filename, enum zdf_file_access_mode mo
 	switch( mode ) {
 		case ZDF_WRITE :
 			// Open file for writing
-			if (!(zdf->fp = fopen( filename, "w"))) {
+			// The "wb" mode must be used for compatibility with Windows
+			if (!(zdf->fp = fopen( filename, "wb"))) {
 				perror("(*error*) Unable to open ZDF file for writing");
 				return(-1);
 			}
@@ -190,31 +233,74 @@ int zdf_open_file( t_zdf_file* zdf, char* filename, enum zdf_file_access_mode mo
  * For these systems just writing the data to disk is sufficient
  */
 
-
+/**
+ * Writes int32 value to file
+ * @param  zdf ZDF file descriptor
+ * @param  i   int32_t value to write
+ * @return     Returns 0 on success, other value on error
+ */
 int zdf_int32_write( t_zdf_file* zdf, const int32_t i ){
 	return ( fwrite( (void *) &i, sizeof(int32_t), 1, zdf -> fp ) == 1 );
 }
 
+/**
+ * Writes uint32 value to file
+ * @param  zdf ZDF file descriptor
+ * @param  u   uint32_t value to write
+ * @return     Returns 0 on success, other value on error
+ */
 int zdf_uint32_write( t_zdf_file* zdf, const uint32_t u ){
 	return ( fwrite( (void *) &u, sizeof(uint32_t), 1, zdf -> fp ) == 1 );
 }
 
+/**
+ * Writes int64 value to file
+ * @param  zdf ZDF file descriptor
+ * @param  i   int64_t value to write
+ * @return     Returns 0 on success, other value on error
+ */
 int zdf_int64_write( t_zdf_file* zdf, const int64_t i ){
 	return ( fwrite( (void *) &i, sizeof(int64_t), 1, zdf -> fp ) == 1 );
 }
 
+/**
+ * Writes uint64_t value to file
+ * @param  zdf ZDF file descriptor
+ * @param  u   uint64_t value to write
+ * @return     Returns 0 on success, other value on error
+ */
 int zdf_uint64_write( t_zdf_file* zdf, const uint64_t u ){
 	return ( fwrite( (void *) &u, sizeof(uint64_t), 1, zdf -> fp ) == 1 );
 }
 
+/**
+ * Writes double (float64) value to file
+ * @param  zdf ZDF file descriptor
+ * @param  d   double value to write
+ * @return     Returns 0 on success, other value on error
+ */
 int zdf_double_write( t_zdf_file* zdf, const double d ){
 	return ( fwrite( (void *) &d, sizeof(double), 1, zdf -> fp ) == 1 );
 }
 
+/**
+ * Write float (float32) vector to file
+ * @param  zdf  ZDF file descriptor
+ * @param  data Pointer to float (float32) data to write
+ * @param  len  Number of vector elements
+ * @return      Returns 0 on success, other value on error
+ */
 int zdf_float_vector_write( t_zdf_file* zdf,  float const * const data, size_t len ) {
 	return( fwrite( (void *) data, sizeof(float), len, zdf -> fp ) != len );
 }
 
+/**
+ * Write double (float64) vector to file
+ * @param  zdf  ZDF file descriptor
+ * @param  data Pointer to float (float64) data to write
+ * @param  len  Number of vector elements
+ * @return      Returns 0 on success, other value on error
+ */
 int zdf_double_vector_write( t_zdf_file* zdf,  double const * const data, size_t len ) {
 	return( fwrite( (void *) data, sizeof(double), len, zdf -> fp ) != len );
 }
@@ -233,7 +319,7 @@ int zdf_double_vector_write( t_zdf_file* zdf,  double const * const data, size_t
 
 
 /*
-
+// Not required
 #define bswap_16(x) \
 ({ \
 	uint16_t __x = (x); \
@@ -243,6 +329,11 @@ int zdf_double_vector_write( t_zdf_file* zdf,  double const * const data, size_t
 })
 */
 
+/**
+ * Swap bytes for 32 bit number
+ * @param  x 32 bit number to convert
+ * @return   byte-swapped version of x
+ */
 #define bswap_32(x) \
 ({ \
 	uint32_t __x = (x); \
@@ -253,6 +344,11 @@ int zdf_double_vector_write( t_zdf_file* zdf,  double const * const data, size_t
 		(((uint32_t)(__x) & (uint32_t)0xff000000UL) >> 24) )); \
 })
 
+/**
+ * Swap bytes for 64 bit number
+ * @param  x 64 bit number to convert
+ * @return   byte-swapped version of x
+ */
 #define bswap_64(x) \
 ({ \
 	uint64_t __x = (x); \
@@ -267,31 +363,68 @@ int zdf_double_vector_write( t_zdf_file* zdf,  double const * const data, size_t
 		(uint64_t)(((uint64_t)(__x) & (uint64_t)0xff00000000000000ULL) >> 56) )); \
 })
 
+/**
+ * Writes int32 value to file
+ * @param  zdf ZDF file descriptor
+ * @param  i   int32_t value to write
+ * @return     Returns 0 on success, other value on error
+ */
 int zdf_int32_write( t_zdf_file* zdf, const int32_t i ){
 	uint32_t tmp = bswap_32((uint32_t)i);
 	return ( fwrite( (void *) &tmp, sizeof(uint32_t), 1, zdf -> fp ) == 1 );
 }
 
+/**
+ * Writes uint32 value to file
+ * @param  zdf ZDF file descriptor
+ * @param  u   uint32_t value to write
+ * @return     Returns 0 on success, other value on error
+ */
 int zdf_uint32_write( t_zdf_file* zdf, const uint32_t u ){
 	uint32_t tmp = bswap_32(u);
 	return ( fwrite( (void *) &tmp, sizeof(uint32_t), 1, zdf -> fp ) == 1 );
 }
 
+/**
+ * Writes int64 value to file
+ * @param  zdf ZDF file descriptor
+ * @param  i   int64_t value to write
+ * @return     Returns 0 on success, other value on error
+ */
 int zdf_int64_write( t_zdf_file* zdf, const int64_t i ){
 	uint64_t tmp = bswap_64((uint64_t)i);
 	return ( fwrite( (void *) &tmp, sizeof(uint64_t), 1, zdf -> fp ) == 1 );
 }
 
+/**
+ * Writes uint64_t value to file
+ * @param  zdf ZDF file descriptor
+ * @param  u   uint64_t value to write
+ * @return     Returns 0 on success, other value on error
+ */
 int zdf_uint64_write( t_zdf_file* zdf, const uint64_t u ){
 	uint64_t tmp = bswap_64(u);
 	return ( fwrite( (void *) &tmp, sizeof(uint64_t), 1, zdf -> fp ) == 1 );
 }
 
+/**
+ * Writes double (float64) value to file
+ * @param  zdf ZDF file descriptor
+ * @param  d   double value to write
+ * @return     Returns 0 on success, other value on error
+ */
 int zdf_double_write( t_zdf_file* zdf, const double d ){
 	uint64_t tmp = bswap_64((uint64_t)d);
 	return ( fwrite( (void *) &tmp, sizeof(uint64_t), 1, zdf -> fp ) == 1 );
 }
 
+/**
+ * Write float (float32) vector to file
+ * @param  zdf  ZDF file descriptor
+ * @param  data Pointer to float (float32) data to write
+ * @param  len  Number of vector elements
+ * @return      Returns 0 on success, other value on error
+ */
 int zdf_float_vector_write( t_zdf_file* zdf,  float const * const data, size_t len ) {
 
 	uint32_t buffer[ENDIAN_CONV_BUF_SIZE];
@@ -312,6 +445,13 @@ int zdf_float_vector_write( t_zdf_file* zdf,  float const * const data, size_t l
 	return( 1 );
 }
 
+/**
+ * Write double (float64) vector to file
+ * @param  zdf  ZDF file descriptor
+ * @param  data Pointer to float (float64) data to write
+ * @param  len  Number of vector elements
+ * @return      Returns 0 on success, other value on error
+ */
 int zdf_double_vector_write( t_zdf_file* zdf,  double const * const data, size_t len ) {
 	uint64_t buffer[ENDIAN_CONV_BUF_SIZE];
 
@@ -338,8 +478,13 @@ int zdf_double_vector_write( t_zdf_file* zdf,  double const * const data, size_t
 
 #endif
 
-// zdf_bytes_write is independent of endianess
-
+/**
+ * Write a sequence of bytes to file
+ * @param  zdf ZDF file descriptor
+ * @param  u   Pointer to byte data
+ * @param  len Number of bytes to write
+ * @return     Returns 0 on success, other value on error
+ */
 int zdf_bytes_write( t_zdf_file* zdf, const uint8_t *u, size_t len ){
 	
 	if ( fwrite( (void *) u, sizeof(uint8_t), len, zdf -> fp ) != len ) {
@@ -359,11 +504,16 @@ int zdf_bytes_write( t_zdf_file* zdf, const uint8_t *u, size_t len ){
 }
 
 
-
 /* -----------------------------------------------------------------------------------------------
   zdf_string
 -------------------------------------------------------------------------------------------------- */
 
+/**
+ * Write a string to file
+ * @param  zdf ZDF file descriptor
+ * @param  str C string (char *) to write
+ * @return     Returns 0 on success, 1 on error
+ */
 int zdf_string_write( t_zdf_file* zdf, const char * str ){
 
 	uint32_t len;
@@ -378,6 +528,11 @@ int zdf_string_write( t_zdf_file* zdf, const char * str ){
 	return(1);
 }
 
+/**
+ * Calculate size of string record
+ * @param  s C string (char *) to write
+ * @return   The number of bytes required for writing the string data
+ */
 uint64_t size_zdf_string( const char *s )
 {
 	unsigned len = ( s ) ? strlen( s ) : 0;
@@ -586,7 +741,7 @@ typedef struct {
 	uint32_t ndims;
 	uint64_t nx[zdf_max_dims];
 
-	char* data;
+	uint8_t* data;
 } t_zdf_dataset;
 
 
@@ -709,7 +864,7 @@ int zdf_save_grid( const float* data, const t_zdf_grid_info *_info,
     t_zdf_dataset dataset = {
     	.data_type = zdf_float32,
     	.ndims = _info->ndims,
-    	.data = (char *) data 
+    	.data = (uint8_t *) data 
     };
     for( i = 0; i < _info->ndims; i ++) dataset.nx[i] = _info->nx[i];
 
@@ -782,7 +937,7 @@ int zdf_part_file_add_quant( t_zdf_file *zdf, const char *name, const float* dat
     t_zdf_dataset dataset = {
     	.data_type = zdf_float32,
     	.ndims = 1,
-    	.data = (char *) data
+    	.data = (uint8_t *) data
     };
 
     dataset.nx[0] = np;
