@@ -13,6 +13,7 @@
 #include "zpic.h"
 
 enum smooth_type { none, binomial, compensated };
+enum current_boundary{ CURRENT_BC_NONE, CURRENT_BC_PERIODIC };
 
 typedef struct {
 	enum smooth_type xtype;
@@ -44,8 +45,8 @@ typedef struct {
 	// Iteration number
 	int iter;
 
-	// Moving window
-	int moving_window;
+	// Boundary conditions
+	int bc_type;
 	
 } t_current;
 

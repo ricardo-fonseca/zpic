@@ -51,7 +51,8 @@ void current_new( t_current *current, int nx, t_fld box, float dt )
 	current -> iter = 0;
 	current -> dt = dt;
 
-	current -> moving_window = 0;
+	// Default to periodic boundaries
+	current -> bc_type = CURRENT_BC_PERIODIC;
 
     // Zero initial current
     // This is only relevant for diagnostics, current is always zeroed before deposition
@@ -77,31 +78,38 @@ void current_zero( t_current *current )
 	
 }
 
+void current_update_gc( t_current *current )
+{
+	if ( current -> bc_type == CURRENT_BC_PERIODIC ) {
+		t_vfld* restrict const J = current -> J;
+		const int nx = current -> nx;
+
+		// lower - add the values from upper boundary ( both gc and inside box )
+		for (int i=-current->gc[0]; i<current->gc[1]; i++) {
+			J[ i ].x += J[ nx + i ].x;
+			J[ i ].y += J[ nx + i ].y;
+			J[ i ].z += J[ nx + i ].z;
+		}
+		
+		// upper - just copy the values from the lower boundary 
+		for (int i=-current->gc[0]; i<current->gc[1]; i++) {
+			J[ nx + i ].x = J[ i ].x;
+			J[ nx + i ].y = J[ i ].y;
+			J[ nx + i ].z = J[ i ].z;
+		}
+	}
+}
+
 void current_update( t_current *current )
 {
-	int i;
-
-	t_vfld* restrict const J = current -> J;
 	
-	// x
-		
-	// lower - add the values from upper boundary ( both gc and inside box )
-	for (i=-current->gc[0]; i<current->gc[1]; i++) {
-		J[ i ].x += J[ current->nx + i ].x;
-		J[ i ].y += J[ current->nx + i ].y;
-		J[ i ].z += J[ current->nx + i ].z;
-	}
-	
-	// upper - just copy the values from the lower boundary 
-	for (i=-current->gc[0]; i<current->gc[1]; i++) {
-		J[ current->nx + i ].x = J[ i ].x;
-		J[ current->nx + i ].y = J[ i ].y;
-		J[ current->nx + i ].z = J[ i ].z;
-	}
+	// Boundary conditions / guard cells
+	current_update_gc( current );
 
 	// Smoothing
 	current_smooth( current );
 
+	// Advance iteration number
 	current -> iter++;
 	
 }
@@ -210,8 +218,8 @@ void kernel_x( t_current* const current, const t_fld sa, const t_fld sb ){
 
 	}
 
-	// Update x boundaries unless we are using a moving window
-	if ( ! current -> moving_window ) {
+	// Update x boundaries for periodic boundaries
+	if ( current -> bc_type == CURRENT_BC_PERIODIC ) {
 		for(i = -current->gc[0]; i<0; i++) 
 			J[ i ] = J[ current->nx + i ];
 

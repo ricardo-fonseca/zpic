@@ -69,13 +69,17 @@ void sim_set_smooth( t_simulation* sim,  t_smooth* smooth ){
 
 void sim_set_moving_window( t_simulation* sim ){
 
+	// Set moving window flag and disable boundary conditions
+	// for EM fields
 	sim -> emf.moving_window = 1;
     sim -> emf.bc_type = EMF_BC_NONE;
 
-	sim -> current.moving_window = 1;
+	// Disable boundary conditions for electric current
+	// No specific code for 
+	sim -> current.bc_type = CURRENT_BC_NONE;
 
-    int i;
-	for(i=0; i<sim -> n_species; i++)
+	// Set moving window flag for all species
+	for(int i=0; i<sim -> n_species; i++)
 		sim -> species[i].moving_window = 1;
 
 }
