@@ -52,7 +52,7 @@ void sim_init( t_simulation* sim ){
 
 	// Set current smoothing (this must come after sim_new)
 	t_smooth smooth = {
-		.xtype = compensated,
+		.xtype = COMPENSATED,
 		.xlevel = 4
 	};
 

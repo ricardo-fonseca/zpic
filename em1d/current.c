@@ -43,7 +43,7 @@ void current_new( t_current *current, int nx, t_fld box, float dt )
 
 	// Clear smoothing options
 	current -> smooth = (t_smooth) {
-		.xtype = none,
+		.xtype = NONE,
 		.xlevel = 0
 	};
 
@@ -220,7 +220,7 @@ void kernel_x( t_current* const current, const t_fld sa, const t_fld sb ){
 
 	// Update x boundaries for periodic boundaries
 	if ( current -> bc_type == CURRENT_BC_PERIODIC ) {
-		for(i = -current->gc[0]; i<0; i++) 
+		for(i = -current->gc[0]; i<0; i++)
 			J[ i ] = J[ current->nx + i ];
 
 		for (i=0; i<current->gc[1]; i++)
@@ -237,7 +237,7 @@ void current_smooth( t_current* const current ) {
 	t_fld sa, sb;
 
     // x-direction filtering
-    if ( current -> smooth.xtype != none ) {
+    if ( current -> smooth.xtype != NONE ) {
     	// binomial filter
     	sa = 0.25; sb = 0.5;
     	for( int i = 0; i < current -> smooth.xlevel; i++) {
@@ -245,7 +245,7 @@ void current_smooth( t_current* const current ) {
     	}
 
     	// Compensator
-    	if ( current -> smooth.xtype == compensated ) {
+    	if ( current -> smooth.xtype == COMPENSATED ) {
     		get_smooth_comp( current -> smooth.xlevel, &sa, &sb );
     		kernel_x( current, sa, sb );
     	}

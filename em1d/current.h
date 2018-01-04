@@ -12,7 +12,7 @@
 
 #include "zpic.h"
 
-enum smooth_type { none, binomial, compensated };
+enum smooth_type { NONE, BINOMIAL, COMPENSATED };
 enum current_boundary{ CURRENT_BC_NONE, CURRENT_BC_PERIODIC };
 
 typedef struct {

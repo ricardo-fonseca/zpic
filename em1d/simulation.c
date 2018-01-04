@@ -73,7 +73,7 @@ void sim_add_laser( t_simulation* sim,  t_emf_laser* laser ){
 
 void sim_set_smooth( t_simulation* sim,  t_smooth* smooth ){
 
-    if ( (smooth -> xtype != none) && (smooth -> xlevel <= 0) ) {
+    if ( (smooth -> xtype != NONE) && (smooth -> xlevel <= 0) ) {
     	printf("Invalid smooth level along x direction\n");
     	exit(-1);
     }
