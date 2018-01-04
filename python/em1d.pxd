@@ -66,6 +66,8 @@ cdef extern from "em1d/particles.h":
 	cdef int U2
 	cdef int U3
 
+	int PHASESPACE( int a, int b )
+
 	void spec_report( const t_species *spec, const int rep_type,
 				  const int pha_nx[], const float pha_range[][2] )
 
@@ -115,7 +117,7 @@ cdef extern from "em1d/emf.h":
 
 cdef extern from "em1d/current.h":
 	cdef enum smooth_type:
-		none, binomial, compensated
+		NONE, BINOMIAL, COMPENSATED
 
 	cdef enum current_boundary:
 		CURRENT_BC_NONE, CURRENT_BC_PERIODIC
@@ -135,6 +137,9 @@ cdef extern from "em1d/current.h":
 		float dt
 		int iter;
 		int bc_type;
+
+	void current_report( const t_current *current, const char jc )
+
 
 #########################################################################################
 # Simulation
