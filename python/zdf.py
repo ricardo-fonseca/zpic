@@ -204,6 +204,7 @@ class ZDFfile:
             return False
 
         # Reshape dataset to the supplied dimensions
+        nx.reverse()
         data.shape = nx
 
         return data
