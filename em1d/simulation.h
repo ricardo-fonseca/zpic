@@ -7,13 +7,13 @@
 #include "current.h"
 
 typedef struct {
-	
+
 	int moving_window;
 
 	// Time step
 	float dt;
 	float tmax;
-	
+
 	// Diagnostic frequency
 	int ndump;
 
@@ -30,6 +30,7 @@ typedef struct {
 void sim_init( t_simulation* sim );
 void sim_report( t_simulation* sim );
 
+void sim_iter( t_simulation* sim );
 void sim_report_energy( t_simulation* sim );
 
 void sim_new( t_simulation* sim, int nx, float box, float dt, float tmax, int ndump, t_species* species, int n_species );

@@ -19,7 +19,7 @@
 
 static double _emf_time = 0.0;
 
-double emf_time()
+double emf_time( void )
 {
 	return _emf_time;
 }
@@ -293,7 +293,7 @@ void mur_abc( t_emf *emf ) {
 		// lower boundary
         emf -> mur_fld[0].y = emf -> mur_tmp[0].y + S * (emf -> E[0].y - emf -> mur_fld[0].y);
         emf -> mur_fld[0].z = emf -> mur_tmp[0].z + S * (emf -> E[0].z - emf -> mur_fld[0].z);
-        
+
         emf ->  E[-1].y = emf -> mur_fld[0].y;
         emf ->  E[-1].z = emf -> mur_fld[0].z;
 
@@ -304,21 +304,21 @@ void mur_abc( t_emf *emf ) {
 		// upper boundary
         emf -> mur_fld[1].y = emf -> mur_tmp[1].y + S * (emf -> E[nx-1].y - emf -> mur_fld[1].y);
         emf -> mur_fld[1].z = emf -> mur_tmp[1].z + S * (emf -> E[nx-1].z - emf -> mur_fld[1].z);
-        
+
         emf ->  E[nx].y = emf -> mur_fld[1].y;
         emf ->  E[nx].z = emf -> mur_fld[1].z;
 
         // Store Eperp for next iteration
         emf -> mur_tmp[1].y = emf -> E[nx-1].y;
         emf -> mur_tmp[1].z = emf -> E[nx-1].z;
-	}    
+	}
 
 }
 
 /*********************************************************************************************
- 
+
  Field solver
- 
+
  *********************************************************************************************/
 
 void yee_b( t_emf *emf, const float dt )
@@ -326,12 +326,12 @@ void yee_b( t_emf *emf, const float dt )
 	// this must not be unsigned because we access negative cell indexes
 	int i;
 	t_fld dt_dx;
-	
+
     t_vfld* const restrict B = emf -> B;
     const t_vfld* const restrict E = emf -> E;
 
 	dt_dx = dt / emf->dx;
-	
+
 	// Canonical implementation
 	for (i=-1; i<=emf->nx; i++) {
 		// B[ i ].x += 0;  // Bx does not evolve in 1D
@@ -464,7 +464,7 @@ void emf_advance( t_emf *emf, const t_current *current )
 
 void emf_get_energy( const t_emf *emf, double energy[] )
 {
-	unsigned i;
+	int i;
     t_vfld* const restrict E = emf -> E;
     t_vfld* const restrict B = emf -> B;
 

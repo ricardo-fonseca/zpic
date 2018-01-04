@@ -100,7 +100,7 @@ void spec_delete( t_species* spec );
 
 void spec_advance( t_species* spec, t_emf* emf, t_current* current );
 
-double spec_time();
+double spec_time( void );
 
 /*********************************************************************************************
  

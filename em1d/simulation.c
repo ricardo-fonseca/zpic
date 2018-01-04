@@ -4,7 +4,6 @@
 #include "simulation.h"
 #include "timer.h"
 
-
 int report( int n, int ndump )
 {
 	if (ndump > 0) {
@@ -13,6 +12,20 @@ int report( int n, int ndump )
 		return 0;
 	}
 }
+
+void sim_iter( t_simulation* sim ) {
+	// Advance particles and deposit current
+	current_zero( &sim -> current );
+	for (int i = 0; i<sim -> n_species; i++)
+		spec_advance(&sim -> species[i], &sim -> emf, &sim -> current );
+
+	// Update current boundary conditions and advance iteration
+	current_update( &sim -> current );
+
+	// Advance EM fields
+	emf_advance( &sim -> emf, &sim -> current );
+}
+
 
 void sim_timings( t_simulation* sim, uint64_t t0, uint64_t t1 ){
 
@@ -26,7 +39,7 @@ void sim_timings( t_simulation* sim, uint64_t t0, uint64_t t1 ){
 	fprintf(stderr, "Time for emf   advance = %f s\n", emf_time());
 	fprintf(stderr, "Total simulation time  = %f s\n", timer_interval_seconds(t0, t1));
 	fprintf(stderr, "\n");
-	
+
 	float perf = spec_time()/(npart);
 	fprintf(stderr, "Particle advance [nsec/part] = %f \n", 1.e9*perf);
 	fprintf(stderr, "Particle advance [Mpart/sec] = %f \n", 1.e-6/perf);
@@ -59,7 +72,7 @@ void sim_add_laser( t_simulation* sim,  t_emf_laser* laser ){
 }
 
 void sim_set_smooth( t_simulation* sim,  t_smooth* smooth ){
-    
+
     if ( (smooth -> xtype != none) && (smooth -> xlevel <= 0) ) {
     	printf("Invalid smooth level along x direction\n");
     	exit(-1);
@@ -75,7 +88,8 @@ void sim_set_moving_window( t_simulation* sim ){
     sim -> emf.bc_type = EMF_BC_NONE;
 
 	// Disable boundary conditions for electric current
-	// No specific code for 
+	// No specific code for
+
 	sim -> current.bc_type = CURRENT_BC_NONE;
 
 	// Set moving window flag for all species
@@ -86,7 +100,7 @@ void sim_set_moving_window( t_simulation* sim ){
 
 void sim_report_energy( t_simulation* sim )
 {
-	unsigned i;
+	int i;
 
 	double emf_energy[6];
 	double part_energy[ sim -> n_species ];
@@ -103,7 +117,8 @@ void sim_report_energy( t_simulation* sim )
 		tot_part += part_energy[i];
 	}
 
-	printf("Energy (fields | particles | total) = %e %e %e\n", 
+	printf("Energy (fields | particles | total) = %e %e %e\n",
+
 		tot_emf, tot_part, tot_emf+tot_part);
 
 }
@@ -112,11 +127,10 @@ void sim_delete( t_simulation* sim ) {
 
 	int i;
 	for (i = 0; i<sim->n_species; i++) spec_delete( &sim->species[i] );
-	
+
 	free( sim->species );
 
 	current_delete( &sim->current );
 	emf_delete( &sim->emf );
 
 }
-

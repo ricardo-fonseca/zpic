@@ -32,7 +32,7 @@ void spec_sort( t_species *spec );
  *********************************************************************************************/
 
 
-double spec_time()
+double spec_time( void )
 {
 	return _spec_time;
 }
@@ -916,7 +916,7 @@ void spec_rep_particles( const t_species *spec )
 	
 	t_zdf_file part_file;
 
-	unsigned i;
+	int i;
 	
 	const char * quants[] = {
 	    "x1",

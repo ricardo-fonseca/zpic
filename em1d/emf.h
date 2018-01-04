@@ -78,7 +78,7 @@ void emf_move_window( t_emf *emf );
 
 void emf_update_gc( t_emf *emf );
 
-double emf_time();
+double emf_time( void );
 
 void emf_set_moving_window( t_emf* emf );
 

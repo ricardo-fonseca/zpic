@@ -22,18 +22,18 @@ void set_rand_seed( uint32_t m_w_, uint32_t m_z_ )
 	m_z = m_z_;
 }
 
-uint32_t rand_uint32()
+uint32_t rand_uint32( void )
 {
     m_z = 36969 * (m_z & 65535) + (m_z >> 16);
     m_w = 18000 * (m_w & 65535) + (m_w >> 16);
     return (m_z << 16) + m_w;  /* 32-bit result */
 }
 
-double rand_norm()
+double rand_norm( void )
 {
 	static int iset = 0;
 	static double gset = 0.0;
-	
+
 	if (iset) {
 		iset = 0;
 		return gset;
@@ -45,17 +45,17 @@ double rand_norm()
 
 			v1 = ( rand_uint32() + 0.5 ) / 2147483649.0 - 1.0;
 			v2 = ( rand_uint32() + 0.5 ) / 2147483649.0 - 1.0;
-			
-			// check if they are inside the unit circle, and not (0,0) 
+
+			// check if they are inside the unit circle, and not (0,0)
 			// otherwise try again
 			rsq = v1*v1 + v2*v2;
-			
+
 		} while ( rsq == 0.0 || rsq >= 1.0 );
-		
-		// Use Box-Muller method to generate random deviates with 
+
+		// Use Box-Muller method to generate random deviates with
 		// normal (gaussian) distribution
 		fac = sqrt(-2.0 * log(rsq)/rsq);
-		
+
 		// store 1 value for future use
 		gset = v1*fac;
 		iset = 1;

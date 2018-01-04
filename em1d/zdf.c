@@ -24,7 +24,7 @@ along with the ZPIC Educational code suite. If not, see <http://www.gnu.org/lice
  * This ZDF version is totally self contained. It does not depend on XDR.
  * Current implementation should also work on big endian systems (untested)
  * This version is not compatible is version 0 (it has the opposite endianess)
- * 
+ *
  */
 
 
@@ -641,10 +641,10 @@ uint64_t size_xdr_zdf_grid_info(const t_zdf_grid_info* grid) {
    	size += size_zdf_int32;
     if ( grid -> axis ) {
 
-    	int i;
-    	for(i=0; i<grid -> ndims; i++) 
-    		size += size_zdf_int32 + 
-    	            2 * size_zdf_double + 
+    	unsigned int i;
+    	for(i=0; i<grid -> ndims; i++)
+    		size += size_zdf_int32 +
+    	            2 * size_zdf_double +
     	            size_zdf_string( grid -> axis[i].label ) +
     	            size_zdf_string( grid -> axis[i].units );
     }
@@ -817,7 +817,7 @@ int zdf_save_grid( const float* data, const t_zdf_grid_info *_info,
 	const t_zdf_iteration *_iteration, char const path[] )
 {
 
-	int i;
+	unsigned int i;
 	char filename[1024];
 
     // Set iteration info

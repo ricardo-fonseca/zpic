@@ -14,6 +14,6 @@
 
 void set_rand_seed( uint32_t m_z_, uint32_t m_w_ );
 
-double rand_norm();
+double rand_norm( void );
 
 #endif
