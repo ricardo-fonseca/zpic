@@ -1,28 +1,16 @@
-from distutils.core import setup
-from distutils.extension import Extension
-from Cython.Distutils import build_ext
-# from Cython.Build import cythonize
+from distutils.core import setup, Extension
+from Cython.Build import cythonize
 
-ext_modules = [Extension(
-    name="cwrap",
-    sources=["cwrap.pyx", "ccode.c"],
-        # extra_objects=["fc.o"],  # if you compile fc.cpp separately
-        # include_dirs = [numpy.get_include()],  # .../site-packages/numpy/core/include
-        # language="c",
-        # libraries=
-        # extra_compile_args = "...".split(),
-        # extra_link_args = "...".split()
-    )]
+ext = Extension("em1d",
+                sources=["em1d.pyx",
+                "em1d/current.c",
+				"em1d/emf.c",
+				"em1d/particles.c",
+				"em1d/random.c",
+				"em1d/simulation.c",
+				"em1d/timer.c",
+				"em1d/zdf.c"
+])
 
-setup(
-    name = 'cwrap',
-    cmdclass = {'build_ext': build_ext},
-    ext_modules = ext_modules,
-        # ext_modules = cythonize(ext_modules)  ? not in 0.14.1
-    # version=
-    # description=
-    # author=
-    # author_email=
-    )
-
-# test: import f
+setup(name="zpic_em1d",
+      ext_modules = cythonize([ext]))
