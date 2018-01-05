@@ -22,6 +22,36 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
+class ZDF_Iteration:
+    def __init__( self ):
+        self.n = 0
+        self.t = 0.
+        self.tunits = ""
+
+class ZDF_Grid_Axis:
+    def __init__( self ):
+        self.type = 0
+        self.min = 0.
+        self.max = 0.
+        self.label = ''
+        self.units = ''
+
+class ZDF_Grid_Info:
+    def __init__( self ):
+        self.ndims = 0
+        self.nx = []
+        self.label = ''
+        self.units = ''
+        self.has_axis = 0
+        self.axis = []
+
+class ZDF_Part_Info:
+    def __init__( self ):
+        self.name = ''
+        self.nquants = 0
+        self.quants = []
+        self.units = dict()
+        self.nparts = 0
 
 class ZDFfile:
     def __init__(self, file_name):
@@ -65,7 +95,7 @@ class ZDFfile:
         if (length > 0):
             data = self.__file.read(length)
             fstring = data.decode()
- 
+
             # Data is always written in blocks of 4 byt
             pad = ((length - 1) // 4 + 1) * 4 - length
             if ( pad > 0 ):
@@ -126,58 +156,50 @@ class ZDFfile:
 
     def read_iteration(self):
         rec = self.read_record()
-        iteration = dict()
-        iteration['n'] = self.__read_int32()
-        iteration['t'] = self.__read_float64()
-        iteration['tunits'] = self.__read_string()
+        iteration = ZDF_Iteration()
+        iteration.n = self.__read_int32()
+        iteration.t = self.__read_float64()
+        iteration.tunits = self.__read_string()
         return iteration
 
     def read_grid_info(self):
         rec = self.read_record()
-        info = dict()
-        info['ndims'] = self.__read_uint32()
+        info = ZDF_Grid_Info()
+        info.ndims = self.__read_uint32()
 
-        nx = []
-        for i in range(info['ndims']):
-            nx.append(self.__read_uint64())
+        for i in range(info.ndims):
+            info.nx.append(self.__read_uint64())
 
-        info['nx'] = nx
-        info['label'] = self.__read_string()
-        info['units'] = self.__read_string()
-        info['has_axis'] = self.__read_int32()
+        info.label = self.__read_string()
+        info.units = self.__read_string()
+        info.has_axis = self.__read_int32()
 
-        if (info['has_axis']):
-            axis = []
-            for i in range(info['ndims']):
-                ax = dict()
-                ax['type']  = self.__read_int32()
-                ax['min']   = self.__read_float64()
-                ax['max']   = self.__read_float64()
-                ax['label'] = self.__read_string()
-                ax['units'] = self.__read_string()
-                axis.append(ax)
-            info['axis'] = axis
+        if ( info.has_axis ):
+            for i in range(info.ndims):
+                ax = ZDF_Grid_Axis()
+                ax.type  = self.__read_int32()
+                ax.min   = self.__read_float64()
+                ax.max   = self.__read_float64()
+                ax.label = self.__read_string()
+                ax.units = self.__read_string()
+                info.axis.append(ax)
 
         return info
 
     def read_part_info(self):
         rec = self.read_record()
 
-        info = dict()
-        info['name'] = self.__read_string()
-        info['nquants'] = self.__read_uint32()
+        info = ZDF_Part_Info()
+        info.name    = self.__read_string()
+        info.nquants = self.__read_uint32()
 
-        quants = []
-        for i in range(info['nquants']):
-            quants.append(self.__read_string())
-        info['quants'] = quants
+        for i in range(info.nquants):
+            info.quants.append(self.__read_string())
 
-        units = dict()
-        for q in quants:
-            units[q] = self.__read_string()
+        for q in info.quants:
+            info.units[q] = self.__read_string()
 
-        info['units'] = units
-        info['nparts'] = self.__read_uint64()
+        info.nparts = self.__read_uint64()
 
         return info
 
@@ -235,83 +257,68 @@ class ZDFfile:
 # High level interfaces
 # -----------------------------------------------------------------------------
 
+class ZDF_Info:
+    """ZDF File information"""
+    def __init__(self):
+        self.type = ""
+        self.grid = None
+        self.particles = None
+        self.iteration = None
 
-def info_grid(file_name):
+
+def info( file_name ):
     # Open file
-    zdf = ZDFfile(file_name)
-    # Check file type
-    file_type = zdf.read_string()
-    if (file_type != "grid"):
-        print("File is not a valid ZDF grid file", file=sys.stderr)
+    zdf = ZDFfile( file_name )
+
+    # Check file type and read metadata
+    info = ZDF_Info()
+    info.type = zdf.read_string()
+    if ( info.type == "grid" ):
+        info.grid = zdf.read_grid_info()
+    elif ( info.type == "particles" ):
+        info.particles = zdf.read_part_info()
+    else:
+        print("File is not a valid ZDF grid or particles file", file=sys.stderr)
+        zdf.close()
         return False
-    # Read metadata
-    info = dict()
-    info['grid'] = zdf.read_grid_info()
-    info['iteration'] = zdf.read_iteration()
+
+    # Read iteration info
+    info.iteration = zdf.read_iteration()
+
     # Close file
     zdf.close()
 
     return info
 
-
-def read_grid(file_name):
+def read( file_name ):
     # Open file
-    zdf = ZDFfile(file_name)
-    # Check file type
-    file_type = zdf.read_string()
-    if (file_type != "grid"):
-        print("File is not a valid ZDF grid file", file=sys.stderr)
+    zdf = ZDFfile( file_name )
+
+    # Check file type and read metadata
+    info = ZDF_Info()
+
+    info.type = zdf.read_string()
+    if ( info.type == "grid" ):
+        info.grid = zdf.read_grid_info()
+        info.iteration = zdf.read_iteration()
+        data = zdf.read_dataset()
+    elif ( info.type == "particles" ):
+        info.particles = zdf.read_part_info()
+        info.iteration = zdf.read_iteration()
+
+        # Read all quantities
+        data = dict()
+        for q in info.particles.quants:
+            data[q] = zdf.read_dataset()
+    else:
+        print("File is not a valid ZDF grid or particles file", file=sys.stderr)
+        zdf.close()
         return False
-    # Read metadata
-    info = dict()
-    info['grid'] = zdf.read_grid_info()
-    info['iteration'] = zdf.read_iteration()
-    # Read dataset
-    data = zdf.read_dataset()
-    # Close file
+
+    #Close file
     zdf.close()
 
-    return (data, info)
-
-
-def info_particles(file_name):
-    # Open file
-    zdf = ZDFfile(file_name)
-    # Check file type
-    file_type = zdf.read_string()
-    if (file_type != "particles"):
-        print("File is not a valid ZDF particles file", file=sys.stderr)
-        return False
-    # Read metadata
-    info = dict()
-    info['particles'] = zdf.read_part_info()
-    info['iteration'] = zdf.read_iteration()
-    # Close file
-    zdf.close()
-
-    return info
-
-
-def read_particles(file_name):
-    # Open file
-    zdf = ZDFfile(file_name)
-    # Check file type
-    file_type = zdf.read_string()
-    if (file_type != "particles"):
-        print("File is not a valid ZDF particles file", file=sys.stderr)
-        return False
-    # Read metadata
-    info = dict()
-    info['particles'] = zdf.read_part_info()
-    info['iteration'] = zdf.read_iteration()
-    # Read all quantities
-    data = dict()
-    for q in info['particles']['quants']:
-        data[q] = zdf.read_dataset()
-    # Close file
-    zdf.close()
-
-    return (data, info)
+    return (data,info)
 
 def list(file_name, printRec=False):
     zdf = ZDFfile(file_name)
