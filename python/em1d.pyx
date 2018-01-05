@@ -332,6 +332,9 @@ cdef class Simulation:
 		# Allocate the simulation object
 		self._thisptr = <t_simulation *> calloc(1, sizeof(t_simulation))
 
+		# Initialize the random number generator
+		set_rand_seed( 12345, 67890 )
+
 		# Initialize particle species data
 		self.species = []
 		cdef Species s

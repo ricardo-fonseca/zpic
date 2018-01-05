@@ -1,3 +1,8 @@
+from libc.stdint cimport uint32_t
+
+cdef extern from "../em1d/random.h":
+	void set_rand_seed( uint32_t m_z_, uint32_t m_w_ )
+
 cdef extern from "../em1d/zpic.h":
 	ctypedef struct t_vfld:
 		float x
