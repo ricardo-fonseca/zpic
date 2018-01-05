@@ -1,27 +1,40 @@
+#cython: language_level=3
+
 cimport em1d
 from libc.stdlib cimport calloc, free
 
 import numpy as np
 
+cdef float custom_density( float x, void *f ):
+	cdef Density d = <object> f
+	return d.custom_func(x)
+
 cdef class Density:
+	"""Extension type to wrap t_density objects"""
 	cdef t_density *_thisptr
+
+	cdef object custom_func
 
 	uniform = UNIFORM
 	step = STEP
 	slab = SLAB
 	# Because of a namespace conflict we cannot call this "ramp"
 	linear_ramp = RAMP
+	custom = CUSTOM
 
-	# custom = CUSTOM
-
-	def __cinit__( self, *, type = UNIFORM, float start = 0.0, float end = 0.0, list ramp = [0.,0.]):
+	def __cinit__( self, *, type = UNIFORM, float start = 0.0, float end = 0.0,
+		           list ramp = [0.,0.], custom = None):
 		# Allocates the structure and initializes all elements to 0
 		self._thisptr = <t_density *> calloc(1, sizeof(t_density))
 
-		self._thisptr.type = UNIFORM
+		self._thisptr.type = type
 		self._thisptr.start = start
 		self._thisptr.end = end
 		self._thisptr.ramp = np.array(ramp, dtype=np.float32)
+		if ( custom ):
+			self.custom_func = custom
+			self._thisptr.custom = custom_density
+			self._thisptr.custom_data = <void *> self
 
 	def __dealloc__(self):
 		free( self._thisptr )
@@ -33,6 +46,11 @@ cdef class Density:
 		new.start = self.start
 		new.end   = self.end
 		new.ramp  = self.ramp
+
+		new.custom_func = self.custom_func
+		new._thisptr.custom = self._thisptr.custom
+		new._thisptr.custom_data = self._thisptr.custom_data
+
 		return new
 
 	@property
@@ -76,6 +94,8 @@ cdef class Density:
 		self._thisptr.ramp = value
 
 cdef class Species:
+	"""Extension type to wrap t_species objects"""
+
 	cdef t_species _this
 	cdef t_species* _thisptr
 	cdef Density _density
@@ -130,10 +150,13 @@ cdef class Species:
 
 
 def phasespace( int a, int b ):
+	"""Returns the type of the requested phasespace"""
 	return PHASESPACE(a,b)
 
 
 cdef class EMF:
+	"""Extension type to wrap t_emf objects"""
+
 	cdef t_emf* _thisptr
 
 	# Diagnostic types
@@ -160,6 +183,8 @@ cdef class EMF:
 		self._thisptr.bc_type = value
 
 cdef class Laser:
+	"""Extension type to wrap t_emf_laser objects"""
+
 	cdef t_emf_laser * _thisptr
 
 	def __cinit__( self, *, float start = 0.0, float fwhm = 0.0,
@@ -245,6 +270,8 @@ cdef class Laser:
 
 
 cdef class Current:
+	"""Extension type to wrap t_current objects"""
+
 	cdef t_current* _thisptr
 
 	cdef associate( self, t_current* ptr ):
@@ -255,6 +282,8 @@ cdef class Current:
 
 
 cdef class Smooth:
+	"""Extension type to wrap t_smooth objects"""
+
 	cdef t_smooth* _thisptr
 
 	none        = NONE
@@ -288,6 +317,8 @@ cdef class Smooth:
 
 
 cdef class Simulation:
+	"""Extension type to wrap t_simulation objects"""
+
 	cdef t_simulation *_thisptr
 	cdef int n
 	cdef float t
@@ -356,7 +387,7 @@ cdef class Simulation:
 		print("Starting simulation...")
 
 		while self.t <= self._thisptr.tmax:
-			print("n = {:d}, t = {:g}".format(self.n,self.t))
+			print('n = {:d}, t = {:g}'.format(self.n,self.t), end = '\r')
 			report( self )
 			sim_iter( self._thisptr )
 			self.n = self.n+1

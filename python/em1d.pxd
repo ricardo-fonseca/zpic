@@ -1,4 +1,4 @@
-cdef extern from "em1d/zpic.h":
+cdef extern from "../em1d/zpic.h":
 	ctypedef struct t_vfld:
 		float x
 		float y
@@ -7,7 +7,7 @@ cdef extern from "em1d/zpic.h":
 #########################################################################################
 # Particles
 #
-cdef extern from "em1d/particles.h":
+cdef extern from "../em1d/particles.h":
 	cdef int MAX_SPNAME_LEN
 
 	ctypedef struct t_part:
@@ -26,7 +26,8 @@ cdef extern from "em1d/particles.h":
 		float start
 		float end
 		float ramp[2]
-		float (*custom)(float)
+		float (*custom)(float, void*)
+		void *custom_data
 		unsigned long total_np_inj
 		double custom_q_inj
 
@@ -75,7 +76,7 @@ cdef extern from "em1d/particles.h":
 #########################################################################################
 # EMF
 #
-cdef extern from "em1d/emf.h":
+cdef extern from "../em1d/emf.h":
 	cdef enum emf_diag:
 		EFLD, BFLD
 
@@ -115,7 +116,7 @@ cdef extern from "em1d/emf.h":
 # Current
 #
 
-cdef extern from "em1d/current.h":
+cdef extern from "../em1d/current.h":
 	cdef enum smooth_type:
 		NONE, BINOMIAL, COMPENSATED
 
@@ -145,7 +146,7 @@ cdef extern from "em1d/current.h":
 # Simulation
 #
 
-cdef extern from "em1d/simulation.h":
+cdef extern from "../em1d/simulation.h":
 	ctypedef struct t_simulation:
 		int moving_window
 		float dt

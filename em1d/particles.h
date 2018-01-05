@@ -30,10 +30,11 @@ typedef struct {
 
 	enum density_type type;	// Density profile type
 	float start, end;		// Position of the plasma start/end, in simulation units
-	
+
 	float ramp[2];     // Initial and final density of the ramp
 
-	float (*custom)(float); // Pointer to custom density function
+	float (*custom)(float, void*); // Pointer to custom density function
+	void *custom_data;
 
 	unsigned long total_np_inj;	// Total number of particles already injected
 	double custom_q_inj;		// Total charge injected (density integral) in custom profile
@@ -43,9 +44,9 @@ typedef struct {
 enum part_boundary { PART_BC_NONE, PART_BC_PERIODIC, PART_BC_OPEN };
 
 typedef struct {
-	
+
 	char name[MAX_SPNAME_LEN];
-	
+
 	// Particle data buffer
 	t_part *part;
 	int np;
@@ -56,10 +57,10 @@ typedef struct {
 
 	// total kinetic energy
 	double energy;
-	
+
 	// charge of individual particle
 	float q;
-	
+
 	// Number of particles per cell
 	int ppc;
 
@@ -87,10 +88,11 @@ typedef struct {
 
 	// Boundary conditions
 	int bc_type;
-	
+
 } t_species;
 
-void spec_new( t_species* spec, char name[], const float m_q, const int ppc, 
+void spec_new( t_species* spec, char name[], const float m_q, const int ppc,
+
 			  const float ufl[], const float uth[],
 			  const int nx, float box, const float dt, t_density* density );
 
@@ -103,9 +105,9 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current );
 double spec_time( void );
 
 /*********************************************************************************************
- 
+
  Diagnostics
- 
+
  *********************************************************************************************/
 
 #define CHARGE 		0x1000
@@ -118,8 +120,8 @@ double spec_time( void );
 
 #define PHASESPACE(a,b) ((a) + (b)*16 + PHA)
 
-void spec_report( const t_species *spec, const int rep_type, 
-				  const int pha_nx[], const float pha_range[][2] );
+void spec_report( const t_species *spec, const int rep_type,
 
+				  const int pha_nx[], const float pha_range[][2] );
 
 #endif

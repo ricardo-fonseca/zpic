@@ -10,7 +10,7 @@
 
 #include "../simulation.h"
 
-float custom_n0( float x ) {
+float custom_n0( float x, void *data ) {
 
 	return 1.0 + 0.5*sin(x/M_PI)*sin(x/M_PI);
 
