@@ -13,7 +13,8 @@ cdef extern from "../em1d/zpic.h":
 # Particles
 #
 cdef extern from "../em1d/particles.h":
-	cdef int MAX_SPNAME_LEN
+	cdef enum:
+		MAX_SPNAME_LEN
 
 	ctypedef struct t_part:
 		int ix
@@ -40,7 +41,7 @@ cdef extern from "../em1d/particles.h":
 		PART_BC_NONE, PART_BC_PERIODIC, PART_BC_OPEN
 
 	ctypedef struct t_species:
-		char name[32]
+		char name[MAX_SPNAME_LEN]
 		t_part *part
 		int np
 		int np_max

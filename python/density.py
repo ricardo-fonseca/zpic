@@ -17,11 +17,11 @@ box = 20.0
 ndump = 100
 
 # Background plasma
-#density = em1d.Density( type = em1d.Density.uniform )
-#density = em1d.Density( type = em1d.Density.step, start = 17.5 )
-#density = em1d.Density( type = em1d.Density.slab, start = 17.5, end = 22.5 )
-#density = em1d.Density( type = em1d.Density.linear_ramp, start = 17.5, end = 22.5, ramp = [1.0,2.0] )
-density = em1d.Density( type = em1d.Density.custom, custom = custom_n0 )
+#density = em1d.Density( type = em1d.DensityType.uniform )
+#density = em1d.Density( type = em1d.DensityType.step, start = 17.5 )
+#density = em1d.Density( type = em1d.DensityType.slab, start = 17.5, end = 22.5 )
+#density = em1d.Density( type = em1d.DensityType.ramp, start = 17.5, end = 22.5, ramp = [1.0,2.0] )
+density = em1d.Density( type = em1d.DensityType.custom, custom = custom_n0 )
 
 print( "initializing electrons ")
 
@@ -32,10 +32,10 @@ def rep( sim ):
     if ( sim.n % ndump == 0 ):
 
         # Charge density
-        electrons.report( em1d.Species.charge )
+        electrons.report( em1d.SpeciesDiag.charge )
 
         # raw particle data
-        electrons.report( em1d.Species.particles )
+        electrons.report( em1d.SpeciesDiag.particles )
 
 # Initialize simulation data
 print( "initializing sim ")

@@ -19,8 +19,8 @@ left  = em1d.Species( "left", -1.0, ppc, ufl = ufl, uth = uth )
 
 def rep( sim ):
     if ( sim.n % ndump == 0 ):
-        right.report(em1d.Species.particles)
-        left.report(em1d.Species.particles)
+        right.report(em1d.SpeciesDiag.particles)
+        left.report(em1d.SpeciesDiag.particles)
         sim.emf.report(em1d.EMF.efld,0)
 
 sim = em1d.Simulation( nx, box, dt, [right,left], report = rep )

@@ -17,7 +17,7 @@ ndump = 50
 ppc = 128 # Particles per cell
 
 electrons = em1d.Species( "electrons", -1.0, ppc,
-	                      density = em1d.Density( type = em1d.Density.step, start = 20.0))
+	                      density = em1d.Density( type = em1d.DensityType.step, start = 20.0))
 
 # Simulation reports
 def rep( sim ):
@@ -28,10 +28,10 @@ def rep( sim ):
         sim.emf.report( em1d.EMF.efld, 2 )
 
         # Charge density
-        electrons.report( em1d.Species.charge )
+        electrons.report( em1d.SpeciesDiag.charge )
 
         # x1u1 phasespace
-        electrons.report( em1d.phasespace( em1d.Species.x1, em1d.Species.u1),
+        electrons.report( em1d.phasespace( em1d.SpeciesDiag.x1, em1d.SpeciesDiag.u1),
                           pha_nx = [1024,512], pha_range = [[0.0,20.0],[-2.0,2.0]])
 
 

@@ -9,25 +9,25 @@ cdef float custom_density( float x, void *f ):
 	cdef Density d = <object> f
 	return d.custom_func(x)
 
+cdef class DensityType:
+	uniform = UNIFORM
+	step = STEP
+	slab = SLAB
+	ramp = RAMP
+	custom = CUSTOM
+
 cdef class Density:
 	"""Extension type to wrap t_density objects"""
 	cdef t_density *_thisptr
 
 	cdef object custom_func
 
-	uniform = UNIFORM
-	step = STEP
-	slab = SLAB
-	# Because of a namespace conflict we cannot call this "ramp"
-	linear_ramp = RAMP
-	custom = CUSTOM
-
-	def __cinit__( self, *, type = UNIFORM, float start = 0.0, float end = 0.0,
+	def __cinit__( self, *, int type = UNIFORM, float start = 0.0, float end = 0.0,
 		           list ramp = [0.,0.], custom = None):
 		# Allocates the structure and initializes all elements to 0
 		self._thisptr = <t_density *> calloc(1, sizeof(t_density))
 
-		self._thisptr.type = type
+		self._thisptr.type = <density_type> type
 		self._thisptr.start = start
 		self._thisptr.end = end
 		self._thisptr.ramp = np.array(ramp, dtype=np.float32)
@@ -93,6 +93,21 @@ cdef class Density:
 	def ramp(self,value):
 		self._thisptr.ramp = value
 
+cdef class SpeciesDiag:
+	charge	   = CHARGE
+	pha	       = PHA
+	particles  = PARTICLES
+	x1		   = X1
+	u1		   = U1
+	u2		   = U2
+	u3		   = U3
+
+cdef class SpeciesBoundary:
+	none     = PART_BC_NONE
+	periodic = PART_BC_PERIODIC
+	open     = PART_BC_OPEN
+
+
 cdef class Species:
 	"""Extension type to wrap t_species objects"""
 
@@ -100,20 +115,6 @@ cdef class Species:
 	cdef t_species* _thisptr
 	cdef Density _density
 	cdef str _name
-
-	# Diagnostic types
-	charge	= CHARGE
-	pha	   = PHA
-	particles = PARTICLES
-	x1		= X1
-	u1		= U1
-	u2		= U2
-	u3		= U3
-
-	# Boundary condition types
-	bc_none     = PART_BC_NONE
-	bc_periodic = PART_BC_PERIODIC
-	bc_open     = PART_BC_OPEN
 
 	def __cinit__( self, str name, const float m_q, const int ppc, *,
 				  list ufl = [0.,0.,0.], list uth = [0.,0.,0.], Density density = None):
@@ -136,7 +137,7 @@ cdef class Species:
 			self._this.ufl, self._this.uth,
 			nx, box, dt, self._density._thisptr )
 
-	def report( self, type, *, pha_nx = 0, pha_range = 0 ):
+	def report( self, int type, *, pha_nx = 0, pha_range = 0 ):
 		cdef int _nx[2]
 		cdef float _range[2][2]
 
@@ -147,6 +148,15 @@ cdef class Species:
 			_nx = np.array( pha_nx, dtype = np.int32)
 			_range = np.array( pha_range, dtype = np.float32)
 			spec_report( self._thisptr, type, _nx, _range )
+
+	@property
+	def dx(self):
+		return self._thisptr.dx
+
+	@property
+	def particles(self):
+		cdef t_part[::1] buf = <t_part[:self._thisptr.np]>self._thisptr.part
+		return np.asarray( buf, dtype = [('ix','>i4'),('x','>f4'),('ux','>f4'),('uy','>f4'),('uz','>f4')] )
 
 
 def phasespace( int a, int b ):
@@ -181,6 +191,18 @@ cdef class EMF:
 	@bc_type.setter
 	def bc_type( self, value ):
 		self._thisptr.bc_type = value
+
+	@property
+	def nx(self):
+		return self._thisptr.nx
+
+	@property
+	def dx(self):
+		return self._thisptr.dx
+
+	@property
+	def box(self):
+		return self._thisptr.box
 
 	@property
 	def E( self ):
@@ -406,6 +428,9 @@ cdef class Simulation:
 
 	def add_laser(self, Laser laser):
 		sim_add_laser( self._thisptr, laser._thisptr )
+
+	def iter( self ):
+		sim_iter( self._thisptr )
 
 	def run( self, float tmax ):
 
