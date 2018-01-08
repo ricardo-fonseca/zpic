@@ -27,15 +27,8 @@ print( "initializing electrons ")
 
 electrons = em1d.Species( "electrons", -1.0, 128, density = density )
 
-# Initialize simulation data
-print( "initializing sim ")
-sim = em1d.Simulation( nx, box, dt, tmax, electrons )
-
-# Set moving window
-sim.set_moving_window()
-
 # Diagnostics
-def report( sim ):
+def rep( sim ):
     if ( sim.n % ndump == 0 ):
 
         # Charge density
@@ -44,5 +37,12 @@ def report( sim ):
         # raw particle data
         electrons.report( em1d.Species.particles )
 
+# Initialize simulation data
+print( "initializing sim ")
+sim = em1d.Simulation( nx, box, dt, electrons, report = rep )
+
+# Set moving window
+sim.set_moving_window()
+
 # Run simulation
-sim.run(report)
+sim.run( tmax )

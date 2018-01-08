@@ -327,12 +327,16 @@ cdef class Simulation:
 	cdef Current current
 	cdef list species
 
-	def __cinit__( self, int nx, float box, float dt, float tmax, species ):
+	cdef object report
+
+	def __cinit__( self, int nx, float box, float dt, species, *,
+	               report = None ):
 
 		# Allocate the simulation object
 		self._thisptr = <t_simulation *> calloc(1, sizeof(t_simulation))
 
 		# Initialize the random number generator
+		# These are the value set when launching a new C simulation
 		set_rand_seed( 12345, 67890 )
 
 		# Initialize particle species data
@@ -360,8 +364,11 @@ cdef class Simulation:
 			n_species = 0
 			species_ = NULL
 
+		# Diagnostics
+		self.report = report
+
 		# Initialize simulation
-		sim_new( self._thisptr, nx, box, dt, tmax, 0, species_, n_species )
+		sim_new( self._thisptr, nx, box, dt, 0.0, 0, species_, n_species )
 
 		self.n = 0
 		self.t = 0.0
@@ -385,18 +392,33 @@ cdef class Simulation:
 	def add_laser(self, Laser laser):
 		sim_add_laser( self._thisptr, laser._thisptr )
 
-	def run( self, report ):
+	def run( self, float tmax ):
 
-		print("Starting simulation...")
+		if ( tmax < self.t ):
+			print("Simulation is already at t = {:g}".format(self.t))
+			return
 
-		while self.t <= self._thisptr.tmax:
-			print('n = {:d}, t = {:g}'.format(self.n,self.t), end = '\r')
-			report( self )
-			sim_iter( self._thisptr )
-			self.n = self.n+1
-			self.t = self.n * self._thisptr.dt
+		print("Running simulation up to t = {:g} ...".format(tmax))
 
-		print("\nSimulation completed.")
+		if ( self.report ):
+
+			# Run simulation with diagnostics
+			while self.t <= tmax:
+				print('n = {:d}, t = {:g}'.format(self.n,self.t), end = '\r')
+				self.report( self )
+				sim_iter( self._thisptr )
+				self.n = self.n+1
+				self.t = self.n * self._thisptr.dt
+		else:
+			# Run simulation without diagnostics
+			while self.t <= tmax:
+				print('n = {:d}, t = {:g}'.format(self.n,self.t), end = '\r')
+				sim_iter( self._thisptr )
+				self.n = self.n+1
+				self.t = self.n * self._thisptr.dt
+
+		print('n = {:d}, t = {:g}'.format(self.n,self.t), end = '\r')
+		print("\nDone.")
 
 	@property
 	def emf(self):
@@ -413,6 +435,14 @@ cdef class Simulation:
 	@property
 	def t(self):
 		return self.t
+
+	@property
+	def report(self):
+		return self.report
+
+	@report.setter
+	def report( self, f ):
+		self.report = f
 
 
 

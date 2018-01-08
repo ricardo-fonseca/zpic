@@ -17,13 +17,13 @@ right = em1d.Species( "right", -1.0, ppc, ufl = ufl, uth = uth )
 ufl[0] = -ufl[0]
 left  = em1d.Species( "left", -1.0, ppc, ufl = ufl, uth = uth )
 
-sim = em1d.Simulation( nx, box, dt, tmax, [right,left])
-
-def report( sim ):
+def rep( sim ):
     if ( sim.n % ndump == 0 ):
         right.report(em1d.Species.particles)
         left.report(em1d.Species.particles)
         sim.emf.report(em1d.EMF.efld,0)
 
-sim.run(report)
+sim = em1d.Simulation( nx, box, dt, [right,left], report = rep )
+
+sim.run(tmax)
 
