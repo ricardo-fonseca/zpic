@@ -182,6 +182,16 @@ cdef class EMF:
 	def bc_type( self, value ):
 		self._thisptr.bc_type = value
 
+	@property
+	def E( self ):
+		cdef float *buf = <float *> self._thisptr.E
+		return np.asarray( <float [:self._thisptr.nx,:3]> buf, dtype = np.float32 )
+
+	@property
+	def B( self ):
+		cdef float *buf = <float *> self._thisptr.B
+		return np.asarray( <float [:self._thisptr.nx,:3]> buf, dtype = np.float32 )
+
 cdef class Laser:
 	"""Extension type to wrap t_emf_laser objects"""
 
@@ -279,6 +289,11 @@ cdef class Current:
 
 	def report( self, char jc ):
 		current_report( self._thisptr, jc )
+
+	@property
+	def J( self ):
+		cdef float *buf = <float *> self._thisptr.J
+		return np.asarray( <float [:self._thisptr.nx,:3]> buf, dtype = np.float32 )
 
 
 cdef class Smooth:
