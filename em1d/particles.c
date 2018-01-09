@@ -1046,60 +1046,42 @@ const char * spec_pha_axis_units( int quant ) {
 	return("");
 }
 
-void spec_rep_pha( const t_species *spec, const int rep_type,
-
-			  const int pha_nx[], const float pha_range[][2] )
+void spec_deposit_pha( const t_species *spec, const int rep_type,
+			  const int pha_nx[], const float pha_range[][2], float* restrict buf )
 {
 	const int BUF_SIZE = 1024;
 	float pha_x1[BUF_SIZE], pha_x2[BUF_SIZE];
 
-	int i, nrow;
 
-	int quant1, quant2;
-	float rdx1, rdx2, x1min, x2min;
+	const int nrow = pha_nx[0];
 
-	char const * const pha_ax_name[] = {"x1","x2","x3","u1","u2","u3"};
-	char pha_name[64];
+	const int quant1 = rep_type & 0x000F;
+	const int quant2 = (rep_type & 0x00F0)>>4;
 
-	// Allocate phasespace buffer
-	float* restrict buf = malloc( pha_nx[0] * pha_nx[1] * sizeof( float ));
-	memset( buf, 0, pha_nx[0] * pha_nx[1] * sizeof( float ));
+	const float x1min = pha_range[0][0];
+	const float x2min = pha_range[1][0];
 
-	nrow = pha_nx[0];
+	const float rdx1 = pha_nx[0] / ( pha_range[0][1] - pha_range[0][0] );
+	const float rdx2 = pha_nx[1] / ( pha_range[1][1] - pha_range[1][0] );
 
-	quant1 = rep_type & 0x000F;
-	quant2 = (rep_type & 0x00F0)>>4;
-
-    const char * pha_ax1_units = spec_pha_axis_units(quant1);
-    const char * pha_ax2_units = spec_pha_axis_units(quant2);
-
-	x1min = pha_range[0][0];
-	x2min = pha_range[1][0];
-
-	rdx1 = pha_nx[0] / ( pha_range[0][1] - pha_range[0][0] );
-	rdx2 = pha_nx[1] / ( pha_range[1][1] - pha_range[1][0] );
-
-	for (i = 0; i<spec->np; i+=BUF_SIZE) {
-		int k;
+	for ( int i = 0; i<spec->np; i+=BUF_SIZE ) {
 		int np = ( i + BUF_SIZE > spec->np )? spec->np - i : BUF_SIZE;
 
 		spec_pha_axis( spec, i, np, quant1, pha_x1 );
 	    spec_pha_axis( spec, i, np, quant2, pha_x2 );
 
-		for (k = 0; k < np; k++) {
-			float nx1, nx2, w1, w2;
-			int i1, i2, idx;
+		for ( int k = 0; k < np; k++ ) {
 
-			nx1 = ( pha_x1[k] - x1min ) * rdx1;
-			nx2 = ( pha_x2[k] - x2min ) * rdx2;
+			float nx1 = ( pha_x1[k] - x1min ) * rdx1;
+			float nx2 = ( pha_x2[k] - x2min ) * rdx2;
 
-			i1 = (int)(nx1 + 0.5f);
-			i2 = (int)(nx2 + 0.5f);
+			int i1 = (int)(nx1 + 0.5f);
+			int i2 = (int)(nx2 + 0.5f);
 
-			w1 = nx1 - i1 + 0.5f;
-			w2 = nx2 - i2 + 0.5f;
+			float w1 = nx1 - i1 + 0.5f;
+			float w2 = nx2 - i2 + 0.5f;
 
-			idx = i1 + nrow*i2;
+			int idx = i1 + nrow*i2;
 
 			if ( i2 >= 0 && i2 < pha_nx[1] ) {
 
@@ -1127,8 +1109,29 @@ void spec_rep_pha( const t_species *spec, const int rep_type,
 		}
 
 	}
+}
+
+void spec_rep_pha( const t_species *spec, const int rep_type,
+			  const int pha_nx[], const float pha_range[][2] )
+{
+
+	char const * const pha_ax_name[] = {"x1","x2","x3","u1","u2","u3"};
+	char pha_name[64];
+
+	// Allocate phasespace buffer
+	float* restrict buf = malloc( pha_nx[0] * pha_nx[1] * sizeof( float ));
+	memset( buf, 0, pha_nx[0] * pha_nx[1] * sizeof( float ));
+
+	// Deposit the phasespace
+	spec_deposit_pha( spec, rep_type, pha_nx, pha_range, buf );
 
 	// save the data in hdf5 format
+	int quant1 = rep_type & 0x000F;
+	int quant2 = (rep_type & 0x00F0)>>4;
+
+    const char * pha_ax1_units = spec_pha_axis_units(quant1);
+    const char * pha_ax2_units = spec_pha_axis_units(quant2);
+
 	sprintf( pha_name, "%s%s", pha_ax_name[quant1-1], pha_ax_name[quant2-1] );
 
     t_zdf_grid_axis axis[2];

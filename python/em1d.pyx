@@ -158,6 +158,28 @@ cdef class Species:
 		cdef t_part[::1] buf = <t_part[:self._thisptr.np]>self._thisptr.part
 		return np.asarray( buf, dtype = [('ix','>i4'),('x','>f4'),('ux','>f4'),('uy','>f4'),('uz','>f4')] )
 
+	def charge(self):
+		charge = np.zeros( shape = self._thisptr.nx+1, dtype = np.float32 )
+		cdef float [::1] buf = charge
+		spec_deposit_charge( self._thisptr, &buf[0] )
+
+		# Throw away guard cell
+		return charge[ 0 : self._thisptr.nx ]
+
+	def phasespace( self, int type, pha_nx, pha_range ):
+		cdef int _nx[2]
+		cdef float _range[2][2]
+
+		_nx = np.array( pha_nx, dtype = np.int32)
+		_range = np.array( pha_range, dtype = np.float32)
+
+		pha = np.zeros( shape = (_nx[1],_nx[0]), dtype = np.float32 )
+		cdef float [:,:] buf = pha
+
+		spec_deposit_pha( self._thisptr, type, _nx, _range, &buf[0,0] )
+
+		return pha
+
 
 def phasespace( int a, int b ):
 	"""Returns the type of the requested phasespace"""
@@ -438,7 +460,7 @@ cdef class Simulation:
 			print("Simulation is already at t = {:g}".format(self.t))
 			return
 
-		print("Running simulation up to t = {:g} ...".format(tmax))
+		print("\nRunning simulation up to t = {:g} ...".format(tmax))
 
 		if ( self.report ):
 
@@ -475,6 +497,18 @@ cdef class Simulation:
 	@property
 	def t(self):
 		return self.t
+
+	@property
+	def dx(self):
+		return self.emf.dx
+
+	@property
+	def nx(self):
+		return self.emf.nx
+
+	@property
+	def box(self):
+		return self.emf.box
 
 	@property
 	def report(self):

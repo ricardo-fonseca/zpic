@@ -78,6 +78,11 @@ cdef extern from "../em1d/particles.h":
 	void spec_report( const t_species *spec, const int rep_type,
 				  const int pha_nx[], const float pha_range[][2] )
 
+	void spec_deposit_charge( const t_species* spec, float* charge )
+
+	void spec_deposit_pha( const t_species *spec, const int rep_type,
+			  const int pha_nx[], const float pha_range[][2], float* buf )
+
 
 #########################################################################################
 # EMF
