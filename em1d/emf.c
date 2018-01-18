@@ -25,41 +25,41 @@ double emf_time( void )
 }
 
 /*********************************************************************************************
- 
+
  Constructor / Destructor
- 
+
  *********************************************************************************************/
 
-
 void emf_new( t_emf *emf, int nx, t_fld box, const float dt )
-{   	
+{
+
 	// Number of guard cells for linear interpolation
-	int gc[2] = {1,2}; 
-	
+	int gc[2] = {1,2};
+
 	// Allocate global arrays
 	size_t size = (gc[0] + nx + gc[1]) * sizeof( t_vfld ) ;
-	
+
 	emf->E_buf = malloc( size );
 	emf->B_buf = malloc( size );
-	
+
 	assert( emf->E_buf && emf->B_buf );
-	
+
 	// zero fields
 	memset( emf->E_buf, 0, size );
 	memset( emf->B_buf, 0, size );
-	
+
 	// store nx and gc values
 	emf->nx = nx;
 	emf->gc[0] = gc[0];
 	emf->gc[1] = gc[1];
-	
+
     // store time step values
     emf -> dt = dt;
 
 	// Make E and B point to cell [0]
 	emf->E = emf->E_buf + gc[0];
 	emf->B = emf->B_buf + gc[0];
-	
+
 	// Set cell sizes and box limits
 	emf -> box = box;
 	emf -> dx = box / nx;
@@ -76,32 +76,35 @@ void emf_new( t_emf *emf, int nx, t_fld box, const float dt )
 
 	// Default to periodic boundary condtions
 	emf -> bc_type = EMF_BC_PERIODIC;
-	
+
 	emf -> mur_fld[0].x = emf -> mur_fld[0].y = emf -> mur_fld[0].z = 0;
 	emf -> mur_fld[1].x = emf -> mur_fld[1].y = emf -> mur_fld[1].z = 0;
 
 	emf -> mur_tmp[0].x = emf -> mur_tmp[0].y = emf -> mur_tmp[0].z = 0;
 	emf -> mur_tmp[1].x = emf -> mur_tmp[1].y = emf -> mur_tmp[1].z = 0;
 
-	
+	// Disable external fields by default
+	emf -> ext_fld.type = EMF_EXT_FLD_NONE;
+	emf -> E_part = emf->E;
+	emf -> B_part = emf->B;
+
 }
 
 void emf_delete( t_emf *emf )
 {
 	free( emf->E_buf );
 	free( emf->B_buf );
-	
+
 	emf->E_buf = NULL;
 	emf->B_buf = NULL;
-	
+
 }
 
 /*********************************************************************************************
- 
+
  Laser Pulses
- 
+
 *********************************************************************************************/
- 
 
 t_fld lon_env( const t_emf_laser* const laser, const t_fld z )
 {
@@ -157,32 +160,33 @@ void emf_add_laser( t_emf* const emf, t_emf_laser* laser )
 		fprintf(stderr, "Invalid laser FALL, must be > 0, aborting.\n" );
 		exit(-1);
 	}
-	
-	// Launch laser	
+
+	// Launch laser
+
 	t_fld z, z_2;
 	t_fld amp, lenv, lenv_2, k;
 	t_fld dx;
 	t_fld cos_pol, sin_pol;
-	
+
 	t_vfld* restrict E = emf -> E;
 	t_vfld* restrict B = emf -> B;
 
 	dx = emf -> dx;
 
 	amp = laser -> omega0 * laser -> a0;
-	
+
 	cos_pol = cos( laser -> polarization );
 	sin_pol = sin( laser -> polarization );
-		
+
 	k = laser -> omega0;
 
 	for (int i = 0; i < emf->nx; i++) {
 		z = i * dx;
 		z_2 = z + dx/2;
-		
+
 		lenv   = amp * lon_env( laser, z );
 		lenv_2 = amp * lon_env( laser, z_2 );
-		
+
 		// E[i + j*nrow].x += 0.0
 		E[i].y += +lenv * cos( k * z ) * cos_pol;
 		E[i].z += +lenv * cos( k * z ) * sin_pol;
@@ -190,26 +194,25 @@ void emf_add_laser( t_emf* const emf, t_emf_laser* laser )
 		// E[i + j*nrow].x += 0.0
 		B[i].y += -lenv_2 * cos( k * z_2 ) * sin_pol;
 		B[i].z += +lenv_2 * cos( k * z_2 ) * cos_pol;
-			
+
 	}
-    
+
 	// Set guard cell values for periodic boundaries
 	if ( emf -> bc_type == EMF_BC_PERIODIC ) emf_update_gc( emf );
-	
+
 }
 
 /*********************************************************************************************
- 
- Diagnostics
- 
- *********************************************************************************************/
 
+ Diagnostics
+
+ *********************************************************************************************/
 
 void emf_report( const t_emf *emf, const char field, const char fc )
 {
 	int i;
 	char vfname[3];
-	
+
 	// Choose field to save
 	t_vfld * restrict f;
 	switch (field) {
@@ -225,7 +228,7 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 			printf("Invalid field type selected, returning\n");
 			return;
 	}
-	
+
 	// Pack the information
 	float buf[ emf->nx ];
 	switch (fc) {
@@ -273,15 +276,15 @@ void emf_report( const t_emf *emf, const char field, const char fc )
     	.time_units = "1/\\omega_p"
     };
 
-	zdf_save_grid( buf, &info, &iter, "EMF" );	
-		
+	zdf_save_grid( buf, &info, &iter, "EMF" );
+
 }
 
 /*********************************************************************************************
- 
+
  Absorbing boundaries
  1st order MUR absorbing boundary conditions
- 
+
  *********************************************************************************************/
 
 void mur_abc( t_emf *emf ) {
@@ -335,37 +338,38 @@ void yee_b( t_emf *emf, const float dt )
 	// Canonical implementation
 	for (i=-1; i<=emf->nx; i++) {
 		// B[ i ].x += 0;  // Bx does not evolve in 1D
-		B[ i ].y += (   dt_dx * ( E[i+1].z - E[ i ].z) );  
-		B[ i ].z += ( - dt_dx * ( E[i+1].y - E[ i ].y) );  
+		B[ i ].y += (   dt_dx * ( E[i+1].z - E[ i ].z) );
+
+		B[ i ].z += ( - dt_dx * ( E[i+1].y - E[ i ].y) );
+
 	}
 }
-
 
 void yee_e( t_emf *emf, const t_current *current, const float dt )
 {
 	// this must not be unsigned because we access negative cell indexes
 	int i;
 	t_fld dt_dx;
-	
+
 	dt_dx = dt / emf->dx;
 
     t_vfld* const restrict E = emf -> E;
     const t_vfld* const restrict B = emf -> B;
     const t_vfld* const restrict J = current -> J;
     const int nx = emf->nx;
-	
-	// Canonical implementation	
-	for (i=0; i<=nx+1; i++) {
-		E[i].x += (                                - dt * J[i].x );  
-		
-		E[i].y += ( - dt_dx * ( B[i].z - B[i-1].z) - dt * J[i].y );  
 
-		E[i].z += ( + dt_dx * ( B[i].y - B[i-1].y) - dt * J[i].z );  
- 
+	// Canonical implementation
+
+	for (i=0; i<=nx+1; i++) {
+		E[i].x += (                                - dt * J[i].x );
+
+		E[i].y += ( - dt_dx * ( B[i].z - B[i-1].z) - dt * J[i].y );
+
+		E[i].z += ( + dt_dx * ( B[i].y - B[i-1].y) - dt * J[i].z );
+
 	}
 
 }
-
 
 // This code operates with periodic boundaries
 void emf_update_gc( t_emf *emf )
@@ -378,7 +382,7 @@ void emf_update_gc( t_emf *emf )
 
 	if ( emf -> bc_type == EMF_BC_PERIODIC ) {
 		// x
-			
+
 		// lower
 		for (i=-emf->gc[0]; i<0; i++) {
 			E[ i ].x = E[ nx + i ].x;
@@ -395,13 +399,13 @@ void emf_update_gc( t_emf *emf )
 			E[ nx + i ].x = E[ i ].x;
 			E[ nx + i ].y = E[ i ].y;
 			E[ nx + i ].z = E[ i ].z;
-			
+
 			B[ nx + i ].x = B[ i ].x;
 			B[ nx + i ].y = B[ i ].y;
 			B[ nx + i ].z = B[ i ].z;
 		}
-	} 
-	
+	}
+
 }
 
 void emf_move_window( t_emf *emf ){
@@ -415,7 +419,7 @@ void emf_move_window( t_emf *emf ){
 	    const t_vfld zero_fld = {0.,0.,0.};
 
 		// Shift data left 1 cell and zero rightmost cells
-			
+
 		for (i = -emf->gc[0]; i < emf->nx+emf->gc[1] - 1; i++) {
 			E[ i ] = E[ i + 1 ];
 			B[ i ] = B[ i + 1 ];
@@ -428,36 +432,38 @@ void emf_move_window( t_emf *emf ){
 
 		// Increase moving window counter
 		emf -> n_move++;
-        
+
 	}
 
 }
-
 
 void emf_advance( t_emf *emf, const t_current *current )
 {
 	uint64_t t0 = timer_ticks();
 	const float dt = emf->dt;
-	
+
 	// Advance EM field using Yee algorithm modified for having E and B time centered
 	yee_b( emf, dt/2.0f );
-	
+
 	yee_e( emf, current, dt );
 
     // Process open boundaries if needed
     if ( emf->bc_type == EMF_BC_OPEN ) mur_abc( emf );
 
 	yee_b( emf, dt/2.0f );
-	
+
 	// Update guard cells
 	emf_update_gc( emf );
+
+	// Update contribuition of external fields if necessary
+	if ( emf -> ext_fld.type > EMF_EXT_FLD_NONE ) emf_update_part_fld( emf );
 
 	// Advance internal iteration number
     emf -> iter += 1;
 
     // Move simulation window if needed
     if ( emf -> moving_window ) emf_move_window( emf );
- 	
+
     // Update timing information
 	_emf_time += timer_interval_seconds(t0, timer_ticks());
 }
@@ -482,4 +488,76 @@ void emf_get_energy( const t_emf *emf, double energy[] )
 	for( i = 0; i<6; i++) energy[i] *= 0.5 * emf -> dx;
 
 }
+
+/*********************************************************************************************
+
+External Fields
+
+ *********************************************************************************************/
+
+void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
+
+	emf -> ext_fld.type = ext_fld -> type;
+
+	if ( emf -> ext_fld.type == EMF_EXT_FLD_NONE ) {
+		// Particle fields just point to the self-consistent fields
+		emf -> E_part = emf -> E;
+		emf -> B_part = emf -> B;
+
+		emf -> ext_fld.E_part_buf = emf -> ext_fld.B_part_buf = NULL;
+	} else {
+	    switch( emf -> ext_fld.type ) {
+	        case( EMF_EXT_FLD_UNIFORM ):
+	        	emf -> ext_fld.E0 = ext_fld->E0;
+	        	emf -> ext_fld.B0 = ext_fld->B0;
+	        	break;
+
+	    	default:
+	    		fprintf(stderr, "Invalid external field type, aborting.\n" );
+				exit(-1);
+	    }
+
+		// Allocate space for additional field grids
+		size_t size = (emf->gc[0] + emf->nx + emf->gc[1]) * sizeof( t_vfld ) ;
+		emf -> ext_fld.E_part_buf = malloc( size );
+		emf -> ext_fld.B_part_buf = malloc( size );
+
+		emf -> E_part = emf->ext_fld.E_part_buf + emf->gc[0];
+	    emf -> B_part = emf->ext_fld.B_part_buf + emf->gc[0];
+
+	    // Initialize values on E/B_part grids
+	    emf_update_part_fld( emf );
+
+	}
+}
+
+/**
+ * Updates field values seen by particles with externally imposed fields
+ * @param emf EMF object holding field data
+ */
+void emf_update_part_fld( t_emf* const emf ) {
+
+    // Currently only EMF_EXT_FLD_UNIFORM is supported
+
+    t_vfld* const restrict E_part = emf -> E_part;
+    t_vfld* const restrict B_part = emf -> B_part;
+
+	// Add external field values to self consistent fields
+	for( int i = 0; i < emf->gc[0] + emf->nx + emf->gc[1]; i++ ){
+		t_vfld e = emf -> E_buf[i];
+		t_vfld b = emf -> B_buf[i];
+
+		e.x += emf -> ext_fld.E0.x;
+		e.y += emf -> ext_fld.E0.y;
+		e.z += emf -> ext_fld.E0.z;
+
+		b.x += emf -> ext_fld.B0.x;
+		b.y += emf -> ext_fld.B0.y;
+		b.z += emf -> ext_fld.B0.z;
+
+		E_part[i] = e;
+		B_part[i] = b;
+	}
+}
+
 

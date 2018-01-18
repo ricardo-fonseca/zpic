@@ -41,5 +41,6 @@ void sim_delete( t_simulation* sim );
 
 void sim_set_moving_window( t_simulation* sim );
 void sim_set_smooth( t_simulation* sim,  t_smooth* smooth );
+void sim_set_ext_fld( t_simulation* sim, t_emf_ext_fld* ext_fld );
 
 #endif

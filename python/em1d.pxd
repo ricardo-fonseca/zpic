@@ -88,6 +88,16 @@ cdef extern from "../em1d/particles.h":
 # EMF
 #
 cdef extern from "../em1d/emf.h":
+	cdef enum emf_ext_fld:
+		EMF_EXT_FLD_NONE, EMF_EXT_FLD_UNIFORM
+
+	ctypedef struct t_emf_ext_fld:
+		t_vfld E0
+		t_vfld B0
+		int type
+		t_vfld *E_part_buf
+		t_vfld *B_part_buf
+
 	cdef enum emf_diag:
 		EFLD, BFLD
 
@@ -173,6 +183,7 @@ cdef extern from "../em1d/simulation.h":
 	void sim_add_laser( t_simulation* sim,  t_emf_laser* laser )
 	void sim_set_moving_window( t_simulation* sim )
 	void sim_set_smooth( t_simulation* sim,  t_smooth* smooth )
+	void sim_set_ext_fld( t_simulation* sim, t_emf_ext_fld* ext_fld )
 
 	void sim_iter( t_simulation* sim )
 	void sim_report_energy( t_simulation* sim )

@@ -71,6 +71,11 @@ void sim_add_laser( t_simulation* sim,  t_emf_laser* laser ){
 	emf_add_laser( &sim->emf, laser );
 }
 
+void sim_set_ext_fld( t_simulation* sim, t_emf_ext_fld* ext_fld ){
+	emf_set_ext_fld( &sim->emf, ext_fld );
+}
+
+
 void sim_set_smooth( t_simulation* sim,  t_smooth* smooth ){
 
     if ( (smooth -> xtype != NONE) && (smooth -> xlevel <= 0) ) {

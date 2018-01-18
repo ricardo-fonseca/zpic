@@ -31,6 +31,7 @@ along with the ZPIC Educational code suite. If not, see <http://www.gnu.org/lice
 
 // Include Simulation parameters here
 #include "input/twostream.c"
+//#include "input/magnetized.c"
 //#include "input/lwfa.c"
 //#include "input/beam.c"
 //#include "input/absorbing.c"
@@ -43,7 +44,7 @@ int main (int argc, const char * argv[]) {
 	sim_init( &sim );
 
     // Run simulation
-	int n, i;
+	int n;
 	float t;
 
 	printf("Starting simulation ...\n\n");

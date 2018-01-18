@@ -200,6 +200,10 @@ cdef class EMF:
 	bc_periodic = EMF_BC_PERIODIC
 	bc_open     = EMF_BC_OPEN
 
+	# External field types
+	ext_fld_none    = EMF_EXT_FLD_NONE
+	ext_fld_uniform = EMF_EXT_FLD_UNIFORM
+
 	cdef associate( self, t_emf* ptr ):
 		self._thisptr = ptr
 
@@ -451,8 +455,38 @@ cdef class Simulation:
 	def add_laser(self, Laser laser):
 		sim_add_laser( self._thisptr, laser._thisptr )
 
+	def set_ext_fld( self, int type, *, E0 = None, B0 = None ):
+		cdef t_emf_ext_fld ext_fld;
+		cdef float buf[3];
+
+		ext_fld.type = type
+
+		if ( E0 ):
+			buf = np.array( E0, dtype=np.float32)
+			ext_fld.E0.x = buf[0]
+			ext_fld.E0.y = buf[1]
+			ext_fld.E0.z = buf[2]
+		else:
+			ext_fld.E0.x = 0
+			ext_fld.E0.y = 0
+			ext_fld.E0.z = 0
+
+		if ( B0 ):
+			buf = np.array( B0, dtype=np.float32)
+			ext_fld.B0.x = buf[0]
+			ext_fld.B0.y = buf[1]
+			ext_fld.B0.z = buf[2]
+		else:
+			ext_fld.B0.x = 0
+			ext_fld.B0.y = 0
+			ext_fld.B0.z = 0
+
+		sim_set_ext_fld( self._thisptr, &ext_fld )
+
 	def iter( self ):
 		sim_iter( self._thisptr )
+		self.n = self.n+1
+		self.t = self.n * self._thisptr.dt
 
 	def run( self, float tmax ):
 
