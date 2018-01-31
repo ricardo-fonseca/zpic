@@ -672,7 +672,6 @@ void spec_sort( t_species* spec )
  *********************************************************************************************/
 
 void interpolate_fld( const t_vfld* restrict const E, const t_vfld* restrict const B,
-
 	          const t_part* restrict const part, t_vfld* restrict const Ep, t_vfld* restrict const Bp )
 {
 	int i, ih;
@@ -738,7 +737,7 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 		uz = spec -> part[i].uz;
 
 		// interpolate fields
-		interpolate_fld( emf -> E_part, emf -> E_part, &spec -> part[i], &Ep, &Bp );
+		interpolate_fld( emf -> E_part, emf -> B_part, &spec -> part[i], &Ep, &Bp );
 		// Ep.x = Ep.y = Ep.z = Bp.x = Bp.y = Bp.z = 0;
 
 		// advance u using Boris scheme
