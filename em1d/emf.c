@@ -537,10 +537,11 @@ void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
  */
 void emf_update_part_fld( t_emf* const emf ) {
 
-    // Currently only EMF_EXT_FLD_UNIFORM is supported
+    // Restrict pointers to E_part and B_part
+    t_vfld* const restrict E_part = emf->ext_fld.E_part_buf;
+    t_vfld* const restrict B_part = emf->ext_fld.B_part_buf;
 
-    t_vfld* const restrict E_part = emf -> E_part;
-    t_vfld* const restrict B_part = emf -> B_part;
+    // Currently only EMF_EXT_FLD_UNIFORM is supported
 
 	// Add external field values to self consistent fields
 	for( int i = 0; i < emf->gc[0] + emf->nx + emf->gc[1]; i++ ){

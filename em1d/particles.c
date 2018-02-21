@@ -22,18 +22,39 @@
 #include "timer.h"
 
 static double _spec_time = 0.0;
+static double _spec_npush = 0.0;
 
 void spec_sort( t_species *spec );
 
-/*********************************************************************************************
- Initialization
- *********************************************************************************************/
 
+/**
+ * Returns the total time spent pushing particles (includes boundaries and moving window)
+ * @return  Total time in seconds
+ */
 double spec_time( void )
 {
 	return _spec_time;
 }
 
+/**
+ * Returns the performance achieved by the code (push time)
+ * @return  Performance in seconds per particle
+ */
+double spec_perf( void )
+{
+	return (_spec_npush > 0 )? _spec_time / _spec_npush: 0.0;
+}
+
+/*********************************************************************************************
+ Initialization
+ *********************************************************************************************/
+
+/**
+ * Sets the momentum of the range of particles supplieds using a thermal distribution
+ * @param spec  Particle species
+ * @param start Index of the first particle to set the momentum
+ * @param end   Index of the last particle to set the momentum
+ */
 void spec_set_u( t_species* spec, const int start, const int end )
 {
 	int i;
@@ -473,11 +494,8 @@ void spec_delete( t_species* spec )
  *********************************************************************************************/
 
 void dep_current_esk( int ix0, int di,
-
 						float x0, float x1,
-
 						float qnx, float qvy, float qvz,
-
 						t_current *current )
 {
 
@@ -822,6 +840,7 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 
 	// Advance internal iteration number
     spec -> iter += 1;
+    _spec_npush += spec -> np;
 
     // Check for particles leaving the box
 	if ( spec -> moving_window ){
@@ -849,9 +868,6 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 
 	// Sort species at every 16 time steps
 	if ( ! (spec -> iter % 16) ) spec_sort( spec );
-
-    // Move simulation window if needed
-    if ( spec -> moving_window )
 
 	_spec_time += timer_interval_seconds( t0, timer_ticks() );
 }
