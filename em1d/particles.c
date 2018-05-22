@@ -154,9 +154,8 @@ int spec_np_inj( t_species* spec, const int range[] )
 					                           spec -> density.custom_data);
 			}
 
-			// Get corresponding number of simulation particles
-			// The +0.5 is a protection against rounding errors
-			np_inj = q * spec -> ppc + 0.5;
+			// Get corresponding number of simulation particles, rounding up
+			np_inj = ceil(q * spec -> ppc);
 		}
 		break;
 
