@@ -33,6 +33,9 @@ typedef struct {
 void sim_init( t_simulation* sim );
 void sim_report( t_simulation* sim );
 
+void sim_iter( t_simulation* sim );
+void sim_report_energy( t_simulation* sim );
+
 void sim_add_neutral_bkg( t_simulation* sim );
 
 void sim_new( t_simulation* sim, int nx, float box, float dt, float tmax, int ndump, t_species* species, int n_species );

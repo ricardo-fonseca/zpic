@@ -50,6 +50,6 @@ void field_advance( t_field *field, const t_charge *charge );
 
 void field_update_gc( t_field *field );
 
-double field_time();
+double field_time( void );
 
 #endif

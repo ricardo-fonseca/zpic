@@ -33,7 +33,8 @@ typedef struct {
 	
 	float ramp[2];     // Initial and final density of the ramp
 
-	float (*custom)(float); // Pointer to custom density function
+	float (*custom)(float, void*); // Pointer to custom density function
+	void *custom_data;
 
 	unsigned long total_np_inj;	// Total number of particles already injected
 	double custom_q_inj;		// Total charge injected (density integral) in custom profile
@@ -90,9 +91,7 @@ void spec_delete( t_species* spec );
 
 void spec_advance( t_species* spec, t_field* emf, t_charge* charge );
 
-void spec_deposit_charge( const t_species* spec, float* charge );
-
-double spec_time();
+double spec_time( void );
 
 /*********************************************************************************************
  
@@ -107,6 +106,11 @@ double spec_time();
 #define V1     		0x0004
 
 #define PHASESPACE(a,b) ((a) + (b)*16 + PHA)
+
+void spec_deposit_pha( const t_species *spec, const int rep_type,
+			  const int pha_nx[], const float pha_range[][2], float* buf );
+
+void spec_deposit_charge( const t_species* spec, float* charge );
 
 void spec_report( const t_species *spec, const int rep_type, 
 				  const int pha_nx[], const float pha_range[][2] );

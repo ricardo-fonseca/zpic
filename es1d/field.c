@@ -126,11 +126,10 @@ void update_fE( t_field *field, const t_charge *charge )
     float complex * const restrict fEx = field -> fE.s;
 
     const float dk = fft_dk( field->E.nx, field->dx );
-	unsigned int i;
 
 	fEx[0] = 0;
 
-    for( i = 1; i < field -> fE.nx; i++) {
+    for( int i = 1; i < field -> fE.nx; i++) {
     	float kx = i * dk;
     	fEx[i] = - I * frho[i] / kx;
     }
