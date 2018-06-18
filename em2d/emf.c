@@ -19,7 +19,7 @@
 
 static double _emf_time = 0.0;
 
-double emf_time()
+double emf_time( void )
 {
 	return _emf_time;
 }
@@ -42,10 +42,10 @@ void emf_new( t_emf *emf, int nx[], t_fld box[], const float dt )
 	// Allocate global arrays
 	size_t size;
 	
-	size = (gc[0][0] + nx[0] + gc[0][1]) * (gc[1][0] + nx[1] + gc[1][1]);
+	size = (gc[0][0] + nx[0] + gc[0][1]) * (gc[1][0] + nx[1] + gc[1][1]) * sizeof( t_vfld );
 	
-	emf->E_buf = malloc( size * sizeof( t_vfld ) );
-	emf->B_buf = malloc( size * sizeof( t_vfld ) );
+	emf->E_buf = malloc( size );
+	emf->B_buf = malloc( size );
 	
 	assert( emf->E_buf && emf->B_buf );
 	
@@ -84,6 +84,9 @@ void emf_new( t_emf *emf, int nx[], t_fld box[], const float dt )
 	emf -> moving_window = 0;
 	emf -> n_move = 0;
 	
+
+	printf(" emf -> nx = %d, %d \n", emf->nx[0], emf->nx[1]);
+	printf(" emf -> dx = %f, %f \n", emf->dx[0], emf->dx[1]);
 }
 
 void emf_delete( t_emf *emf )
@@ -289,7 +292,10 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 {
 	int i, j;
 	char vfname[3];
-	
+
+    printf("In emf_report, field = %d, fc = %d \n", field, fc);
+    printf("nrow = %d\n", emf -> nrow);
+
 	// Choose field to save
 	t_vfld * restrict f;
 	switch (field) {
@@ -305,7 +311,7 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 			printf("Invalid field type selected, returning\n");
 			return;
 	}
-	
+
 	// Pack the information
 	float * restrict const buf = malloc( emf->nx[0]*emf->nx[1]*sizeof(float) );
     float * restrict p = buf;
@@ -340,6 +346,9 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 			}
 			vfname[1] = '3';
 			break;
+		default:
+			printf("Invalid field component selected, returning\n");
+			return;
 	}
 	vfname[2] = 0;
 
@@ -374,11 +383,11 @@ void emf_report( const t_emf *emf, const char field, const char fc )
     	.time_units = "1/\\omega_p"
     };
 
-	zdf_save_grid( buf, &info, &iter, "EMF" );	
-	
+	zdf_save_grid( buf, &info, &iter, "EMF" );
+
 	// free local data
 	free( buf );
-	
+
 }
 
 
@@ -573,4 +582,28 @@ void emf_advance( t_emf *emf, const t_current *current )
 	
     // Update timing information
 	_emf_time += timer_interval_seconds(t0, timer_ticks());
+}
+
+void emf_get_energy( const t_emf *emf, double energy[] )
+{
+	int i,j;
+    t_vfld* const restrict E = emf -> E;
+    t_vfld* const restrict B = emf -> B;
+    const int nrow = emf -> nrow;
+
+	for( i = 0; i<6; i++) energy[i] = 0;
+
+	for( j = 0; i < emf -> nx[1]; j ++ ) {
+		for( i = 0; i < emf -> nx[0]; i ++ ) {
+			energy[0] += E[i + j*nrow].x * E[i + j*nrow].x;
+			energy[1] += E[i + j*nrow].y * E[i + j*nrow].y;
+			energy[2] += E[i + j*nrow].z * E[i + j*nrow].z;
+			energy[3] += B[i + j*nrow].x * B[i + j*nrow].x;
+			energy[4] += B[i + j*nrow].y * B[i + j*nrow].y;
+			energy[5] += B[i + j*nrow].z * B[i + j*nrow].z;
+		}
+	}
+
+	for( i = 0; i<6; i++) energy[i] *= 0.5 * emf -> dx[0] * emf -> dx[1];
+
 }
