@@ -64,7 +64,8 @@ typedef struct {
 	float axis;     // Position of optical axis, in simulation units
 	
 } t_emf_laser;
-	
+
+void emf_get_energy( const t_emf *emf, double energy[] );
 
 void emf_new( t_emf *emf, int nx[], t_fld box[], const float dt );
 void emf_delete( t_emf *emf );
@@ -78,7 +79,7 @@ void emf_move_window( t_emf *emf );
 
 void emf_update_gc( t_emf *emf );
 
-double emf_time();
+double emf_time( void );
 
 void emf_set_moving_window( t_emf* emf );
 

@@ -14,6 +14,19 @@ int report( int n, int ndump )
 	}
 }
 
+void sim_iter( t_simulation* sim ) {
+	// Advance particles and deposit current
+	current_zero( &sim -> current );
+	for (int i = 0; i<sim -> n_species; i++)
+		spec_advance(&sim -> species[i], &sim -> emf, &sim -> current );
+
+	// Update current boundary conditions and advance iteration
+	current_update( &sim -> current );
+
+	// Advance EM fields
+	emf_advance( &sim -> emf, &sim -> current );
+}
+
 void sim_timings( t_simulation* sim, uint64_t t0, uint64_t t1 ){
 
 	int npart = 0;
@@ -26,10 +39,12 @@ void sim_timings( t_simulation* sim, uint64_t t0, uint64_t t1 ){
 	fprintf(stderr, "Time for emf   advance = %f s\n", emf_time());
 	fprintf(stderr, "Total simulation time  = %f s\n", timer_interval_seconds(t0, t1));
 	fprintf(stderr, "\n");
-	
-	float perf = spec_time()/(npart);
-	fprintf(stderr, "Particle advance [nsec/part] = %f \n", 1.e9*perf);
-	fprintf(stderr, "Particle advance [Mpart/sec] = %f \n", 1.e-6/perf);
+
+	if (spec_time()>0) {
+		double perf = spec_perf();
+		fprintf(stderr, "Particle advance [nsec/part] = %f \n", 1.e9*perf);
+		fprintf(stderr, "Particle advance [Mpart/sec] = %f \n", 1.e-6/perf);
+	}
 }
 
 void sim_new( t_simulation* sim, int nx[], float box[], float dt, float tmax, int ndump, t_species* species, int n_species ){
@@ -37,6 +52,9 @@ void sim_new( t_simulation* sim, int nx[], float box[], float dt, float tmax, in
 	sim -> dt = dt;
 	sim -> tmax = tmax;
 	sim -> ndump = ndump;
+
+	printf(" nx  = %d, %d\n", nx[0], nx[1]);
+	printf(" box = %g, %g\n", box[0], box[1]);
 
 	emf_new( &sim -> emf, nx, box, dt );
 	current_new(&sim -> current, nx, box, dt);
@@ -60,12 +78,12 @@ void sim_add_laser( t_simulation* sim,  t_emf_laser* laser ){
 
 void sim_set_smooth( t_simulation* sim,  t_smooth* smooth ){
     
-    if ( (smooth -> xtype != none) && (smooth -> xlevel <= 0) ) {
+    if ( (smooth -> xtype != NONE) && (smooth -> xlevel <= 0) ) {
     	printf("Invalid smooth level along x direction\n");
     	exit(-1);
     }
 
-    if ( (smooth -> ytype != none) && (smooth -> ylevel <= 0) ) {
+    if ( (smooth -> ytype != NONE) && (smooth -> ylevel <= 0) ) {
     	printf("Invalid smooth level along y direction\n");
     	exit(-1);
     }
@@ -84,11 +102,37 @@ void sim_set_moving_window( t_simulation* sim ){
 
 }
 
+
+void sim_report_energy( t_simulation* sim )
+{
+	int i;
+
+	double emf_energy[6];
+	double part_energy[ sim -> n_species ];
+
+	emf_get_energy( &sim -> emf, emf_energy );
+	double tot_emf = emf_energy[0];
+	for( i = 0; i < 6; i++ ){
+		tot_emf += emf_energy[i];
+	}
+
+	double tot_part = 0;
+	for( i = 0; i < sim -> n_species; i++ ){
+		part_energy[i] = sim -> species[i].energy;
+		tot_part += part_energy[i];
+	}
+
+	printf("Energy (fields | particles | total) = %e %e %e\n",
+
+		tot_emf, tot_part, tot_emf+tot_part);
+
+}
+
 void sim_delete( t_simulation* sim ) {
 
 	int i;
 	for (i = 0; i<sim->n_species; i++) spec_delete( &sim->species[i] );
-	
+
 	free( sim->species );
 
 	current_delete( &sim->current );

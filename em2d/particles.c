@@ -22,22 +22,38 @@
 #include "timer.h"
 
 static double _spec_time = 0.0;
+static double _spec_npush = 0.0;
 
 void spec_sort( t_species *spec );
 
-/*********************************************************************************************
- 
- Initialization
- 
- *********************************************************************************************/
-
-
-double spec_time()
+/**
+ * Returns the total time spent pushing particles (includes boundaries and moving window)
+ * @return  Total time in seconds
+ */
+double spec_time( void )
 {
 	return _spec_time;
 }
-	
 
+/**
+ * Returns the performance achieved by the code (push time)
+ * @return  Performance in seconds per particle
+ */
+double spec_perf( void )
+{
+	return (_spec_npush > 0 )? _spec_time / _spec_npush: 0.0;
+}
+
+/*********************************************************************************************
+ Initialization
+ *********************************************************************************************/
+
+/**
+ * Sets the momentum of the range of particles supplieds using a thermal distribution
+ * @param spec  Particle species
+ * @param start Index of the first particle to set the momentum
+ * @param end   Index of the last particle to set the momentum
+ */
 void spec_set_u( t_species* spec, const int start, const int end )
 {
 	int i;    
@@ -197,8 +213,10 @@ void spec_new( t_species* spec, char name[], const t_part_data m_q, const int pp
 	// Initialize density profile
 	if ( density ) {
 		spec -> density = *density;
+		if ( spec -> density.n == 0. ) spec -> density.n = 1.0;
 	} else {
-		spec -> density.type = UNIFORM;
+		// Default values
+		spec -> density = (t_density) { .type = UNIFORM, .n = 1.0 };
 	}
 
 	// Initialize temperature profile
@@ -207,6 +225,9 @@ void spec_new( t_species* spec, char name[], const t_part_data m_q, const int pp
 	} else {
 		for(i=0; i<3; i++) spec -> ufl[i] = 0;
 	}
+
+	// Density multiplier
+	spec ->q *= fabsf( spec -> density.n );
 
 	if ( uth ) {
 		for(i=0; i<3; i++) spec -> uth[i] = uth[i];
@@ -753,6 +774,7 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 
 	// Advance internal iteration number
     spec -> iter += 1;
+    _spec_npush += spec -> np;
 
     // Check for particles leaving the box
 	if ( spec -> moving_window ){
@@ -846,7 +868,7 @@ void spec_rep_particles( const t_species *spec )
 	
 	t_zdf_file part_file;
 
-	unsigned i;
+	int i;
 	
 	const char * quants[] = {
 	    "x1","x2",
@@ -1008,6 +1030,7 @@ void spec_pha_axis( const t_species *spec, int i0, int np, int quant, float *axi
 const char * spec_pha_axis_units( int quant ) {
 	switch (quant) {
 		case X1:
+		case X2:
 			return("c/\\omega_p");
 			break;
 		case U1:
@@ -1018,67 +1041,50 @@ const char * spec_pha_axis_units( int quant ) {
 	return("");
 }
 
-	
-void spec_rep_pha( const t_species *spec, const int rep_type, 
-			  const int pha_nx[], const float pha_range[][2] )
+
+void spec_deposit_pha( const t_species *spec, const int rep_type,
+			  const int pha_nx[], const float pha_range[][2], float* restrict buf )
 {
 	const int BUF_SIZE = 1024;
 	float pha_x1[BUF_SIZE], pha_x2[BUF_SIZE];
-	
-	int i, nrow;
-	
-	int quant1, quant2;
-	float rdx1, rdx2, x1min, x2min;
-	
-	char const * const pha_ax_name[] = {"x1","x2","x3","u1","u2","u3"};
-	char pha_name[64];
-	
-	// Allocate phasespace buffer
-	float* restrict buf = malloc( pha_nx[0] * pha_nx[1] * sizeof( float ));
-	memset( buf, 0, pha_nx[0] * pha_nx[1] * sizeof( float ));
-	
-	nrow = pha_nx[0];
-	
-	quant1 = rep_type & 0x000F;
-	quant2 = (rep_type & 0x00F0)>>4;
-	
-    const char * pha_ax1_units = spec_pha_axis_units(quant1);
-    const char * pha_ax2_units = spec_pha_axis_units(quant2);
 
-	x1min = pha_range[0][0];
-	x2min = pha_range[1][0];
-	
-	rdx1 = pha_nx[0] / ( pha_range[0][1] - pha_range[0][0] );
-	rdx2 = pha_nx[1] / ( pha_range[1][1] - pha_range[1][0] );
-	
-	for (i = 0; i<spec->np; i+=BUF_SIZE) {
-		int k;
+
+	const int nrow = pha_nx[0];
+
+	const int quant1 = rep_type & 0x000F;
+	const int quant2 = (rep_type & 0x00F0)>>4;
+
+	const float x1min = pha_range[0][0];
+	const float x2min = pha_range[1][0];
+
+	const float rdx1 = pha_nx[0] / ( pha_range[0][1] - pha_range[0][0] );
+	const float rdx2 = pha_nx[1] / ( pha_range[1][1] - pha_range[1][0] );
+
+	for ( int i = 0; i<spec->np; i+=BUF_SIZE ) {
 		int np = ( i + BUF_SIZE > spec->np )? spec->np - i : BUF_SIZE;
-		
+
 		spec_pha_axis( spec, i, np, quant1, pha_x1 );
 	    spec_pha_axis( spec, i, np, quant2, pha_x2 );
-		
-		for (k = 0; k < np; k++) {
-			float nx1, nx2, w1, w2;
-			int i1, i2, idx;
-			
-			nx1 = ( pha_x1[k] - x1min ) * rdx1;
-			nx2 = ( pha_x2[k] - x2min ) * rdx2;
-			
-			i1 = (int)(nx1 + 0.5f);
-			i2 = (int)(nx2 + 0.5f);
-			
-			w1 = nx1 - i1 + 0.5f;
-			w2 = nx2 - i2 + 0.5f;
-			
-			idx = i1 + nrow*i2;
-			
+
+		for ( int k = 0; k < np; k++ ) {
+
+			float nx1 = ( pha_x1[k] - x1min ) * rdx1;
+			float nx2 = ( pha_x2[k] - x2min ) * rdx2;
+
+			int i1 = (int)(nx1 + 0.5f);
+			int i2 = (int)(nx2 + 0.5f);
+
+			float w1 = nx1 - i1 + 0.5f;
+			float w2 = nx2 - i2 + 0.5f;
+
+			int idx = i1 + nrow*i2;
+
 			if ( i2 >= 0 && i2 < pha_nx[1] ) {
-				
+
 				if (i1 >= 0 && i1 < pha_nx[0]) {
 					buf[ idx ] += (1.0f-w1)*(1.0f-w2)*spec->q;
 				}
-				
+
 				if (i1+1 >= 0 && i1+1 < pha_nx[0] ) {
 					buf[ idx + 1 ] += w1*(1.0f-w2)*spec->q;
 				}
@@ -1086,21 +1092,42 @@ void spec_rep_pha( const t_species *spec, const int rep_type,
 
 			idx += nrow;
 			if ( i2+1 >= 0 && i2+1 < pha_nx[1] ) {
-				
+
 				if (i1 >= 0 && i1 < pha_nx[0]) {
 					buf[ idx ] += (1.0f-w1)*w2*spec->q;
 				}
-				
+
 				if (i1+1 >= 0 && i1+1 < pha_nx[0] ) {
 					buf[ idx + 1 ] += w1*w2*spec->q;
 				}
 			}
-			
+
 		}
-		
+
 	}
+}
+
+void spec_rep_pha( const t_species *spec, const int rep_type,
+			  const int pha_nx[], const float pha_range[][2] )
+{
+
+	char const * const pha_ax_name[] = {"x1","x2","x3","u1","u2","u3"};
+	char pha_name[64];
+
+	// Allocate phasespace buffer
+	float* restrict buf = malloc( pha_nx[0] * pha_nx[1] * sizeof( float ));
+	memset( buf, 0, pha_nx[0] * pha_nx[1] * sizeof( float ));
+
+	// Deposit the phasespace
+	spec_deposit_pha( spec, rep_type, pha_nx, pha_range, buf );
 
 	// save the data in hdf5 format
+	int quant1 = rep_type & 0x000F;
+	int quant2 = (rep_type & 0x00F0)>>4;
+
+    const char * pha_ax1_units = spec_pha_axis_units(quant1);
+    const char * pha_ax2_units = spec_pha_axis_units(quant2);
+
 	sprintf( pha_name, "%s%s", pha_ax_name[quant1-1], pha_ax_name[quant2-1] );
 
     t_zdf_grid_axis axis[2];
@@ -1134,13 +1161,12 @@ void spec_rep_pha( const t_species *spec, const int rep_type,
     	.time_units = "1/\\omega_p"
     };
 
-	zdf_save_grid( buf, &info, &iter, spec->name );	
+	zdf_save_grid( buf, &info, &iter, spec->name );
 
 	// Free temp. buffer
 	free( buf );
 
 }
-
 
 void spec_report( const t_species *spec, const int rep_type, 
 				  const int pha_nx[], const float pha_range[][2] )

@@ -50,8 +50,8 @@ void current_new( t_current *current, int nx[], t_fld box[], float dt )
 
 	// Clear smoothing options
 	current -> smooth = (t_smooth) {
-		.xtype = none,
-		.ytype = none,
+		.xtype = NONE,
+		.ytype = NONE,
 		.xlevel = 0,
 		.ylevel = 0
 	};
@@ -341,7 +341,7 @@ void current_smooth( t_current* const current ) {
 	int i;
 
     // x-direction filtering
-    if ( current -> smooth.xtype != none ) {
+    if ( current -> smooth.xtype != NONE ) {
     	// binomial filter
     	sa = 0.25; sb = 0.5;
     	for( i = 0; i < current -> smooth.xlevel; i++) {
@@ -349,14 +349,14 @@ void current_smooth( t_current* const current ) {
     	}
 
     	// Compensator
-    	if ( current -> smooth.xtype == compensated ) {
+    	if ( current -> smooth.xtype == COMPENSATED ) {
     		get_smooth_comp( current -> smooth.xlevel, &sa, &sb );
     		kernel_x( current, sa, sb );
     	}
     }
 
     // y-direction filtering
-    if ( current -> smooth.ytype != none ) {
+    if ( current -> smooth.ytype != NONE ) {
     	// binomial filter
     	sa = 0.25; sb = 0.5;
     	for( i = 0; i < current -> smooth.xlevel; i++) {
@@ -364,7 +364,7 @@ void current_smooth( t_current* const current ) {
     	}
 
     	// Compensator
-    	if ( current -> smooth.ytype == compensated ) {
+    	if ( current -> smooth.ytype == COMPENSATED ) {
     		get_smooth_comp( current -> smooth.ylevel, &sa, &sb );
     		kernel_y( current, sa, sb );
     	}

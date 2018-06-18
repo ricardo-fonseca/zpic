@@ -51,19 +51,9 @@ int main (int argc, const char * argv[]) {
 	for (n=0,t=0.0; t<=sim.tmax; n++, t=n*sim.dt) {
 		printf("n = %i, t = %f\n",n,t);
 
-		if ( report ( n , sim.ndump ) )
-      sim_report( &sim );
+		if ( report ( n , sim.ndump ) ) sim_report( &sim );
 
-		// Advance particles and deposit current
-		current_zero( &sim.current );
-		for (i = 0; i<sim.n_species; i++)
-			spec_advance(&sim.species[i], &sim.emf, &sim.current );
-
-		// Update current boundary conditions and advance iteration
-		current_update( &sim.current );
-
-		// Advance EM fields
-		emf_advance( &sim.emf, &sim.current );
+        sim_iter( &sim );
 	}
 
 	t1 = timer_ticks();

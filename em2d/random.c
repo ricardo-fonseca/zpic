@@ -22,14 +22,14 @@ void set_rand_seed( uint32_t m_w_, uint32_t m_z_ )
 	m_z = m_z_;
 }
 
-uint32_t rand_uint32()
+uint32_t rand_uint32( void )
 {
     m_z = 36969 * (m_z & 65535) + (m_z >> 16);
     m_w = 18000 * (m_w & 65535) + (m_w >> 16);
     return (m_z << 16) + m_w;  /* 32-bit result */
 }
 
-double rand_norm()
+double rand_norm( void )
 {
 	static int iset = 0;
 	static double gset = 0.0;

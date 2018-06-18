@@ -12,7 +12,7 @@
 
 #include "zpic.h"
 
-enum smooth_type { none, binomial, compensated };
+enum smooth_type { NONE, BINOMIAL, COMPENSATED };
 
 typedef struct {
 	enum smooth_type xtype, ytype;

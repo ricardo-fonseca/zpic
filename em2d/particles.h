@@ -26,6 +26,8 @@ enum density_type {UNIFORM, STEP, SLAB};
 
 typedef struct {
 
+	float n;				// reference density (defaults to 1.0, multiplies density profile)
+
 	enum density_type type;		// Density profile type
 	float edge;	    // Position of the plasma edge, in simulation units
 	float start, end;		// Position of the plasma start/end, in simulation units
@@ -44,6 +46,9 @@ typedef struct {
 
 	// mass over charge ratio
 	t_part_data m_q;
+
+	// total kinetic energy
+	double energy;
 
 	// charge of individual particle
 	t_part_data q;
@@ -85,7 +90,8 @@ void spec_delete( t_species* spec );
 
 void spec_advance( t_species* spec, t_emf* emf, t_current* current );
 
-double spec_time();
+double spec_time( void );
+double spec_perf( void );
 
 /*********************************************************************************************
 
@@ -104,8 +110,13 @@ double spec_time();
 
 #define PHASESPACE(a,b) ((a) + (b)*16 + PHA)
 
+void spec_deposit_pha( const t_species *spec, const int rep_type,
+			  const int pha_nx[], const float pha_range[][2], float* buf );
+
 void spec_report( const t_species *spec, const int rep_type,
 				  const int pha_nx[], const float pha_range[][2] );
+
+void spec_deposit_charge( const t_species* spec, float* charge );
 
 
 #endif
