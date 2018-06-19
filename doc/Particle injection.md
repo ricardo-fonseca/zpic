@@ -66,8 +66,8 @@ Injects a density profile that varies linearly from _ramp[0]_ at position _start
 
 ```C
 // Ramp density example
-t_density density = { 
-   .type = RAMP, 
+t_density density = {
+   .type = RAMP,
    .start = 17.5,
    .end = 22.5,
    .ramp = {1.0, 2.0}
@@ -77,22 +77,23 @@ t_density density = {
 
 ### Custom
 
-The custom type injects a density profile set by a user defined function. The function must accept one parameter of type _float_ (the position at which the density is to be evaluated in simulation units) and returns a value of the same type. Note that density values are normalized to _n_.
+The custom type injects a density profile set by a user defined function. The function must accept two parameters: one parameter of type _float_ (the position at which the density is to be evaluated in simulation units) and a void pointer (which can be used to send additional data to the function). It must returns the density value has a value of type _float_. Note that density values are normalized to _n_.
 
 ```C
 // Custom density example
 // The density will oscillate between 0 and 0.1
 // note the n parameter below
 
-float custom_n0( float x ) {
+float custom_n0( float x, void *data ) {
 	return sin(x/M_PI)*sin(x/M_PI);
-} 
+}
 
 (...)
 
-t_density density = { 
+t_density density = {
   .type = CUSTOM,
-  .n = 0.1, 
-  .custom = &custom_n0
+  .n = 0.1,
+  .custom = &custom_n0,
+  .custom_data = NULL,
 };
 ```
