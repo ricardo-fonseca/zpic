@@ -14,25 +14,21 @@
 #include "zpic.h"
 
 typedef struct {
-	
+
 	float *s;
-	
 	float *buffer;
-	
 	int nx;
 	int gc[2];
-		
+
 } t_scalar_grid;
 
 typedef struct {
-	
+
 	float complex *s;
-	
 	float complex *buffer;
-	
 	int nx;
 	int gc[2];
-		
+
 } t_cscalar_grid;
 
 
@@ -41,26 +37,22 @@ typedef struct {
 } t_vfld;
 
 typedef struct {
-	
+
 	float *x,*y,*z;
-	
 	float *buffer;
-	
 	int nx;
 	int gc[2];
-		
+
 } t_vfld_grid;
 
 
 typedef struct {
-	
+
 	float complex *x,*y,*z;
-	
 	float complex *buffer;
-	
 	int nx;
 	int gc[2];
-		
+
 } t_cvfld_grid;
 
 

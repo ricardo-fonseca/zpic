@@ -51,6 +51,24 @@ em2d = Extension("em2d",
 )
 
 
-setup(name="zpic",
-      ext_modules = cythonize([em1d, es1d, em2d]))
+em1ds = Extension("em1ds",
+                sources=["em1ds.pyx",
+				"../em1ds/charge.c",
+				"../em1ds/current.c",
+				"../em1ds/emf.c",
+				"../em1ds/fft.c",
+				"../em1ds/grid.c",
+				"../em1ds/main.c",
+				"../em1ds/particles.c",
+				"../em1ds/random.c",
+				"../em1ds/simulation.c",
+				"../em1ds/timer.c",
+				"../em1ds/zdf.c"]
+)
 
+#setup(name="zpic",
+#      ext_modules = cythonize([em1d, es1d, em2d]))
+
+
+setup(name="zpic",
+      ext_modules = cythonize([em1ds]))

@@ -209,7 +209,7 @@ int fft_init_factors( t_fft_cfg* cfg )
 
 int fft_init_cfg( t_fft_cfg* cfg, unsigned int n, enum fft_direction direction ){
 
-    int i;
+    unsigned int i;
 
     cfg -> n = n;
     cfg -> direction = direction;

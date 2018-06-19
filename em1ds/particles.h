@@ -31,10 +31,11 @@ typedef struct {
 
 	enum density_type type;	// Density profile type
 	float start, end;		// Position of the plasma start/end, in simulation units
-	
+
 	float ramp[2];     // Initial and final density of the ramp
 
-	float (*custom)(float); // Pointer to custom density function
+	float (*custom)(float, void*); // Pointer to custom density function
+	void *custom_data;
 
 	unsigned long total_np_inj;	// Total number of particles already injected
 	double custom_q_inj;		// Total charge injected (density integral) in custom profile
@@ -43,9 +44,9 @@ typedef struct {
 
 
 typedef struct {
-	
+
 	char name[MAX_SPNAME_LEN];
-	
+
 	// Particle data buffer
 	t_part *part;
 	int np;
@@ -53,13 +54,13 @@ typedef struct {
 
 	// mass over charge ratio
 	float m_q;
-	
+
 	// charge of individual particle
 	float q;
 
 	// total kinetic energy
 	double energy;
-	
+
 	// Number of particles per cell
 	int ppc;
 
@@ -80,7 +81,7 @@ typedef struct {
 
 	// Iteration number
 	int iter;
-	
+
 } t_species;
 
 void spec_new( t_species* spec, char name[], const float m_q, const int ppc, 
@@ -93,12 +94,13 @@ void spec_advance( t_species* spec, t_emf* emf, t_charge* charge, t_current* cur
 
 void spec_deposit_charge( const t_species* spec, float* charge );
 
-double spec_time();
+double spec_time( void );
+double spec_perf( void );
 
 /*********************************************************************************************
- 
+
  Diagnostics
- 
+
  *********************************************************************************************/
 
 #define CHARGE 		0x1000
@@ -111,8 +113,13 @@ double spec_time();
 
 #define PHASESPACE(a,b) ((a) + (b)*16 + PHA)
 
-void spec_report( const t_species *spec, const int rep_type, 
+void spec_report( const t_species *spec, const int rep_type,
 				  const int pha_nx[], const float pha_range[][2] );
+
+void spec_deposit_charge( const t_species* spec, float* charge );
+
+void spec_deposit_pha( const t_species *spec, const int rep_type,
+		  const int pha_nx[], const float pha_range[][2], float* buf );
 
 
 #endif

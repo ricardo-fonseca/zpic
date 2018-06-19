@@ -19,7 +19,7 @@
 enum emf_diag { EFLD, BFLD };
 
 typedef struct {
-	
+
 	// E and B fields
 	t_vfld_grid E;
 	t_vfld_grid B;
@@ -28,7 +28,7 @@ typedef struct {
 	t_cvfld_grid fEl;
 	t_cvfld_grid fEt;
 	t_cvfld_grid fB;
-		
+
 	// Simulation box info
 	t_fld box;
 	t_fld dx;
@@ -41,23 +41,24 @@ typedef struct {
 
 	// FFT configuration
 	t_fftr_cfg *fft_forward, *fft_backward;
-	
+
 } t_emf;
 
 
 // In 1D we only have plane waves
 typedef struct {
-	
+
 	float start;	// Front edge of the laser pulse, in simulation units
 	float fwhm;		// FWHM of the laser pulse duration, in simulation units
-	
+	float rise, flat, fall; // Rise, flat and fall time of the laser pulse, in simulation units
+
 	float a0;		// Normalized peak vector potential of the pulse
 	float omega0;	// Laser frequency, normalized to the plasma frequency
-	
-	float polarization; 
-		
+
+	float polarization;
+
 } t_emf_laser;
-	
+
 
 void emf_new( t_emf *emf, int nx, t_fld box, const float dt, t_fftr_cfg *fft_forward,
 	t_fftr_cfg *fft_backward );
@@ -74,6 +75,6 @@ void emf_move_window( t_emf *emf );
 
 void emf_update_gc( t_emf *emf );
 
-double emf_time();
+double emf_time( void );
 
 #endif

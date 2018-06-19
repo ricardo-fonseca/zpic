@@ -13,9 +13,9 @@
 
 #include <stdint.h>
 
-uint64_t timer_ticks();
+uint64_t timer_ticks( void );
 double timer_interval_seconds(uint64_t start, uint64_t end);
-double timer_cpu_seconds();
-double timer_resolution();
+double timer_cpu_seconds( void );
+double timer_resolution( void );
 
 #endif

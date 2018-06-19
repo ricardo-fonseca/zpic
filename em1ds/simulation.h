@@ -10,11 +10,11 @@
 #include "current.h"
 
 typedef struct {
-	
+
 	// Time step
 	float dt;
 	float tmax;
-	
+
 	// Diagnostic frequency
 	int ndump;
 
@@ -33,6 +33,9 @@ typedef struct {
 
 void sim_init( t_simulation* sim );
 void sim_report( t_simulation* sim );
+
+void sim_iter( t_simulation* sim );
+void sim_report_energy( t_simulation* sim );
 
 void sim_add_laser( t_simulation* sim,  t_emf_laser* laser );
 void sim_add_neutral_bkg( t_simulation* sim );

@@ -15,15 +15,15 @@
 #include "fft.h"
 
 typedef struct {
-	
+
 	t_vfld_grid J;
-	
+
 	// Fourier transform of Jt
 	t_cvfld_grid fJt;
 
 	// Box size
 	t_fld box;
-	
+
 	// Cell size
 	t_fld dx;
 
@@ -35,7 +35,7 @@ typedef struct {
 
 	// FFT configuration
 	t_fftr_cfg *fft_forward;
-	
+
 } t_current;
 
 void current_new( t_current *current, int nx, t_fld box, float dt, t_fftr_cfg *fft_forward );

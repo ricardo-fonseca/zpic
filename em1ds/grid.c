@@ -147,15 +147,14 @@ int vfld_grid_init( t_vfld_grid *grid, const unsigned int nx, const unsigned int
 
 
 	size_t size = grid->gc[0] + grid->nx + grid->gc[1];
-	
 	grid -> buffer = malloc( 3 * size * sizeof( float ) );
-	
+
 	if ( !grid -> buffer ) {
 		fprintf(stderr, "(*error*) Unable to allocate memory for fld_grid variable\n");
 		return(-1);
 	}
 
-	
+
 	// Make x, y and z point to cell [0]
 	grid -> x = grid -> buffer + grid->gc[0];
 	grid -> y = grid -> x + size;
