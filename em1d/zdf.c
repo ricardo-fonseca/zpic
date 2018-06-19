@@ -641,8 +641,7 @@ uint64_t size_xdr_zdf_grid_info(const t_zdf_grid_info* grid) {
    	size += size_zdf_int32;
     if ( grid -> axis ) {
 
-    	unsigned int i;
-    	for(i=0; i<grid -> ndims; i++)
+    	for(unsigned int i=0; i<grid -> ndims; i++)
     		size += size_zdf_int32 +
     	            2 * size_zdf_double +
     	            size_zdf_string( grid -> axis[i].label ) +
