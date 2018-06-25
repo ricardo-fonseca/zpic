@@ -39,7 +39,7 @@ typedef struct {
 
 } t_current;
 
-void current_new( t_current *current, const unsigned nx[], t_fld box[], float dt);
+void current_new( t_current *current, const int nx[], t_fld box[], float dt);
 void current_delete( t_current *current );
 void current_zero( t_current *current );
 void current_update( t_current *current );

@@ -20,9 +20,9 @@ typedef struct {
 
 	float *buffer;
 
-	unsigned int nx[2];
-	unsigned int nrow;
-	unsigned int gc[2][2];
+	int nx[2];
+	int nrow;
+	int gc[2][2];
 
 } t_scalar_grid2d;
 
@@ -32,9 +32,9 @@ typedef struct {
 
 	float complex *buffer;
 
-	unsigned int nx[2];
-	unsigned int nrow;
-	unsigned int gc[2][2];
+	int nx[2];
+	int nrow;
+	int gc[2][2];
 
 } t_cscalar_grid2d;
 
@@ -44,9 +44,9 @@ typedef struct {
 
 	float *buffer;
 
-	unsigned int nx[2];
-	unsigned int nrow;
-	unsigned int gc[2][2];
+	int nx[2];
+	int nrow;
+	int gc[2][2];
 
 } t_vfld_grid2d;
 
@@ -57,9 +57,9 @@ typedef struct {
 
 	float complex *buffer;
 
-	unsigned int nx[2];
-	unsigned int nrow;
-	unsigned int gc[2][2];
+	int nx[2];
+	int nrow;
+	int gc[2][2];
 
 } t_cvfld_grid2d;
 

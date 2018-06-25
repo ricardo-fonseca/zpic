@@ -292,7 +292,7 @@ int cvfld_grid2d_cleanup( t_cvfld_grid2d *grid )
 
 void cvfld_grid2d_zero( t_cvfld_grid2d *grid ) {
 	size_t size =  (grid->gc[0][0] + grid->nx[0] + grid->gc[0][1]) *
-				   (grid->gc[1][0] + grid->nx[1] + grid->gc[1][1]) * 
+				   (grid->gc[1][0] + grid->nx[1] + grid->gc[1][1]) *
 				   3 * sizeof(float complex);
 	memset( grid -> buffer, 0, size );
 }

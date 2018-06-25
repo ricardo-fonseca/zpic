@@ -43,7 +43,7 @@ typedef struct {
 } t_charge;
 
 
-void charge_new( t_charge *charge, const unsigned nx[], t_fld box[], float dt);
+void charge_new( t_charge *charge, const int nx[], t_fld box[], float dt);
 void charge_delete( t_charge *charge );
 void charge_zero( t_charge *charge );
 void charge_update( t_charge *charge );

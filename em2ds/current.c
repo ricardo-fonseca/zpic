@@ -19,7 +19,7 @@
 #include "filter.h"
 #include "zdf.h"
 
-void current_new( t_current *current, const unsigned int nx[], t_fld box[], float dt )
+void current_new( t_current *current, const int nx[], t_fld box[], float dt )
 {
 
 	if ( nx[0] % 2 || nx[1] % 2 ) {
@@ -35,7 +35,7 @@ void current_new( t_current *current, const unsigned int nx[], t_fld box[], floa
 	const unsigned int fnx[2] = { nx[1], nx[0]/2+1 };
 
 	// Initialize grids
-	vfld_grid2d_init( &current->J, nx, gc );
+	vfld_grid2d_init( &current->J, (unsigned int *) nx, gc );
 	cvfld_grid2d_init( &current->fJt, fnx, NULL );
 
 	// Initializ FFT transform
@@ -188,7 +188,6 @@ void current_report( const t_current *current, const char jc )
 {
 	float *f;
 	float *buf, *p;
-	unsigned int i, j;
 	char vfname[3];
 
 	// Pack the information
@@ -213,8 +212,8 @@ void current_report( const t_current *current, const char jc )
 	}
 	vfname[2] = 0;
 
-	for( j = 0; j < current->J.nx[1]; j++) {
-		for ( i = 0; i < current->J.nx[0]; i++ ) {
+	for( int j = 0; j < current->J.nx[1]; j++) {
+		for ( int i = 0; i < current->J.nx[0]; i++ ) {
 			p[i] = f[i];
 		}
 		p += current->J.nx[0];

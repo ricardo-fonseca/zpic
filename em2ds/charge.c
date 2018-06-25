@@ -8,7 +8,7 @@
 
 
 
-void charge_new( t_charge *charge, const unsigned nx[], t_fld box[], float dt)
+void charge_new( t_charge *charge, const int nx[], t_fld box[], float dt)
 {
 
 	if (( nx[0] % 2 ) || ( nx[1] % 2 )) {
@@ -18,13 +18,13 @@ void charge_new( t_charge *charge, const unsigned nx[], t_fld box[], float dt)
 
 	// Number of guard cells for linear interpolation
 	const unsigned int gc[2][2] = {{1,2},
-		            {1,2}};
+		                           {1,2}};
 
 	// The FFT result will be transposed
 	const unsigned int fnx[2] = { nx[1], nx[0]/2+1 };
 
 	// Initialize grids
-	scalar_grid2d_init( &charge->rho, nx, gc );
+	scalar_grid2d_init( &charge->rho, (unsigned int *)nx, gc );
 	cscalar_grid2d_init( &charge->frho, fnx, NULL );
 
 	// Initializ FFT transform
@@ -32,8 +32,7 @@ void charge_new( t_charge *charge, const unsigned nx[], t_fld box[], float dt)
 	    charge -> rho.nrow, FFT_FORWARD );
 
 	// Set cell sizes and box limits
-	unsigned i;
-	for(i = 0; i<2; i++){
+	for(int i = 0; i<2; i++){
 		charge -> box[i] = box[i];
 		charge -> dx[i]  = box[i] / nx[i];
 	}
@@ -53,7 +52,7 @@ void charge_new( t_charge *charge, const unsigned nx[], t_fld box[], float dt)
 void charge_init_neutral_bkg( t_charge *charge )
 {
 	scalar_grid2d_init( &charge->neutral, (unsigned int *) charge ->rho.nx,
-					    charge ->rho.gc );
+					    (unsigned int (*)[2]) charge ->rho.gc );
 	scalar_grid2d_zero( &charge -> neutral );
 }
 
@@ -200,15 +199,14 @@ void charge_report( const t_charge *charge )
 	char vfname[] = "charge density";
 
 	float *buf, *p, *f;
-	unsigned int i, j;
 
 	// Pack the information
 	buf = malloc( charge->rho.nx[0]*charge->rho.nx[1]*sizeof(float) );
     p = buf;
 	f = charge -> rho.s;
 
-	for( j = 0; j < charge->rho.nx[1]; j++) {
-		for ( i = 0; i < charge->rho.nx[0]; i++ ) {
+	for( int j = 0; j < charge->rho.nx[1]; j++) {
+		for ( int i = 0; i < charge->rho.nx[0]; i++ ) {
 			p[i] = f[i];
 		}
 		p += charge->rho.nx[0];

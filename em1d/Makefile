@@ -2,6 +2,9 @@
 CC = gcc
 CFLAGS = -Ofast -std=c99 -pedantic
 
+#Debug options
+#CFLAGS = -g -Og -std=c99 -pedantic -fsanitize=undefined -fsanitize=address
+
 # Intel icc compiler
 #CC = icc
 #CFLAGS = -restrict -Ofast -std=c99 -pedantic
@@ -10,7 +13,8 @@ CFLAGS = -Ofast -std=c99 -pedantic
 #CC = clang
 #CFLAGS = -Ofast -std=c99 -pedantic
 
-LDFLAGS =
+# On some systems
+LDFLAGS = -lm
 
 
 SOURCE = current.c emf.c particles.c random.c timer.c main.c simulation.c zdf.c

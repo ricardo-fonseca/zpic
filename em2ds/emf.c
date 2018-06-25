@@ -31,7 +31,7 @@ double emf_time()
  *********************************************************************************************/
 
 
-void emf_new( t_emf *emf, const unsigned int nx[], t_fld box[], const float dt )
+void emf_new( t_emf *emf, const int nx[], t_fld box[], const float dt )
 {
 	unsigned int i;
 
@@ -48,8 +48,8 @@ void emf_new( t_emf *emf, const unsigned int nx[], t_fld box[], const float dt )
 	const unsigned int fnx[2] = { nx[1], nx[0]/2+1 };
 
 	// Initialize grids
-	vfld_grid2d_init( &emf->E, nx, gc );
-	vfld_grid2d_init( &emf->B, nx, gc );
+	vfld_grid2d_init( &emf->E, (unsigned int *) nx, gc );
+	vfld_grid2d_init( &emf->B, (unsigned int *) nx, gc );
 
 	cvfld_grid2d_init( &emf->fEl, fnx, NULL );
 	cvfld_grid2d_init( &emf->fEt, fnx, NULL );
@@ -229,7 +229,7 @@ void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
 
 	// Buffer to hold Fourier transform of laser field
 	t_cvfld_grid2d buffer;
-	cvfld_grid2d_init( &buffer, emf->fEt.nx, NULL);
+	cvfld_grid2d_init( &buffer, (unsigned int *) emf->fEt.nx, NULL);
 	cvfld_grid2d_zero( &buffer );
 
 	t_fftr2d_cfg fft_forward;

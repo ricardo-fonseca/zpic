@@ -214,8 +214,6 @@ int fft_init_factors( t_fft_cfg* cfg )
 
 int fft_init_cfg( t_fft_cfg* cfg, unsigned int n, enum fft_direction direction ){
 
-    int i;
-
     cfg -> n = n;
     cfg -> direction = direction;
 
@@ -226,7 +224,7 @@ int fft_init_cfg( t_fft_cfg* cfg, unsigned int n, enum fft_direction direction )
     }
 
     double phase_mult =  ( direction == FFT_BACKWARD ) ? (2 * M_PI) / n : - (2 * M_PI) / n;
-    for( i=0; i<n; i++) {
+    for( unsigned int i=0; i<n; i++) {
         cfg -> phase[i] = cos( i * phase_mult ) + I * sin( i * phase_mult );
     }
 

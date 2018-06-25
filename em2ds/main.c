@@ -41,7 +41,7 @@ int main (int argc, const char * argv[]) {
 	sim_init( &sim );
 	
     // Run simulation
-	int n, i;
+	int n;
 	float t;
 	
 	printf("Starting simulation ...\n\n");
@@ -52,21 +52,9 @@ int main (int argc, const char * argv[]) {
 	for (n=0,t=0.0; t<=sim.tmax; n++, t=n*sim.dt) {
 		printf("n = %i, t = %f\n",n,t);
 
-		if ( report ( n , sim.ndump ) ) 
-			sim_report( &sim );
+		if ( report ( n , sim.ndump ) ) sim_report( &sim );
 
-		// Advance particles and deposit current
-		current_zero( &sim.current );
-		charge_zero( &sim.charge );
-		for (i = 0; i<sim.n_species; i++) 
-			spec_advance(&sim.species[i], &sim.emf, &sim.charge, &sim.current );
-		
-		// Update charge and current boundary conditions and get fourier transforms
-		current_update( &sim.current );
-		charge_update( &sim.charge );
-		
-		// Advance EM fields
-		emf_advance( &sim.emf, &sim.charge, &sim.current );		
+		sim_iter( &sim );
 	}
 
 	t1 = timer_ticks();

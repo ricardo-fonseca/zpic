@@ -14,27 +14,37 @@ int report( int n, int ndump )
 	}
 }
 
+void sim_iter( t_simulation* sim ) {
+	// Advance particles and deposit current
+	current_zero( &sim -> current );
+	charge_zero( &sim -> charge );
+	for (int i = 0; i<sim -> n_species; i++)
+		spec_advance(&sim -> species[i], &sim -> emf, &sim -> charge, &sim -> current );
+
+	// Update charge and current boundary conditions and get fourier transforms
+	current_update( &sim -> current );
+	charge_update( &sim -> charge );
+
+	// Advance EM fields
+	emf_advance( &sim -> emf, &sim -> charge, &sim -> current );
+
+}
+
 void sim_timings( t_simulation* sim, uint64_t t0, uint64_t t1 ){
-
-	int npart = 0;
-	int i;
-
-	for(i=0; i<sim -> n_species; i++)
-		npart += sim -> species[i].np;
 
 	fprintf(stderr, "Time for spec. advance = %f s\n", spec_time());
 	fprintf(stderr, "Time for emf   advance = %f s\n", emf_time());
 	fprintf(stderr, "Total simulation time  = %f s\n", timer_interval_seconds(t0, t1));
 	fprintf(stderr, "\n");
 
-/*	
-	float perf = spec_time()/(npart);
-	fprintf(stderr, "Particle advance [nsec/part] = %f \n", 1.e9*perf);
-	fprintf(stderr, "Particle advance [Mpart/sec] = %f \n", 1.e-6/perf);
-*/
+	if (spec_time()>0) {
+		double perf = spec_perf();
+		fprintf(stderr, "Particle advance [nsec/part] = %f \n", 1.e9*perf);
+		fprintf(stderr, "Particle advance [Mpart/sec] = %f \n", 1.e-6/perf);
+	}
 }
 
-void sim_new( t_simulation* sim, const unsigned int nx[], float box[], float dt, float tmax, int ndump, t_species* species, int n_species ){
+void sim_new( t_simulation* sim, const int nx[], float box[], float dt, float tmax, int ndump, t_species* species, int n_species ){
 
 	sim -> dt = dt;
 	sim -> tmax = tmax;
@@ -63,11 +73,9 @@ void sim_add_laser( t_simulation* sim,  t_emf_laser* laser ){
 
 void sim_add_neutral_bkg( t_simulation* sim ){
 
-	unsigned i;
-	
 	charge_init_neutral_bkg( &sim -> charge );
 
-	for (i = 0; i<sim -> n_species; i++) 
+	for (int i = 0; i<sim -> n_species; i++) 
 			spec_deposit_charge( &sim -> species[i], sim -> charge.neutral.s );
 
 	charge_update_neutral_bkg( &sim -> charge );
@@ -79,7 +87,7 @@ void sim_delete( t_simulation* sim ) {
 
 	int i;
 	for (i = 0; i<sim->n_species; i++) spec_delete( &sim->species[i] );
-	
+
 	free( sim->species );
 
 	charge_delete( &sim->charge );

@@ -28,11 +28,11 @@ typedef struct {
 enum density_type {UNIFORM, STEP, SLAB};
 
 typedef struct {
-
+	float n;				// reference density (defaults to 1.0, multiplies density profile)
 	enum density_type type;	// Density profile type
 	float edge;	            // Position of the plasma edge, in simulation units
 	float start, end;		// Position of the plasma start/end, in simulation units
-	
+
 } t_density;
 
 
@@ -53,7 +53,7 @@ typedef struct {
 
 	// total kinetic energy
 	double energy;
-	
+
 	// Number of particles per cell
 	int ppc[2];
 
@@ -74,12 +74,12 @@ typedef struct {
 
 	// Iteration number
 	int iter;
-	
+
 } t_species;
 
 void spec_new( t_species* spec, char name[], const float m_q, const int ppc[], 
 			  const float ufl[], const float uth[],
-			  const unsigned int nx[], float box[], const float dt, t_density* density );
+			  const int nx[], float box[], const float dt, t_density* density );
 
 void spec_delete( t_species* spec );
 
@@ -87,12 +87,13 @@ void spec_advance( t_species* spec, t_emf* emf, t_charge* charge, t_current* cur
 
 void spec_deposit_charge( const t_species* spec, float* charge );
 
-double spec_time();
+double spec_time( void );
+double spec_perf( void );
 
 /*********************************************************************************************
- 
+
  Diagnostics
- 
+
  *********************************************************************************************/
 
 #define CHARGE 		0x1000
@@ -106,7 +107,12 @@ double spec_time();
 
 #define PHASESPACE(a,b) ((a) + (b)*16 + PHA)
 
-void spec_report( const t_species *spec, const int rep_type, 
+void spec_deposit_pha( const t_species *spec, const int rep_type,
+			  const int pha_nx[], const float pha_range[][2], float* buf );
+
+void spec_deposit_charge( const t_species* spec, float* charge );
+
+void spec_report( const t_species *spec, const int rep_type,
 				  const int pha_nx[], const float pha_range[][2] );
 
 

@@ -53,6 +53,7 @@ typedef struct {
 
 	float start;	// Front edge of the laser pulse, in simulation units
 	float fwhm;		// FWHM of the laser pulse duration, in simulation units
+	float rise, flat, fall; // Rise, flat and fall time of the laser pulse, in simulation units
 
 	float a0;		// Normalized peak vector potential of the pulse
 	float omega0;	// Laser frequency, normalized to the plasma frequency
@@ -65,8 +66,9 @@ typedef struct {
 
 } t_emf_laser;
 
+void emf_get_energy( const t_emf *emf, double energy[] );
 
-void emf_new( t_emf *emf, const unsigned int nx[], t_fld box[], const float dt );
+void emf_new( t_emf *emf, const int nx[], t_fld box[], const float dt );
 void emf_delete( t_emf *emf );
 void emf_report( const t_emf *emf, const char field, const char fc );
 
@@ -76,6 +78,6 @@ void emf_advance( t_emf *emf, const t_charge *charge, const t_current *current )
 
 void emf_update_gc( t_emf *emf );
 
-double emf_time();
+double emf_time( void );
 
 #endif
