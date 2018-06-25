@@ -171,7 +171,6 @@ def phasespace( int a, int b ):
 	"""Returns the type of the requested phasespace"""
 	return PHASESPACE(a,b)
 
-
 cdef class EMF:
 	"""Extension type to wrap t_emf objects"""
 
@@ -200,18 +199,57 @@ cdef class EMF:
 		return self._thisptr.box
 
 	@property
-	def E( self ):
+	def Ex( self ):
 		cdef float *buf = <float *> self._thisptr.E_buf
 		cdef int nx = self._thisptr.gc[0][0] + self._thisptr.nx[0] + self._thisptr.gc[0][1]
 		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
-		return np.asarray( <float [:ny,:nx,:3]> buf, dtype = np.float32 )
+		tmp = np.asarray( <float [:ny,:nx,:3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
+		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 0]
 
 	@property
-	def B( self ):
+	def Ey( self ):
+		cdef float *buf = <float *> self._thisptr.E_buf
+		cdef int nx = self._thisptr.gc[0][0] + self._thisptr.nx[0] + self._thisptr.gc[0][1]
+		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
+		tmp = np.asarray( <float [:ny,:nx,:3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
+		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 1]
+
+	def Ez( self ):
+		cdef float *buf = <float *> self._thisptr.E_buf
+		cdef int nx = self._thisptr.gc[0][0] + self._thisptr.nx[0] + self._thisptr.gc[0][1]
+		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
+		tmp = np.asarray( <float [:ny,:nx,:3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
+		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 2]
+
+	@property
+	def Bx( self ):
 		cdef float *buf = <float *> self._thisptr.B_buf
 		cdef int nx = self._thisptr.gc[0][0] + self._thisptr.nx[0] + self._thisptr.gc[0][1]
 		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
-		return np.asarray( <float [:ny,:nx,:3]> buf, dtype = np.float32 )
+		tmp = np.asarray( <float [:ny,:nx,:3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
+		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 0]
+
+	@property
+	def By( self ):
+		cdef float *buf = <float *> self._thisptr.B_buf
+		cdef int nx = self._thisptr.gc[0][0] + self._thisptr.nx[0] + self._thisptr.gc[0][1]
+		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
+		tmp = np.asarray( <float [:ny,:nx,:3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
+		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 1]
+
+	@property
+	def Bz( self ):
+		cdef float *buf = <float *> self._thisptr.B_buf
+		cdef int nx = self._thisptr.gc[0][0] + self._thisptr.nx[0] + self._thisptr.gc[0][1]
+		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
+		tmp = np.asarray( <float [:ny,:nx,:3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
+		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 2]
 
 cdef class Laser:
 	"""Extension type to wrap t_emf_laser objects"""
@@ -312,11 +350,31 @@ cdef class Current:
 		current_report( self._thisptr, jc )
 
 	@property
-	def J( self ):
+	def Jx( self ):
 		cdef float *buf = <float *> self._thisptr.J_buf
 		cdef int nx = self._thisptr.gc[0][0] + self._thisptr.nx[0] + self._thisptr.gc[0][1]
 		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
-		return np.asarray( <float [:ny,:nx,:3]> buf, dtype = np.float32 )
+		tmp = np.asarray( <float [:ny,:nx,:3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
+		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 0]
+
+	@property
+	def Jy( self ):
+		cdef float *buf = <float *> self._thisptr.J_buf
+		cdef int nx = self._thisptr.gc[0][0] + self._thisptr.nx[0] + self._thisptr.gc[0][1]
+		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
+		tmp = np.asarray( <float [:ny,:nx,:3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
+		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 1]
+
+	@property
+	def Jz( self ):
+		cdef float *buf = <float *> self._thisptr.J_buf
+		cdef int nx = self._thisptr.gc[0][0] + self._thisptr.nx[0] + self._thisptr.gc[0][1]
+		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
+		tmp = np.asarray( <float [:ny,:nx,:3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
+		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 2]
 
 
 cdef class Smooth:

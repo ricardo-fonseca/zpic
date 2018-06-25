@@ -22,12 +22,13 @@ cdef class Density:
 
 	cdef object custom_func
 
-	def __cinit__( self, *, int type = UNIFORM, float start = 0.0, float end = 0.0,
+	def __cinit__( self, *, int type = UNIFORM, float n = 1.0, float start = 0.0, float end = 0.0,
 		           list ramp = [0.,0.], custom = None):
 		# Allocates the structure and initializes all elements to 0
 		self._thisptr = <t_density *> calloc(1, sizeof(t_density))
 
 		self._thisptr.type = <density_type> type
+		self._thisptr.n = n
 		self._thisptr.start = start
 		self._thisptr.end = end
 		self._thisptr.ramp = np.array(ramp, dtype=np.float32)
@@ -231,14 +232,46 @@ cdef class EMF:
 		return self._thisptr.box
 
 	@property
-	def E( self ):
-		cdef float *buf = <float *> self._thisptr.E
-		return np.asarray( <float [:self._thisptr.nx,:3]> buf, dtype = np.float32 )
+	def Ex( self ):
+		cdef float *buf = <float *> self._thisptr.E_buf
+		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
+		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
 
 	@property
-	def B( self ):
-		cdef float *buf = <float *> self._thisptr.B
-		return np.asarray( <float [:self._thisptr.nx,:3]> buf, dtype = np.float32 )
+	def Ey( self ):
+		cdef float *buf = <float *> self._thisptr.E_buf
+		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
+		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
+
+	@property
+	def Ez( self ):
+		cdef float *buf = <float *> self._thisptr.E_buf
+		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
+		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
+
+	@property
+	def Bx( self ):
+		cdef float *buf = <float *> self._thisptr.B_buf
+		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
+		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
+
+	@property
+	def By( self ):
+		cdef float *buf = <float *> self._thisptr.B_buf
+		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
+		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
+
+	@property
+	def Bz( self ):
+		cdef float *buf = <float *> self._thisptr.B_buf
+		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
+		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
 
 cdef class Laser:
 	"""Extension type to wrap t_emf_laser objects"""
@@ -339,9 +372,25 @@ cdef class Current:
 		current_report( self._thisptr, jc )
 
 	@property
-	def J( self ):
-		cdef float *buf = <float *> self._thisptr.J
-		return np.asarray( <float [:self._thisptr.nx,:3]> buf, dtype = np.float32 )
+	def Jx( self ):
+		cdef float *buf = <float *> self._thisptr.J_buf
+		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
+		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
+
+	@property
+	def Jy( self ):
+		cdef float *buf = <float *> self._thisptr.J_buf
+		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
+		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
+
+	@property
+	def Jz( self ):
+		cdef float *buf = <float *> self._thisptr.J_buf
+		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
+		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
 
 
 cdef class Smooth:
@@ -551,8 +600,4 @@ cdef class Simulation:
 	@report.setter
 	def report( self, f ):
 		self.report = f
-
-
-
-
 

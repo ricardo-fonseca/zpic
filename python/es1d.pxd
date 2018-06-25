@@ -137,7 +137,8 @@ cdef extern from "../es1d/charge.h":
 
 	ctypedef struct t_charge:
 		t_scalar_grid rho
-		t_cscalar_grid fE
+		t_scalar_grid neutral
+		t_cscalar_grid frho
 		float box
 		float dx;
 		float dt

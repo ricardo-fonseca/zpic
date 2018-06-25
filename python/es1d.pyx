@@ -94,7 +94,7 @@ cdef class Density:
 		self._thisptr.ramp = value
 
 cdef class SpeciesDiag:
-	#charge	   = CHARGE
+	sp_charge  = CHARGE
 	pha	       = PHA
 	particles  = PARTICLES
 	x1		   = X1

@@ -210,34 +210,46 @@ cdef class EMF:
 
 	@property
 	def Ex( self ):
-		cdef float *buf = <float *> self._thisptr.E.x
-		return np.asarray( <float [:self._thisptr.E.nx]> buf, dtype = np.float32 )
+		cdef float *buf = <float *> self._thisptr.E.x - self._thisptr.E.gc[0]
+		cdef int size = self._thisptr.E.gc[0] + self._thisptr.E.nx + self._thisptr.E.gc[1]
+		tmp = np.asarray( <float [:size]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.E.gc[0] : self._thisptr.E.gc[0] + self._thisptr.E.nx ]
 
 	@property
 	def Ey( self ):
-		cdef float *buf = <float *> self._thisptr.E.y
-		return np.asarray( <float [:self._thisptr.E.nx]> buf, dtype = np.float32 )
+		cdef float *buf = <float *> self._thisptr.E.y - self._thisptr.E.gc[0]
+		cdef int size = self._thisptr.E.gc[0] + self._thisptr.E.nx + self._thisptr.E.gc[1]
+		tmp = np.asarray( <float [:size]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.E.gc[0] : self._thisptr.E.gc[0] + self._thisptr.E.nx ]
 
 	@property
 	def Ez( self ):
-		cdef float *buf = <float *> self._thisptr.E.z
-		return np.asarray( <float [:self._thisptr.E.nx]> buf, dtype = np.float32 )
+		cdef float *buf = <float *> self._thisptr.E.z - self._thisptr.E.gc[0]
+		cdef int size = self._thisptr.E.gc[0] + self._thisptr.E.nx + self._thisptr.E.gc[1]
+		tmp = np.asarray( <float [:size]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.E.gc[0] : self._thisptr.E.gc[0] + self._thisptr.E.nx ]
 
 
 	@property
 	def Bx( self ):
-		cdef float *buf = <float *> self._thisptr.B.x
-		return np.asarray( <float [:self._thisptr.B.nx]> buf, dtype = np.float32 )
+		cdef float *buf = <float *> self._thisptr.B.x - self._thisptr.B.gc[0]
+		cdef int size = self._thisptr.B.gc[0] + self._thisptr.B.nx + self._thisptr.B.gc[1]
+		tmp = np.asarray( <float [:size]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.B.gc[0] : self._thisptr.B.gc[0] + self._thisptr.B.nx ]
 
 	@property
 	def By( self ):
-		cdef float *buf = <float *> self._thisptr.B.y
-		return np.asarray( <float [:self._thisptr.B.nx]> buf, dtype = np.float32 )
+		cdef float *buf = <float *> self._thisptr.B.y - self._thisptr.B.gc[0]
+		cdef int size = self._thisptr.B.gc[0] + self._thisptr.B.nx + self._thisptr.B.gc[1]
+		tmp = np.asarray( <float [:size]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.B.gc[0] : self._thisptr.B.gc[0] + self._thisptr.B.nx ]
 
 	@property
 	def Bz( self ):
-		cdef float *buf = <float *> self._thisptr.B.z
-		return np.asarray( <float [:self._thisptr.B.nx]> buf, dtype = np.float32 )
+		cdef float *buf = <float *> self._thisptr.B.z - self._thisptr.B.gc[0]
+		cdef int size = self._thisptr.B.gc[0] + self._thisptr.B.nx + self._thisptr.B.gc[1]
+		tmp = np.asarray( <float [:size]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.B.gc[0] : self._thisptr.B.gc[0] + self._thisptr.B.nx ]
 
 
 cdef class Laser:
@@ -340,18 +352,24 @@ cdef class Current:
 
 	@property
 	def Jx( self ):
-		cdef float *buf = <float *> self._thisptr.J.x
-		return np.asarray( <float [:self._thisptr.J.nx]> buf, dtype = np.float32 )
+		cdef float *buf = <float *> self._thisptr.J.x - self._thisptr.J.gc[0]
+		cdef int size = self._thisptr.J.gc[0] + self._thisptr.J.nx + self._thisptr.J.gc[1]
+		tmp = np.asarray( <float [:size]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.J.gc[0] : self._thisptr.J.gc[0] + self._thisptr.J.nx ]
 
 	@property
 	def Jy( self ):
-		cdef float *buf = <float *> self._thisptr.J.y
-		return np.asarray( <float [:self._thisptr.J.nx]> buf, dtype = np.float32 )
+		cdef float *buf = <float *> self._thisptr.J.y - self._thisptr.J.gc[0]
+		cdef int size = self._thisptr.J.gc[0] + self._thisptr.J.nx + self._thisptr.J.gc[1]
+		tmp = np.asarray( <float [:size]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.J.gc[0] : self._thisptr.J.gc[0] + self._thisptr.J.nx ]
 
 	@property
 	def Jz( self ):
-		cdef float *buf = <float *> self._thisptr.J.z
-		return np.asarray( <float [:self._thisptr.J.nx]> buf, dtype = np.float32 )
+		cdef float *buf = <float *> self._thisptr.J.z - self._thisptr.J.gc[0]
+		cdef int size = self._thisptr.J.gc[0] + self._thisptr.J.nx + self._thisptr.J.gc[1]
+		tmp = np.asarray( <float [:size]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.J.gc[0] : self._thisptr.J.gc[0] + self._thisptr.J.nx ]
 
 cdef class Charge:
 	"""Extension type to wrap t_charge objects"""
@@ -366,8 +384,10 @@ cdef class Charge:
 
 	@property
 	def rho( self ):
-		cdef float *buf = <float *> self._thisptr.rho.s
-		return np.asarray( <float [:self._thisptr.rho.nx]> buf, dtype = np.float32 )
+		cdef float *buf = <float *> self._thisptr.rho.buffer
+		cdef int size = self._thisptr.rho.gc[0] + self._thisptr.rho.nx + self._thisptr.rho.gc[1]
+		tmp = np.asarray( <float [:size]> buf, dtype = np.float32 )
+		return tmp[ self._thisptr.rho.gc[0] : self._thisptr.rho.gc[0] + self._thisptr.rho.nx ]
 
 
 cdef class Simulation:
