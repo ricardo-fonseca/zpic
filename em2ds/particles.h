@@ -30,7 +30,6 @@ enum density_type {UNIFORM, STEP, SLAB};
 typedef struct {
 	float n;				// reference density (defaults to 1.0, multiplies density profile)
 	enum density_type type;	// Density profile type
-	float edge;	            // Position of the plasma edge, in simulation units
 	float start, end;		// Position of the plasma start/end, in simulation units
 
 } t_density;

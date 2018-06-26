@@ -18,26 +18,24 @@ cdef class Density:
 	cdef object custom_func
 
 	def __cinit__( self, *, int type = UNIFORM, float start = 0.0, float end = 0.0,
-		           float edge = 0.0, float n = 1.0):
+		           float n = 1.0):
 		# Allocates the structure and initializes all elements to 0
 		self._thisptr = <t_density *> calloc(1, sizeof(t_density))
 
 		self._thisptr.type = <density_type> type
+		self._thisptr.n = n
 		self._thisptr.start = start
 		self._thisptr.end = end
-		self._thisptr.edge = edge
-		self._thisptr.n = n
 
 	def __dealloc__(self):
 		free( self._thisptr )
 
 	def copy(self):
 		new = Density()
-		new.n	 = self.n
 		new.type  = self.type
+		new.n	 = self.n
 		new.start = self.start
 		new.end   = self.end
-		new.edge  = self.edge
 
 		return new
 
@@ -72,14 +70,6 @@ cdef class Density:
 	@end.setter
 	def end(self,value):
 		self._thisptr.end = value
-
-	@property
-	def edge(self):
-		return self._thisptr.edge
-
-	@edge.setter
-	def edge(self,value):
-		self._thisptr.edge = value
 
 cdef class SpeciesDiag:
 	charge	   = CHARGE

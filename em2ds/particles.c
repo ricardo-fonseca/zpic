@@ -70,7 +70,7 @@ void spec_set_x( t_species* spec, const int range[][2] )
 	int i, j, k, ip;
 	
 	float* poscell;
-	float edge, start, end;
+	float start, end;
 	
 	// Calculate particle positions inside the cell
 	const int npc = spec->ppc[0]*spec->ppc[1];
@@ -92,13 +92,13 @@ void spec_set_x( t_species* spec, const int range[][2] )
 	case STEP: // Step like density profile
 		
 		// Get edge position normalized to cell size;
-		edge = spec -> density.edge / spec -> dx[0];
+		start = spec -> density.start / spec -> dx[0];
 
 		for (j = range[1][0]; j <= range[1][1]; j++) {
 			for (i = range[0][0]; i <= range[0][1]; i++) {
 
 				for (k=0; k<npc; k++) {
-					if ( i + poscell[2*k] > edge ) {
+					if ( i + poscell[2*k] > start ) {
 						spec->part[ip].ix = i;
 						spec->part[ip].iy = j;
 						spec->part[ip].x = poscell[2*k];
@@ -112,7 +112,7 @@ void spec_set_x( t_species* spec, const int range[][2] )
 
 	case SLAB: // Slab like density profile
 		
-		// Get edge position normalized to cell size;
+		// Get edges positions normalized to cell size;
 		start = spec -> density.start / spec -> dx[0] - 0.5;
 		end   = spec -> density.end / spec -> dx[0] - 0.5;
 
@@ -209,9 +209,14 @@ void spec_new( t_species* spec, char name[], const float m_q, const int ppc[],
 	// Initialize density profile
 	if ( density ) {
 		spec -> density = *density;
+		if ( spec -> density.n == 0. ) spec -> density.n = 1.0;
 	} else {
-		spec -> density.type = UNIFORM;
+		// Default values
+		spec -> density = (t_density) { .type = UNIFORM, .n = 1.0 };
 	}
+
+	// Density multiplier
+	spec ->q *= fabsf( spec -> density.n );
 
 	// Initialize temperature profile
 	if ( ufl ) {

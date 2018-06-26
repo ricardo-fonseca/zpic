@@ -22,12 +22,13 @@ cdef class Density:
 
 	cdef object custom_func
 
-	def __cinit__( self, *, int type = UNIFORM, float start = 0.0, float end = 0.0,
+	def __cinit__( self, *, int type = UNIFORM, float n = 1.0, float start = 0.0, float end = 0.0,
 		           list ramp = [0.,0.], custom = None):
 		# Allocates the structure and initializes all elements to 0
 		self._thisptr = <t_density *> calloc(1, sizeof(t_density))
 
 		self._thisptr.type = <density_type> type
+		self._thisptr.n = n
 		self._thisptr.start = start
 		self._thisptr.end = end
 		self._thisptr.ramp = np.array(ramp, dtype=np.float32)

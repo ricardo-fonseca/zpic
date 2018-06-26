@@ -31,7 +31,6 @@ cdef extern from "../em2d/particles.h":
 	ctypedef struct t_density:
 		float n
 		density_type type
-		float edge
 		float start
 		float end
 
