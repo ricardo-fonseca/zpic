@@ -53,9 +53,6 @@ void sim_new( t_simulation* sim, int nx[], float box[], float dt, float tmax, in
 	sim -> tmax = tmax;
 	sim -> ndump = ndump;
 
-	printf(" nx  = %d, %d\n", nx[0], nx[1]);
-	printf(" box = %g, %g\n", box[0], box[1]);
-
 	emf_new( &sim -> emf, nx, box, dt );
 	current_new(&sim -> current, nx, box, dt);
 
@@ -65,7 +62,7 @@ void sim_new( t_simulation* sim, int nx[], float box[], float dt, float tmax, in
 	// Check time step
 	float cour = sqrtf( 1.0f/( 1.0f/(sim->emf.dx[0]*sim->emf.dx[0]) + 1.0f/(sim->emf.dx[1]*sim->emf.dx[1]) ) );
 	if ( dt >= cour ){
-		printf("Invalid timestep, courant condition violation, dtmax = %f \n", cour );
+		fprintf(stderr, "Invalid timestep, courant condition violation, dtmax = %f \n", cour );
 		exit(-1);
 	}
 
@@ -79,12 +76,12 @@ void sim_add_laser( t_simulation* sim,  t_emf_laser* laser ){
 void sim_set_smooth( t_simulation* sim,  t_smooth* smooth ){
     
     if ( (smooth -> xtype != NONE) && (smooth -> xlevel <= 0) ) {
-    	printf("Invalid smooth level along x direction\n");
+    	fprintf(stderr, "Invalid smooth level along x direction\n");
     	exit(-1);
     }
 
     if ( (smooth -> ytype != NONE) && (smooth -> ylevel <= 0) ) {
-    	printf("Invalid smooth level along y direction\n");
+    	fprintf(stderr, "Invalid smooth level along y direction\n");
     	exit(-1);
     }
 
@@ -123,7 +120,6 @@ void sim_report_energy( t_simulation* sim )
 	}
 
 	printf("Energy (fields | particles | total) = %e %e %e\n",
-
 		tot_emf, tot_part, tot_emf+tot_part);
 
 }

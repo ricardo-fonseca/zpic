@@ -83,10 +83,6 @@ void emf_new( t_emf *emf, int nx[], t_fld box[], const float dt )
 	// Reset moving window information
 	emf -> moving_window = 0;
 	emf -> n_move = 0;
-	
-
-	printf(" emf -> nx = %d, %d \n", emf->nx[0], emf->nx[1]);
-	printf(" emf -> dx = %f, %f \n", emf->dx[0], emf->dx[1]);
 }
 
 void emf_delete( t_emf *emf )
@@ -293,9 +289,6 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 	int i, j;
 	char vfname[3];
 
-    printf("In emf_report, field = %d, fc = %d \n", field, fc);
-    printf("nrow = %d\n", emf -> nrow);
-
 	// Choose field to save
 	t_vfld * restrict f;
 	switch (field) {
@@ -308,7 +301,7 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 			vfname[0] = 'B';
 			break;
 		default:
-			printf("Invalid field type selected, returning\n");
+			fprintf(stderr, "Invalid field type selected, returning\n");
 			return;
 	}
 
@@ -347,7 +340,7 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 			vfname[1] = '3';
 			break;
 		default:
-			printf("Invalid field component selected, returning\n");
+			fprintf(stderr, "Invalid field component selected, returning\n");
 			return;
 	}
 	vfname[2] = 0;
