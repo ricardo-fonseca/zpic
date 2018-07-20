@@ -98,6 +98,14 @@ void emf_delete( t_emf *emf )
 	emf->E_buf = NULL;
 	emf->B_buf = NULL;
 
+	if ( emf -> ext_fld.type > EMF_EXT_FLD_NONE ) {
+		free( emf -> ext_fld.E_part_buf );
+		free( emf -> ext_fld.B_part_buf );
+	}
+
+	emf->E_part = NULL;
+	emf->B_part = NULL;
+
 }
 
 /*********************************************************************************************
