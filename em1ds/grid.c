@@ -16,7 +16,7 @@
 	Scalar grids
  ****************************************************************************************/
 
-int scalar_grid_init( t_scalar_grid *grid, const unsigned int nx, const unsigned int * gc )
+int scalar_grid_init( t_scalar_grid *grid, const int nx, const int * gc )
 {
 
 	// store nx and gc values
@@ -77,7 +77,7 @@ void scalar_grid_copy( t_scalar_grid *dst, t_scalar_grid *src ){
 	Complex Scalar grids
  ****************************************************************************************/
 
-int cscalar_grid_init( t_cscalar_grid *grid, const unsigned int nx, const unsigned int * gc )
+int cscalar_grid_init( t_cscalar_grid *grid, const int nx, const int * gc )
 {
 
 	// store nx and gc values
@@ -132,7 +132,7 @@ void cscalar_grid_zero( t_cscalar_grid *grid ) {
 	Vector field grids
  ****************************************************************************************/
 
-int vfld_grid_init( t_vfld_grid *grid, const unsigned int nx, const unsigned int * gc )
+int vfld_grid_init( t_vfld_grid *grid, const int nx, const int * gc )
 {
 
 	// store nx and gc values
@@ -187,7 +187,7 @@ void vfld_grid_zero( t_vfld_grid *grid ) {
 	Complex Vector field grids
  ****************************************************************************************/
 
-int cvfld_grid_init( t_cvfld_grid *grid, const unsigned int nx, const unsigned int * gc )
+int cvfld_grid_init( t_cvfld_grid *grid, const int nx, const int * gc )
 {
 
 	// store nx and gc values

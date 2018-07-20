@@ -16,6 +16,24 @@
 #include "current.h"
 #include "charge.h"
 
+enum emf_ext_fld { EMF_EXT_FLD_NONE, EMF_EXT_FLD_UNIFORM };
+
+/*
+Some headers (e.g. termios.h) define a B0 macro that conflicts with this code
+ */
+#ifdef B0
+#undef B0
+#endif
+
+typedef struct {
+	t_vfld E0;
+	t_vfld B0;
+	int type;
+
+	t_vfld_grid E_part_buf;
+	t_vfld_grid B_part_buf;
+} t_emf_ext_fld;
+
 enum emf_diag { EFLD, BFLD };
 
 typedef struct {
@@ -41,6 +59,16 @@ typedef struct {
 
 	// FFT configuration
 	t_fftr_cfg *fft_forward, *fft_backward;
+
+	// Fields seen by particles
+	// When using external fields these will be a combination of the simulation
+	// fields and the externally imposed ones. When external fields are off
+	// these just point to E and B.
+	t_vfld_grid *E_part;
+	t_vfld_grid *B_part;
+
+	// External fields
+	t_emf_ext_fld ext_fld;
 
 } t_emf;
 
@@ -71,10 +99,17 @@ void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser );
 
 void emf_advance( t_emf *emf, const t_charge *charge, const t_current *current );
 
+void emf_update_part_fld( t_emf *emf );
+
 void emf_move_window( t_emf *emf );
 
 void emf_update_gc( t_emf *emf );
 
 double emf_time( void );
+
+void emf_get_energy( const t_emf *emf, double energy[] );
+
+void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld );
+
 
 #endif

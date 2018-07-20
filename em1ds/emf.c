@@ -41,7 +41,7 @@ void emf_new( t_emf *emf, int nx, t_fld box, const float dt, t_fftr_cfg *fft_for
 	}
 
 	// Number of guard cells for linear interpolation
-	unsigned int gc[2] = {0,1};
+	int gc[2] = {0,1};
 
 	// Store pointer to required FFT configuration
 	emf -> fft_forward = fft_forward;
@@ -73,6 +73,10 @@ void emf_new( t_emf *emf, int nx, t_fld box, const float dt, t_fftr_cfg *fft_for
 	// Reset iteration number
 	emf -> iter = 0;
 
+	// Disable external fields by default
+	emf -> ext_fld.type = EMF_EXT_FLD_NONE;
+	emf -> E_part = &emf->E;
+	emf -> B_part = &emf->B;
 }
 
 void emf_delete( t_emf *emf )
@@ -83,6 +87,14 @@ void emf_delete( t_emf *emf )
 	cvfld_grid_cleanup( &emf->fEl );
 	cvfld_grid_cleanup( &emf->fEt );
 	cvfld_grid_cleanup( &emf->fB );
+
+	if ( emf -> ext_fld.type > EMF_EXT_FLD_NONE ) {
+		vfld_grid_cleanup( &emf->ext_fld.E_part_buf );
+		vfld_grid_cleanup( &emf->ext_fld.B_part_buf );
+		emf->E_part = NULL;
+		emf->B_part = NULL;
+	}
+
 }
 
 /*********************************************************************************************
@@ -414,9 +426,106 @@ void emf_advance( t_emf *emf, const t_charge *charge, const t_current *current )
 	// Update (real) E, B (also updates guard cells)
 	emf_update( emf );
 
+	// Update contribuition of external fields if necessary
+	if ( emf -> ext_fld.type > EMF_EXT_FLD_NONE ) emf_update_part_fld( emf );
+
 	// Advance internal iteration number
     emf -> iter += 1;
 
     // Update timing information
 	_emf_time += timer_interval_seconds(t0, timer_ticks());
 }
+
+void emf_get_energy( const t_emf *emf, double energy[] )
+{
+	int i;
+    float* const restrict Ex = emf -> E.x;
+    float* const restrict Ey = emf -> E.y;
+    float* const restrict Ez = emf -> E.z;
+
+    float* const restrict Bx = emf -> B.x;
+    float* const restrict By = emf -> B.y;
+    float* const restrict Bz = emf -> B.z;
+
+	for( i = 0; i<6; i++) energy[i] = 0;
+
+	for( i = 0; i < emf -> E.nx; i ++ ) {
+		energy[0] += Ex[i] * Ex[i];
+		energy[1] += Ey[i] * Ey[i];
+		energy[2] += Ez[i] * Ez[i];
+		energy[3] += Bx[i] * Bx[i];
+		energy[4] += By[i] * By[i];
+		energy[5] += Bz[i] * Bz[i];
+	}
+
+	for( i = 0; i<6; i++) energy[i] *= 0.5 * emf -> dx;
+
+}
+
+/*********************************************************************************************
+
+External Fields
+
+ *********************************************************************************************/
+
+void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
+
+	emf -> ext_fld.type = ext_fld -> type;
+
+	if ( emf -> ext_fld.type == EMF_EXT_FLD_NONE ) {
+		// Particle fields just point to the self-consistent fields
+		emf -> E_part = &(emf -> E);
+		emf -> B_part = &(emf -> B);
+	} else {
+	    switch( emf -> ext_fld.type ) {
+	        case( EMF_EXT_FLD_UNIFORM ):
+	        	emf -> ext_fld.E0 = ext_fld->E0;
+	        	emf -> ext_fld.B0 = ext_fld->B0;
+	        	break;
+
+	    	default:
+	    		fprintf(stderr, "Invalid external field type, aborting.\n" );
+				exit(-1);
+	    }
+
+		// Allocate space for additional field grids
+		vfld_grid_init( &emf -> ext_fld.E_part_buf, emf -> E.nx, emf -> E.gc );
+		vfld_grid_init( &emf -> ext_fld.B_part_buf, emf -> B.nx, emf -> B.gc );
+
+		emf -> E_part = &emf->ext_fld.E_part_buf;
+	    emf -> B_part = &emf->ext_fld.B_part_buf;
+
+	    // Initialize values on E/B_part grids
+	    emf_update_part_fld( emf );
+
+	}
+}
+
+/**
+ * Updates field values seen by particles with externally imposed fields
+ * @param emf EMF object holding field data
+ */
+void emf_update_part_fld( t_emf* const emf ) {
+
+    float* const restrict E_part_x = emf -> ext_fld.E_part_buf.x;
+    float* const restrict E_part_y = emf -> ext_fld.E_part_buf.y;
+    float* const restrict E_part_z = emf -> ext_fld.E_part_buf.z;
+
+    float* const restrict B_part_x = emf -> ext_fld.B_part_buf.x;
+    float* const restrict B_part_y = emf -> ext_fld.B_part_buf.y;
+    float* const restrict B_part_z = emf -> ext_fld.B_part_buf.z;
+
+    // Currently only EMF_EXT_FLD_UNIFORM is supported
+
+	// Add external field values to self consistent fields
+	for( int i = -emf->E.gc[0]; i < emf->E.nx + emf->E.gc[1]; i++ ){
+		E_part_x[i] = emf -> E.x[i] + emf -> ext_fld.E0.x;
+		E_part_y[i] = emf -> E.y[i] + emf -> ext_fld.E0.y;
+		E_part_z[i] = emf -> E.z[i] + emf -> ext_fld.E0.z;
+
+		B_part_x[i] = emf -> B.x[i] + emf -> ext_fld.B0.x;
+		B_part_y[i] = emf -> B.y[i] + emf -> ext_fld.B0.y;
+		B_part_z[i] = emf -> B.z[i] + emf -> ext_fld.B0.z;
+	}
+}
+

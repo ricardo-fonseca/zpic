@@ -56,21 +56,21 @@ typedef struct {
 } t_cvfld_grid;
 
 
-int  scalar_grid_init( t_scalar_grid *grid, const unsigned int nx, const unsigned int * gc );
+int  scalar_grid_init( t_scalar_grid *grid, const int nx, const int * gc );
 int  scalar_grid_cleanup( t_scalar_grid *grid );
 void scalar_grid_zero( t_scalar_grid *grid );
 void scalar_grid_copy( t_scalar_grid *dst, t_scalar_grid *src );
 
-int  cscalar_grid_init( t_cscalar_grid *grid, const unsigned int nx, const unsigned int * gc );
+int  cscalar_grid_init( t_cscalar_grid *grid, const int nx, const int * gc );
 int  cscalar_grid_cleanup( t_cscalar_grid *grid );
 void cscalar_grid_zero( t_cscalar_grid *grid );
 
 
-int  vfld_grid_init( t_vfld_grid *grid, const unsigned int nx, const unsigned int * gc );
+int  vfld_grid_init( t_vfld_grid *grid, const int nx, const int * gc );
 int  vfld_grid_cleanup( t_vfld_grid *grid );
 void vfld_grid_zero( t_vfld_grid *grid );
 
-int  cvfld_grid_init( t_cvfld_grid *grid, const unsigned int nx, const unsigned int * gc );
+int  cvfld_grid_init( t_cvfld_grid *grid, const int nx, const int * gc );
 int  cvfld_grid_cleanup( t_cvfld_grid *grid );
 void cvfld_grid_zero( t_cvfld_grid *grid );
 

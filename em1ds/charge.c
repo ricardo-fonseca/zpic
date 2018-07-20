@@ -15,7 +15,7 @@ void charge_new( t_charge *charge, int nx, t_fld box, float dt, t_fftr_cfg *fft_
 	}
 
 	// Number of guard cells for linear interpolation
-	unsigned int gc[2] = {1,2}; 
+	int gc[2] = {1,2}; 
 	
 	// Store pointer to required FFT configuration
 	charge -> fft_forward = fft_forward;
@@ -42,8 +42,7 @@ void charge_new( t_charge *charge, int nx, t_fld box, float dt, t_fftr_cfg *fft_
 
 void charge_init_neutral_bkg( t_charge *charge )
 {
-	scalar_grid_init( &charge->neutral, charge ->rho.nx,
-					  (unsigned int *) charge ->rho.gc );
+	scalar_grid_init( &charge->neutral, charge ->rho.nx, charge ->rho.gc );
 	scalar_grid_zero( &charge -> neutral );
 }
 

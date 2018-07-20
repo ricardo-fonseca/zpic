@@ -25,7 +25,7 @@ void current_new( t_current *current, int nx, t_fld box, float dt, t_fftr_cfg *f
 	}
 
 	// Number of guard cells for linear interpolation
-	unsigned int gc[2] = {1,2}; 
+	int gc[2] = {1,2}; 
 	
 	// Store pointer to required FFT configuration
 	current -> fft_forward = fft_forward;
