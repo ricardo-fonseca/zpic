@@ -190,9 +190,6 @@ void current_report( const t_current *current, const char jc )
 	float *buf, *p;
 	char vfname[3];
 
-	// Pack the information
-	buf = malloc( current->J.nx[0]*current->J.nx[1]*sizeof(float) );
-    p = buf;
 
 	vfname[0] = 'J';
 
@@ -209,8 +206,15 @@ void current_report( const t_current *current, const char jc )
 			f = current->J.z;
 			vfname[1] = '3';
 			break;
+		default:
+			fprintf(stderr,"(*error*) Invalid current component selected, returning\n");
+			return;
 	}
 	vfname[2] = 0;
+
+	// Pack the information
+	buf = malloc( current->J.nx[0]*current->J.nx[1]*sizeof(float) );
+    p = buf;
 
 	for( int j = 0; j < current->J.nx[1]; j++) {
 		for ( int i = 0; i < current->J.nx[0]; i++ ) {

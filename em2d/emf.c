@@ -199,7 +199,7 @@ void emf_add_laser( t_emf* const emf,  t_emf_laser*  laser )
 	// Launch laser
 	int i, j, nrow;
 	
-	t_fld z_center, r_center, z, z_2, r, r_2;
+	t_fld r_center, z, z_2, r, r_2;
 	t_fld amp, lenv, lenv_2, k;
 	t_fld dx, dy;
 	t_fld cos_pol, sin_pol;
@@ -211,7 +211,6 @@ void emf_add_laser( t_emf* const emf,  t_emf_laser*  laser )
 	dx = emf -> dx[0];
 	dy = emf -> dx[1];
 	
-	z_center = laser->start - laser->fwhm/2;
 	r_center = laser->axis;
 	amp = laser->omega0 * laser->a0;
 	

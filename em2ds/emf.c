@@ -338,7 +338,7 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 			vfname[0] = 'B';
 			break;
 		default:
-			printf("Invalid field type selected, returning\n");
+			fprintf(stderr,"(*error*) Invalid field type selected, returning\n");
 			return;
 	}
 
@@ -360,6 +360,9 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 			f = vfld->z;
 			vfname[1] = '3';
 			break;
+		default:
+			fprintf(stderr,"(*error*) Invalid field component selected, returning\n");
+			return;
 	}
 	vfname[2] = 0;
 
@@ -659,4 +662,35 @@ void emf_advance( t_emf *emf, const t_charge *charge, const t_current *current )
 
     // Update timing information
 	_emf_time += timer_interval_seconds(t0, timer_ticks());
+}
+
+void emf_get_energy( const t_emf *emf, double energy[] )
+{
+	int i,j;
+
+	float* restrict const Ex = emf -> E.x;
+	float* restrict const Ey = emf -> E.y;
+	float* restrict const Ez = emf -> E.z;
+
+	float* restrict const Bx = emf -> B.x;
+	float* restrict const By = emf -> B.y;
+	float* restrict const Bz = emf -> B.z;
+
+    const int nrow = emf -> E.nrow;
+
+	for( i = 0; i<6; i++) energy[i] = 0;
+
+	for( j = 0; i < emf -> E.nx[1]; j ++ ) {
+		for( i = 0; i < emf -> E.nx[0]; i ++ ) {
+			energy[0] += Ex[i + j*nrow] * Ex[i + j*nrow];
+			energy[1] += Ey[i + j*nrow] * Ey[i + j*nrow];
+			energy[2] += Ez[i + j*nrow] * Ez[i + j*nrow];
+			energy[3] += Bx[i + j*nrow] * Bx[i + j*nrow];
+			energy[4] += By[i + j*nrow] * By[i + j*nrow];
+			energy[5] += Bz[i + j*nrow] * Bz[i + j*nrow];
+		}
+	}
+
+	for( i = 0; i<6; i++) energy[i] *= 0.5 * emf -> dx[0] * emf -> dx[1];
+
 }
