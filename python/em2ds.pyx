@@ -174,6 +174,11 @@ cdef class EMF:
 	def report( self, char field, char fc ):
 		emf_report( self._thisptr, field, fc )
 
+	def get_energy( self ):
+		cdef double energy[6]
+		emf_get_energy( self._thisptr, energy )
+		return np.array( energy, dtype = np.float64 )
+
 	@property
 	def nx(self):
 		return self._thisptr.E.nx
@@ -450,7 +455,7 @@ cdef class Simulation:
 
 	cdef object report
 
-	def __cinit__( self, list nx, list box, float dt, species, *,
+	def __cinit__( self, list nx, list box, float dt, *, species = None,
 	               report = None ):
 
 		# Allocate the simulation object

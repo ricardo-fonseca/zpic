@@ -239,7 +239,7 @@ cdef class Simulation:
 
 	cdef object report
 
-	def __cinit__( self, int nx, float box, float dt, species, *,
+	def __cinit__( self, int nx, float box, float dt, *, species = None,
 	               report = None ):
 
 		# Allocate the simulation object

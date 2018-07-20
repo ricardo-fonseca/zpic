@@ -188,14 +188,51 @@ cdef class EMF:
 	cdef t_emf* _thisptr
 
 	# Diagnostic types
-	efld = EFLD
-	bfld = BFLD
+	_diag_types = { 'E' : EFLD,	'B' : BFLD }
+
+	# External field types
+	_ext_fld_types = {'none'    : EMF_EXT_FLD_NONE,
+	                  'uniform' : EMF_EXT_FLD_UNIFORM }
 
 	cdef associate( self, t_emf* ptr ):
 		self._thisptr = ptr
 
-	def report( self, char field, char fc ):
-		emf_report( self._thisptr, field, fc )
+	def report( self, str type, char fc ):
+		cdef int rep_type = self._diag_types[type];
+		emf_report( self._thisptr, rep_type, fc )
+
+	def get_energy( self ):
+		cdef double energy[6]
+		emf_get_energy( self._thisptr, energy )
+		return np.array( energy, dtype = np.float64 )
+
+	def set_ext_fld( self, str type, *, list E0 = None, list B0 = None ):
+		cdef t_emf_ext_fld ext_fld;
+		cdef float buf[3];
+
+		ext_fld.type = self._ext_fld_types[type]
+
+		if ( E0 ):
+			buf = np.array( E0, dtype=np.float32)
+			ext_fld.E0.x = buf[0]
+			ext_fld.E0.y = buf[1]
+			ext_fld.E0.z = buf[2]
+		else:
+			ext_fld.E0.x = 0
+			ext_fld.E0.y = 0
+			ext_fld.E0.z = 0
+
+		if ( B0 ):
+			buf = np.array( B0, dtype=np.float32)
+			ext_fld.B0.x = buf[0]
+			ext_fld.B0.y = buf[1]
+			ext_fld.B0.z = buf[2]
+		else:
+			ext_fld.B0.x = 0
+			ext_fld.B0.y = 0
+			ext_fld.B0.z = 0
+
+		emf_set_ext_fld( self._thisptr, &ext_fld )
 
 	@property
 	def nx(self):
@@ -405,7 +442,7 @@ cdef class Simulation:
 
 	cdef object report
 
-	def __cinit__( self, int nx, float box, float dt, species, *,
+	def __cinit__( self, int nx, float box, float dt, *, species = None,
 	               report = None ):
 
 		# Allocate the simulation object
@@ -520,6 +557,10 @@ cdef class Simulation:
 	@property
 	def t(self):
 		return self.t
+
+	@property
+	def dt(self):
+		return self._thisptr.dt
 
 	@property
 	def dx(self):

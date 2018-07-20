@@ -222,6 +222,7 @@ cdef extern from "../em2ds/emf.h":
 		float axis
 
 	void emf_report( const t_emf *emf, const char field, const char fc )
+	void emf_get_energy( const t_emf *emf, double energy[] )
 
 #########################################################################################
 # Simulation

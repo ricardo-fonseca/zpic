@@ -176,6 +176,15 @@ cdef extern from "../em1ds/current.h":
 # EMF
 #
 cdef extern from "../em1ds/emf.h":
+	cdef enum emf_ext_fld:
+		EMF_EXT_FLD_NONE, EMF_EXT_FLD_UNIFORM
+
+	ctypedef struct t_emf_ext_fld:
+		t_vfld E0
+		t_vfld B0
+		int type
+		t_vfld_grid E_part_buf
+		t_vfld_grid B_part_buf
 
 	cdef enum emf_diag:
 		EFLD, BFLD
@@ -192,6 +201,9 @@ cdef extern from "../em1ds/emf.h":
 		int iter
 		t_fftr_cfg *fft_forward
 		t_fftr_cfg *fft_backward
+		t_vfld_grid *E_part
+		t_vfld_grid *B_part
+		t_emf_ext_fld ext_fld
 
 	ctypedef struct t_emf_laser:
 		float start
@@ -204,6 +216,8 @@ cdef extern from "../em1ds/emf.h":
 		float polarization
 
 	void emf_report( const t_emf *emf, const char field, const char fc )
+	void emf_get_energy( const t_emf *emf, double energy[] )
+	void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld )
 
 #########################################################################################
 # Simulation

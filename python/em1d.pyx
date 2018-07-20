@@ -9,25 +9,25 @@ cdef float custom_density( float x, void *f ):
 	cdef Density d = <object> f
 	return d.custom_func(x)
 
-cdef class DensityType:
-	uniform = UNIFORM
-	step = STEP
-	slab = SLAB
-	ramp = RAMP
-	custom = CUSTOM
-
 cdef class Density:
 	"""Extension type to wrap t_density objects"""
 	cdef t_density *_thisptr
 
 	cdef object custom_func
 
-	def __cinit__( self, *, int type = UNIFORM, float n = 1.0, float start = 0.0, float end = 0.0,
+	_density_types = {'uniform':UNIFORM,
+	                  'step':STEP,
+	                  'slab':SLAB,
+	                  'ramp':RAMP,
+	                  'custom':CUSTOM}
+
+	def __cinit__( self, *, str type = 'uniform', float n = 1.0, float start = 0.0, float end = 0.0,
 		           list ramp = [0.,0.], custom = None):
+
 		# Allocates the structure and initializes all elements to 0
 		self._thisptr = <t_density *> calloc(1, sizeof(t_density))
 
-		self._thisptr.type = <density_type> type
+		self._thisptr.type = <density_type> self._density_types[type]
 		self._thisptr.n = n
 		self._thisptr.start = start
 		self._thisptr.end = end
@@ -117,6 +117,15 @@ cdef class Species:
 	cdef Density _density
 	cdef str _name
 
+	# Diagnostic types
+	_diag_types  = { 'charge':CHARGE, 'pha':PHA, 'particles':PARTICLES }
+	_pha_quants = { 'x1':X1, 'u1':U1, 'u2':U2, 'u3':U3 }
+
+	# Boundary condition types
+	_bc_types = {'none':     PART_BC_NONE,
+	             'periodic': PART_BC_PERIODIC,
+	             'open':     PART_BC_OPEN }
+
 	def __cinit__( self, str name, const float m_q, const int ppc, *,
 				  list ufl = [0.,0.,0.], list uth = [0.,0.,0.], Density density = None):
 
@@ -138,17 +147,23 @@ cdef class Species:
 			self._this.ufl, self._this.uth,
 			nx, box, dt, self._density._thisptr )
 
-	def report( self, int type, *, pha_nx = 0, pha_range = 0 ):
+	def report( self, str type, *, list quants, pha_nx, pha_range ):
 		cdef int _nx[2]
 		cdef float _range[2][2]
 
-		if ( type == PARTICLES or type == CHARGE ):
-			spec_report( self._thisptr, type, NULL, NULL )
-		else:
-			# Phasespace diagnostic
+		cdef int rep_type = self._diag_types[type]
+
+		if ( type == PHA ):
+			# Phasespace diagnostics get special treatment
 			_nx = np.array( pha_nx, dtype = np.int32)
 			_range = np.array( pha_range, dtype = np.float32)
-			spec_report( self._thisptr, type, _nx, _range )
+			rep_type = PHASESPACE( self._pha_quants[quants[0]],
+				                   self._pha_quants[quants[1]])
+			spec_report( self._thisptr, rep_type, _nx, _range )
+		else:
+			# Other diagnostic
+			spec_report( self._thisptr, rep_type, NULL, NULL )
+
 
 	@property
 	def dx(self):
@@ -167,9 +182,13 @@ cdef class Species:
 		# Throw away guard cell
 		return charge[ 0 : self._thisptr.nx ]
 
-	def phasespace( self, int type, pha_nx, pha_range ):
+	def phasespace( self, list quants, pha_nx, pha_range ):
+
+
 		cdef int _nx[2]
 		cdef float _range[2][2]
+		cdef int rep_type = PHASESPACE( self._pha_quants[quants[0]],
+				                        self._pha_quants[quants[1]])
 
 		_nx = np.array( pha_nx, dtype = np.int32)
 		_range = np.array( pha_range, dtype = np.float32)
@@ -177,7 +196,7 @@ cdef class Species:
 		pha = np.zeros( shape = (_nx[1],_nx[0]), dtype = np.float32 )
 		cdef float [:,:] buf = pha
 
-		spec_deposit_pha( self._thisptr, type, _nx, _range, &buf[0,0] )
+		spec_deposit_pha( self._thisptr, rep_type, _nx, _range, &buf[0,0] )
 
 		return pha
 
@@ -193,23 +212,56 @@ cdef class EMF:
 	cdef t_emf* _thisptr
 
 	# Diagnostic types
-	efld = EFLD
-	bfld = BFLD
+	_diag_types = { 'E' : EFLD,	'B' : BFLD }
 
 	# Boundary condition types
-	bc_none     = EMF_BC_NONE
-	bc_periodic = EMF_BC_PERIODIC
-	bc_open     = EMF_BC_OPEN
+	_bc_types = {'none':     EMF_BC_NONE,
+	             'periodic': EMF_BC_PERIODIC,
+	             'open':     EMF_BC_OPEN }
 
 	# External field types
-	ext_fld_none    = EMF_EXT_FLD_NONE
-	ext_fld_uniform = EMF_EXT_FLD_UNIFORM
+	_ext_fld_types = {'none'    : EMF_EXT_FLD_NONE,
+	                  'uniform' : EMF_EXT_FLD_UNIFORM }
 
 	cdef associate( self, t_emf* ptr ):
 		self._thisptr = ptr
 
-	def report( self, char field, char fc ):
-		emf_report( self._thisptr, field, fc )
+	def report( self, str type, char fc ):
+		cdef int rep_type = self._diag_types[type];
+		emf_report( self._thisptr, rep_type, fc )
+
+	def get_energy( self ):
+		cdef double energy[6]
+		emf_get_energy( self._thisptr, energy )
+		return np.array( energy, dtype = np.float64 )
+
+	def set_ext_fld( self, str type, *, list E0 = None, list B0 = None ):
+		cdef t_emf_ext_fld ext_fld;
+		cdef float buf[3];
+
+		ext_fld.type = self._ext_fld_types[type]
+
+		if ( E0 ):
+			buf = np.array( E0, dtype=np.float32)
+			ext_fld.E0.x = buf[0]
+			ext_fld.E0.y = buf[1]
+			ext_fld.E0.z = buf[2]
+		else:
+			ext_fld.E0.x = 0
+			ext_fld.E0.y = 0
+			ext_fld.E0.z = 0
+
+		if ( B0 ):
+			buf = np.array( B0, dtype=np.float32)
+			ext_fld.B0.x = buf[0]
+			ext_fld.B0.y = buf[1]
+			ext_fld.B0.z = buf[2]
+		else:
+			ext_fld.B0.x = 0
+			ext_fld.B0.y = 0
+			ext_fld.B0.z = 0
+
+		emf_set_ext_fld( self._thisptr, &ext_fld )
 
 	@property
 	def bc_type( self ):
@@ -217,7 +269,7 @@ cdef class EMF:
 
 	@bc_type.setter
 	def bc_type( self, value ):
-		self._thisptr.bc_type = value
+		self._thisptr.bc_type = self._bc_types[value]
 
 	@property
 	def nx(self):
@@ -243,14 +295,14 @@ cdef class EMF:
 		cdef float *buf = <float *> self._thisptr.E_buf
 		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
 		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
-		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
+		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 1 ]
 
 	@property
 	def Ez( self ):
 		cdef float *buf = <float *> self._thisptr.E_buf
 		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
 		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
-		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
+		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 2 ]
 
 	@property
 	def Bx( self ):
@@ -264,14 +316,14 @@ cdef class EMF:
 		cdef float *buf = <float *> self._thisptr.B_buf
 		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
 		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
-		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
+		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 1 ]
 
 	@property
 	def Bz( self ):
 		cdef float *buf = <float *> self._thisptr.B_buf
 		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
 		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
-		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
+		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 2 ]
 
 cdef class Laser:
 	"""Extension type to wrap t_emf_laser objects"""
@@ -441,7 +493,7 @@ cdef class Simulation:
 
 	cdef object report
 
-	def __cinit__( self, int nx, float box, float dt, species, *,
+	def __cinit__( self, int nx, float box, float dt, *, species = None,
 	               report = None ):
 
 		# Allocate the simulation object
@@ -504,34 +556,6 @@ cdef class Simulation:
 	def add_laser(self, Laser laser):
 		sim_add_laser( self._thisptr, laser._thisptr )
 
-	def set_ext_fld( self, int type, *, E0 = None, B0 = None ):
-		cdef t_emf_ext_fld ext_fld;
-		cdef float buf[3];
-
-		ext_fld.type = type
-
-		if ( E0 ):
-			buf = np.array( E0, dtype=np.float32)
-			ext_fld.E0.x = buf[0]
-			ext_fld.E0.y = buf[1]
-			ext_fld.E0.z = buf[2]
-		else:
-			ext_fld.E0.x = 0
-			ext_fld.E0.y = 0
-			ext_fld.E0.z = 0
-
-		if ( B0 ):
-			buf = np.array( B0, dtype=np.float32)
-			ext_fld.B0.x = buf[0]
-			ext_fld.B0.y = buf[1]
-			ext_fld.B0.z = buf[2]
-		else:
-			ext_fld.B0.x = 0
-			ext_fld.B0.y = 0
-			ext_fld.B0.z = 0
-
-		sim_set_ext_fld( self._thisptr, &ext_fld )
-
 	def iter( self ):
 		sim_iter( self._thisptr )
 		self.n = self.n+1
@@ -580,6 +604,10 @@ cdef class Simulation:
 	@property
 	def t(self):
 		return self.t
+
+	@property
+	def dt(self):
+		return self._thisptr.dt
 
 	@property
 	def dx(self):

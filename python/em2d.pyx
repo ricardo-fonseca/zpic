@@ -6,23 +6,21 @@ from libc.stdlib cimport calloc, free
 import numpy as np
 
 
-cdef class DensityType:
-	uniform = UNIFORM
-	step = STEP
-	slab = SLAB
-
 cdef class Density:
 	"""Extension type to wrap t_density objects"""
 	cdef t_density *_thisptr
 
-	cdef object custom_func
+	_density_types = {'uniform':UNIFORM,
+	                  'step':STEP,
+	                  'slab':SLAB}
 
-	def __cinit__( self, *, int type = UNIFORM, float start = 0.0, float end = 0.0,
+	def __cinit__( self, *, str type = 'uniform', float start = 0.0, float end = 0.0,
 		           float n = 1.0):
+
 		# Allocates the structure and initializes all elements to 0
 		self._thisptr = <t_density *> calloc(1, sizeof(t_density))
 
-		self._thisptr.type = <density_type> type
+		self._thisptr.type = <density_type> self._density_types[type]
 		self._thisptr.n = n
 		self._thisptr.start = start
 		self._thisptr.end = end
@@ -111,7 +109,7 @@ cdef class Species:
 			self._this.ufl, self._this.uth,
 			nx, box, dt, self._density._thisptr )
 
-	def report( self, int type, *, pha_nx = 0, pha_range = 0 ):
+	def report( self, str type, *, pha_nx = 0, pha_range = 0 ):
 		cdef int _nx[2]
 		cdef float _range[2][2]
 
@@ -142,9 +140,15 @@ cdef class Species:
 		# Throw away guard cells
 		return charge[ 0 : self._thisptr.nx[1], 0 : self._thisptr.nx[0] ]
 
-	def phasespace( self, int type, pha_nx, pha_range ):
+	def phasespace( self, list quants, pha_nx, pha_range ):
 		cdef int _nx[2]
 		cdef float _range[2][2]
+
+		_PhasespaceQuants = {'x1':X1, 'x2':X2,
+		                     'u1':U1, 'u2':U2, 'u3':U3 }
+
+		cdef int rep_type = PHASESPACE(_PhasespaceQuants[quants[0]],
+			                           _PhasespaceQuants[quants[1]])
 
 		_nx = np.array( pha_nx, dtype = np.int32)
 		_range = np.array( pha_range, dtype = np.float32)
@@ -152,7 +156,7 @@ cdef class Species:
 		pha = np.zeros( shape = (_nx[1],_nx[0]), dtype = np.float32 )
 		cdef float [:,:] buf = pha
 
-		spec_deposit_pha( self._thisptr, type, _nx, _range, &buf[0,0] )
+		spec_deposit_pha( self._thisptr, rep_type, _nx, _range, &buf[0,0] )
 
 		return pha
 
@@ -175,6 +179,11 @@ cdef class EMF:
 
 	def report( self, char field, char fc ):
 		emf_report( self._thisptr, field, fc )
+
+	def get_energy( self ):
+		cdef double energy[6]
+		emf_get_energy( self._thisptr, energy )
+		return np.array( energy, dtype = np.float64 )
 
 	@property
 	def nx(self):
@@ -206,6 +215,7 @@ cdef class EMF:
 		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
 		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 1]
 
+	@property
 	def Ez( self ):
 		cdef float *buf = <float *> self._thisptr.E_buf
 		cdef int nx = self._thisptr.gc[0][0] + self._thisptr.nx[0] + self._thisptr.gc[0][1]
@@ -246,10 +256,14 @@ cdef class Laser:
 
 	cdef t_emf_laser * _thisptr
 
-	def __cinit__( self, *, float start = 0.0, float fwhm = 0.0,
+	def __cinit__( self, *, type = 'plane', float start = 0.0, float fwhm = 0.0,
 		           float rise = 0.0, float flat = 0.0, float fall = 0.0,
-	               float a0 = 0.0, float omega0 = 0.0, float polarization = 0.0 ):
+	               float a0 = 0.0, float omega0 = 0.0, float polarization = 0.0,
+	               float W0 = 0.0, float focus = 0.0, float axis = 0.0 ):
 		self._thisptr = <t_emf_laser *> calloc(1, sizeof(t_emf_laser))
+
+		_LaserType = {'plane':PLANE,'gaussian':GAUSSIAN }
+		self._thisptr.type = _LaserType[type]
 
 		self._thisptr.start = start
 		self._thisptr.fwhm = fwhm
@@ -259,6 +273,10 @@ cdef class Laser:
 		self._thisptr.a0 = a0
 		self._thisptr.omega0 = omega0
 		self._thisptr.polarization = polarization
+
+		self._thisptr.W0 = W0
+		self._thisptr.focus = focus
+		self._thisptr.axis = axis
 
 	def __dealloc__(self):
 		free( self._thisptr )
@@ -327,6 +345,30 @@ cdef class Laser:
 	def polarization(self,value):
 		self._thisptr.polarization = value
 
+	@property
+	def W0(self):
+		return self._thisptr.W0
+
+	@W0.setter
+	def W0(self,value):
+		self._thisptr.W0 = value
+
+	@property
+	def focus(self):
+		return self._thisptr.focus
+
+	@focus.setter
+	def focus(self,value):
+		self._thisptr.focus = value
+
+	@property
+	def axis(self):
+		return self._thisptr.axis
+
+	@axis.setter
+	def axis(self,value):
+		self._thisptr.axis = value
+
 
 cdef class Current:
 	"""Extension type to wrap t_current objects"""
@@ -376,11 +418,18 @@ cdef class Smooth:
 	binomial    = BINOMIAL
 	compensated = COMPENSATED
 
-	def __cinit__( self, *, int xtype = NONE, int xlevel = 0 ):
+	def __cinit__( self, *, xtype = 'none', ytype = 'none', 
+		           int xlevel = 0, int ylevel = 0 ):
+
+		_SmoothType = {'none':NONE, 'binomial':BINOMIAL, 'compensated':COMPENSATED }
+
 		self._thisptr = <t_smooth *> calloc(1, sizeof(t_smooth))
 
-		self._thisptr.xtype = <smooth_type>  xtype
+		self._thisptr.xtype = _SmoothType[ xtype ]
+		self._thisptr.ytype = _SmoothType[ ytype ]
+
 		self._thisptr.xlevel = xlevel
+		self._thisptr.ylevel = ylevel
 
 	def __dealloc__(self):
 		free( self._thisptr )
@@ -415,7 +464,7 @@ cdef class Simulation:
 
 	cdef object report
 
-	def __cinit__( self, list nx, list box, float dt, species, *,
+	def __cinit__( self, list nx, list box, float dt, *, species = None,
 	               report = None ):
 
 		# Allocate the simulation object

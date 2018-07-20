@@ -120,6 +120,7 @@ cdef extern from "../em1d/emf.h":
 		int bc_type
 		t_vfld mur_fld[2]
 		t_vfld mur_tmp[2]
+		t_emf_ext_fld ext_fld
 
 	ctypedef struct t_emf_laser:
 		float start
@@ -132,6 +133,8 @@ cdef extern from "../em1d/emf.h":
 		float polarization
 
 	void emf_report( const t_emf *emf, const char field, const char fc )
+	void emf_get_energy( const t_emf *emf, double energy[] )
+	void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld )
 
 #########################################################################################
 # Current
@@ -183,7 +186,6 @@ cdef extern from "../em1d/simulation.h":
 	void sim_add_laser( t_simulation* sim,  t_emf_laser* laser )
 	void sim_set_moving_window( t_simulation* sim )
 	void sim_set_smooth( t_simulation* sim,  t_smooth* smooth )
-	void sim_set_ext_fld( t_simulation* sim, t_emf_ext_fld* ext_fld )
 
 	void sim_iter( t_simulation* sim )
 	void sim_report_energy( t_simulation* sim )
