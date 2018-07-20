@@ -604,7 +604,7 @@ void interpolate_fld( t_vfld_grid* E, t_vfld_grid* B,
 
 	Bp->x = B->x[i] * s0 + B->x[i+1] * s1;
 	Bp->y = B->y[i] * s0 + B->y[i+1] * s1;
-	Bp->x = B->z[i] * s0 + B->z[i+1] * s1;
+	Bp->z = B->z[i] * s0 + B->z[i+1] * s1;
 }		
 
 
@@ -641,7 +641,7 @@ void spec_advance( t_species* spec, t_emf* emf, t_charge* charge, t_current* cur
 		uz = spec -> part[i].uz;
 
 		// interpolate fields
-		interpolate_fld( &emf -> E, &emf -> B, &spec -> part[i], &Ep, &Bp );
+		interpolate_fld( emf -> E_part, emf -> B_part, &spec -> part[i], &Ep, &Bp );
 
 		// advance u using Boris scheme
 		Ep.x *= tem;
