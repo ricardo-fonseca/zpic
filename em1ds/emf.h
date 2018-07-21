@@ -28,13 +28,15 @@ Some headers (e.g. termios.h) define a B0 macro that conflicts with this code
 typedef struct {
 	t_vfld E0;
 	t_vfld B0;
-	int type;
+	enum emf_ext_fld type;
 
 	t_vfld_grid E_part_buf;
 	t_vfld_grid B_part_buf;
 } t_emf_ext_fld;
 
 enum emf_diag { EFLD, BFLD };
+
+enum emf_solver { EMF_SOLVER_PSTD, EMF_SOLVER_PSATD };
 
 typedef struct {
 
@@ -69,6 +71,9 @@ typedef struct {
 
 	// External fields
 	t_emf_ext_fld ext_fld;
+
+	// solver type
+	enum emf_solver solver_type;
 
 } t_emf;
 

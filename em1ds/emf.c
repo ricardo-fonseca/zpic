@@ -17,6 +17,7 @@
 #include "zdf.h"
 #include "timer.h"
 
+
 static double _emf_time = 0.0;
 
 double emf_time()
@@ -77,6 +78,9 @@ void emf_new( t_emf *emf, int nx, t_fld box, const float dt, t_fftr_cfg *fft_for
 	emf -> ext_fld.type = EMF_EXT_FLD_NONE;
 	emf -> E_part = &emf->E;
 	emf -> B_part = &emf->B;
+
+	// Set default solver type to Pseudo-spectral Time Domain
+	emf -> solver_type = EMF_SOLVER_PSTD;
 }
 
 void emf_delete( t_emf *emf )
@@ -263,7 +267,7 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 
 /*********************************************************************************************
 
- Field solver
+ Spectral Field solver
 
  *********************************************************************************************/
 
@@ -346,6 +350,59 @@ void update_fEl( t_emf *emf, const t_charge *charge )
 
 }
 
+/*********************************************************************************************
+
+ Pseudo-spectral Analytical time domain field solver
+
+ *********************************************************************************************/
+
+void advance_psatd( t_emf *emf, const t_current *current, const float dt )
+{
+
+    // float complex * const restrict fEtx = emf -> fEt.x;
+    float complex * const restrict fEty = emf -> fEt.y;
+    float complex * const restrict fEtz = emf -> fEt.z;
+
+    // float complex * const restrict fBx = emf -> fB.x;
+    float complex * const restrict fBy = emf -> fB.y;
+    float complex * const restrict fBz = emf -> fB.z;
+
+    // float complex * const restrict fJtx = current -> fJt.x;
+    float complex * const restrict fJty = current -> fJt.y;
+    float complex * const restrict fJtz = current -> fJt.z;
+
+    const float dk = fft_dk( emf->E.nx, emf->dx );
+	int i;
+
+	for (i=1; i < emf->fEt.nx; i++) {
+
+		float kx = i * dk;
+		float C = cosf( kx * dt );
+		float S = sinf( kx * dt );
+
+		float complex Ey = fEty[i];
+		float complex Ez = fEtz[i];
+
+		float complex By = fBy[i];
+		float complex Bz = fBz[i];
+
+		// fJtx is always 0 in 1D so this is unnecessary
+		// Ex[i] += dt * (               -  fJtx[i] );
+		Ey = C * Ey -I * S * fBz[i] - S * fJty[i] / kx;
+		Ez = C * Ez +I * S * fBy[i] - S * fJtz[i] / kx;
+
+		// Bx[i] += 0;
+		By = C * By + I * S * fEtz[i] - (1.0f - C) * fJtz[i] / kx;
+		Bz = C * Bz - I * S * fEty[i] + (1.0f - C) * fJty[i] / kx;
+
+		fEty[i] = Ey;
+        fEtz[i] = Ez;
+        fBy[i]  = By;
+        fBz[i]  = Bz;
+
+	}
+}
+
 
 // This code operates with periodic boundaries
 void emf_update( t_emf *emf )
@@ -412,13 +469,17 @@ void emf_advance( t_emf *emf, const t_charge *charge, const t_current *current )
 	uint64_t t0 = timer_ticks();
 	const float dt = emf->dt;
 
-
 	// Advance fB, fEt
-	advance_fB( emf, dt/2.0f );
 
-	advance_fEt( emf, current, dt );
-
-	advance_fB( emf, dt/2.0f );
+	if ( emf -> solver_type == EMF_SOLVER_PSATD ) {
+		// Pseudo-spectral Analytical Time-Domain
+		advance_psatd( emf, current, dt );
+	} else {
+		// Pseudo-spectral Time Domain
+		advance_fB( emf, dt/2.0f );
+		advance_fEt( emf, current, dt );
+		advance_fB( emf, dt/2.0f );
+	}
 
 	// Calculate fEl
 	update_fEl( emf, charge );

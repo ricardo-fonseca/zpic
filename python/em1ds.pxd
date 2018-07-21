@@ -189,6 +189,9 @@ cdef extern from "../em1ds/emf.h":
 	cdef enum emf_diag:
 		EFLD, BFLD
 
+	cdef enum emf_solver:
+		EMF_SOLVER_PSTD, EMF_SOLVER_PSATD
+
 	ctypedef struct t_emf:
 		t_vfld_grid E
 		t_vfld_grid B
@@ -204,6 +207,7 @@ cdef extern from "../em1ds/emf.h":
 		t_vfld_grid *E_part
 		t_vfld_grid *B_part
 		t_emf_ext_fld ext_fld
+		int solver_type
 
 	ctypedef struct t_emf_laser:
 		float start

@@ -194,6 +194,10 @@ cdef class EMF:
 	_ext_fld_types = {'none'    : EMF_EXT_FLD_NONE,
 	                  'uniform' : EMF_EXT_FLD_UNIFORM }
 
+	# Field solver types
+	_solver_types = {'PSTD' : EMF_SOLVER_PSTD,
+                     'PSATD': EMF_SOLVER_PSATD}
+
 	cdef associate( self, t_emf* ptr ):
 		self._thisptr = ptr
 
@@ -245,6 +249,14 @@ cdef class EMF:
 	@property
 	def box(self):
 		return self._thisptr.box
+
+	@property
+	def solver_type(self):
+		return self.solver_type
+
+	@solver_type.setter
+	def solver_type( self, str solver ):
+		self._thisptr.solver_type = self._solver_types[solver]
 
 	@property
 	def Ex( self ):
