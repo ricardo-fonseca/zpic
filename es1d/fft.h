@@ -8,6 +8,10 @@
 
 #include <complex.h>
 
+#ifndef M_PI
+#define M_PI        3.14159265358979323846264338327950288   /* pi             */
+#endif
+
 #define MAX_FACTORS 32
 
 enum fft_direction { FFT_FORWARD, FFT_BACKWARD };

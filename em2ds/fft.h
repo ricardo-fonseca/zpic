@@ -7,15 +7,16 @@
 #define __FFT__
 
 /*
-
 We should use the "Type generic math <tgmath.h> instead of <math.h> and <complex.h>
-
 And then change the code so it can be easily compiled in single our double precision.
-
 */
 
 
 #include <complex.h>
+
+#ifndef M_PI
+#define M_PI        3.14159265358979323846264338327950288   /* pi             */
+#endif
 
 #define MAX_FACTORS 32
 
