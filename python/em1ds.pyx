@@ -4,17 +4,11 @@ cimport em1ds
 from libc.stdlib cimport calloc, free
 
 import numpy as np
+import sys
 
 cdef float custom_density( float x, void *f ):
 	cdef Density d = <object> f
 	return d.custom_func(x)
-
-cdef class DensityType:
-	uniform = UNIFORM
-	step = STEP
-	slab = SLAB
-	ramp = RAMP
-	custom = CUSTOM
 
 cdef class Density:
 	"""Extension type to wrap t_density objects"""
@@ -22,12 +16,19 @@ cdef class Density:
 
 	cdef object custom_func
 
-	def __cinit__( self, *, int type = UNIFORM, float n = 1.0, float start = 0.0, float end = 0.0,
+	_density_types = {'uniform':UNIFORM,
+	                  'step':STEP,
+	                  'slab':SLAB,
+	                  'ramp':RAMP,
+	                  'custom':CUSTOM}
+
+	def __cinit__( self, *, str type = 'uniform', float n = 1.0, float start = 0.0, float end = 0.0,
 		           list ramp = [0.,0.], custom = None):
+
 		# Allocates the structure and initializes all elements to 0
 		self._thisptr = <t_density *> calloc(1, sizeof(t_density))
 
-		self._thisptr.type = <density_type> type
+		self._thisptr.type = <density_type> self._density_types[type]
 		self._thisptr.n = n
 		self._thisptr.start = start
 		self._thisptr.end = end
@@ -94,16 +95,6 @@ cdef class Density:
 	def ramp(self,value):
 		self._thisptr.ramp = value
 
-cdef class SpeciesDiag:
-	sp_charge  = CHARGE
-	pha	       = PHA
-	particles  = PARTICLES
-	x1		   = X1
-	u1		   = U1
-	u2		   = U2
-	u3		   = U3
-
-
 cdef class Species:
 	"""Extension type to wrap t_species objects"""
 
@@ -111,6 +102,10 @@ cdef class Species:
 	cdef t_species* _thisptr
 	cdef Density _density
 	cdef str _name
+
+	# Diagnostic types
+	_diag_types  = { 'charge':CHARGE, 'pha':PHA, 'particles':PARTICLES }
+	_pha_quants = { 'x1':X1, 'u1':U1, 'u2':U2, 'u3':U3 }
 
 	def __cinit__( self, str name, const float m_q, const int ppc, *,
 				  list ufl = [0.,0.,0.], list uth = [0.,0.,0.], Density density = None):
@@ -125,7 +120,8 @@ cdef class Species:
 		if ( density ):
 			self._density = density.copy()
 		else:
-			self._density._thisptr = NULL
+			# Use default uniform density
+			self._density = Density()
 
 	cdef new( self, t_species* ptr, int nx, float box, float dt ):
 		self._thisptr = ptr
@@ -133,17 +129,23 @@ cdef class Species:
 			self._this.ufl, self._this.uth,
 			nx, box, dt, self._density._thisptr )
 
-	def report( self, int type, *, pha_nx = 0, pha_range = 0 ):
+	def report( self, str type, *, list quants = [], list pha_nx = [], list pha_range = [] ):
 		cdef int _nx[2]
 		cdef float _range[2][2]
 
-		if ( type == PARTICLES or type == CHARGE ):
-			spec_report( self._thisptr, type, NULL, NULL )
-		else:
-			# Phasespace diagnostic
+		cdef int rep_type = self._diag_types[type]
+
+		if ( rep_type == PHA ):
+			# Phasespace diagnostics get special treatment
 			_nx = np.array( pha_nx, dtype = np.int32)
 			_range = np.array( pha_range, dtype = np.float32)
-			spec_report( self._thisptr, type, _nx, _range )
+			rep_type = PHASESPACE( self._pha_quants[quants[0]],
+				                   self._pha_quants[quants[1]])
+			spec_report( self._thisptr, rep_type, _nx, _range )
+		else:
+			# Other diagnostic
+			spec_report( self._thisptr, rep_type, NULL, NULL )
+
 
 	@property
 	def dx(self):
@@ -162,9 +164,13 @@ cdef class Species:
 		# Throw away guard cell
 		return charge[ 0 : self._thisptr.nx ]
 
-	def phasespace( self, int type, pha_nx, pha_range ):
+	def phasespace( self, list quants, pha_nx, pha_range ):
+
+
 		cdef int _nx[2]
 		cdef float _range[2][2]
+		cdef int rep_type = PHASESPACE( self._pha_quants[quants[0]],
+				                        self._pha_quants[quants[1]])
 
 		_nx = np.array( pha_nx, dtype = np.int32)
 		_range = np.array( pha_range, dtype = np.float32)
@@ -172,7 +178,7 @@ cdef class Species:
 		pha = np.zeros( shape = (_nx[1],_nx[0]), dtype = np.float32 )
 		cdef float [:,:] buf = pha
 
-		spec_deposit_pha( self._thisptr, type, _nx, _range, &buf[0,0] )
+		spec_deposit_pha( self._thisptr, rep_type, _nx, _range, &buf[0,0] )
 
 		return pha
 
@@ -252,7 +258,10 @@ cdef class EMF:
 
 	@property
 	def solver_type(self):
-		return self.solver_type
+		for key, value in self._solver_types.items():
+			if ( value == self._thisptr.solver_type ):
+				return key
+		return 'unknown'
 
 	@solver_type.setter
 	def solver_type( self, str solver ):
@@ -454,8 +463,29 @@ cdef class Simulation:
 
 	cdef object report
 
-	def __cinit__( self, int nx, float box, float dt, *, species = None,
-	               report = None ):
+    # Filter types
+	_filter_types = {'none' :     FILTER_NONE,
+                     'gaussian' : FILTER_GAUSS,
+                     'sharp' :    FILTER_SHARP}
+
+	def __cinit__( self, int nx, float box, float dt, *, species = None, report = None ):
+
+		# Sanity checks
+		if ( nx < 2 ):
+			print("Invalid number of cells", file = sys.stderr)
+			return
+
+		if ( box <= 0 ):
+			print("Invalid box size, must be > 0", file = sys.stderr)
+			return
+
+		if ( dt < 0 ):
+			print("Invalid time-step, must be > 0", file = sys.stderr)
+			return
+
+		if ( dt >= box/nx ):
+			print("Invalid timestep (courant condition violation), dt must be < {:g}".format( box/nx ) , file = sys.stderr)
+			return
 
 		# Allocate the simulation object
 		self._thisptr = <t_simulation *> calloc(1, sizeof(t_simulation))
@@ -549,6 +579,22 @@ cdef class Simulation:
 
 		print('n = {:d}, t = {:g}'.format(self.n,self.t), end = '\r')
 		print("\nDone.")
+
+	def filter_set( self, str type, *, float ck = 0.0 ):
+		cdef int filter_type;
+
+		filter_type = self._filter_types[type]
+
+		if ( filter_type == FILTER_SHARP ):
+			if ( ck <= 0.0 or ck >= 1.0 ):
+				print("For sharp filter ck must be in the ]0.0,1.0[ range", file = sys.stderr)
+				return
+		elif ( filter_type == FILTER_GAUSS ):
+			if ( ck <= 0.0 ):
+				print("For gaussian filter ck must be > 0.0", file = sys.stderr)
+				return
+
+		sim_filter_set( self._thisptr, filter_type, ck )
 
 	@property
 	def emf(self):

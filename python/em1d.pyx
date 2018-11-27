@@ -4,6 +4,7 @@ cimport em1d
 from libc.stdlib cimport calloc, free
 
 import numpy as np
+import sys
 
 cdef float custom_density( float x, void *f ):
 	cdef Density d = <object> f
@@ -94,21 +95,6 @@ cdef class Density:
 	def ramp(self,value):
 		self._thisptr.ramp = value
 
-cdef class SpeciesDiag:
-	charge	   = CHARGE
-	pha	       = PHA
-	particles  = PARTICLES
-	x1		   = X1
-	u1		   = U1
-	u2		   = U2
-	u3		   = U3
-
-cdef class SpeciesBoundary:
-	none     = PART_BC_NONE
-	periodic = PART_BC_PERIODIC
-	open     = PART_BC_OPEN
-
-
 cdef class Species:
 	"""Extension type to wrap t_species objects"""
 
@@ -139,7 +125,8 @@ cdef class Species:
 		if ( density ):
 			self._density = density.copy()
 		else:
-			self._density._thisptr = NULL
+			# Use default uniform density
+			self._density = Density()
 
 	cdef new( self, t_species* ptr, int nx, float box, float dt ):
 		self._thisptr = ptr
@@ -147,13 +134,13 @@ cdef class Species:
 			self._this.ufl, self._this.uth,
 			nx, box, dt, self._density._thisptr )
 
-	def report( self, str type, *, list quants, pha_nx, pha_range ):
+	def report( self, str type, *, list quants = [], list pha_nx = [], list pha_range = [] ):
 		cdef int _nx[2]
 		cdef float _range[2][2]
 
 		cdef int rep_type = self._diag_types[type]
 
-		if ( type == PHA ):
+		if ( rep_type == PHA ):
 			# Phasespace diagnostics get special treatment
 			_nx = np.array( pha_nx, dtype = np.int32)
 			_range = np.array( pha_range, dtype = np.float32)
@@ -183,7 +170,6 @@ cdef class Species:
 		return charge[ 0 : self._thisptr.nx ]
 
 	def phasespace( self, list quants, pha_nx, pha_range ):
-
 
 		cdef int _nx[2]
 		cdef float _range[2][2]
@@ -282,6 +268,10 @@ cdef class EMF:
 	@property
 	def box(self):
 		return self._thisptr.box
+
+	@property
+	def solver_type(self):
+		return "Yee"
 
 	@property
 	def Ex( self ):
@@ -450,14 +440,15 @@ cdef class Smooth:
 
 	cdef t_smooth* _thisptr
 
-	none        = NONE
-	binomial    = BINOMIAL
-	compensated = COMPENSATED
+    # Filter types
+	_filter_types = {'none'        : NONE,
+                     'binomial'    : BINOMIAL,
+                     'compensated' : COMPENSATED}
 
-	def __cinit__( self, *, int xtype = NONE, int xlevel = 0 ):
+	def __cinit__( self, *, str xtype = 'none', int xlevel = 0 ):
 		self._thisptr = <t_smooth *> calloc(1, sizeof(t_smooth))
 
-		self._thisptr.xtype = <smooth_type>  xtype
+		self._thisptr.xtype = self._filter_types[xtype]
 		self._thisptr.xlevel = xlevel
 
 	def __dealloc__(self):
@@ -495,6 +486,23 @@ cdef class Simulation:
 
 	def __cinit__( self, int nx, float box, float dt, *, species = None,
 	               report = None ):
+
+		# Sanity checks
+		if ( nx < 2 ):
+			print("Invalid number of cells", file = sys.stderr)
+			return
+
+		if ( box <= 0 ):
+			print("Invalid box size, must be > 0", file = sys.stderr)
+			return
+
+		if ( dt < 0 ):
+			print("Invalid time-step, must be > 0", file = sys.stderr)
+			return
+
+		if ( dt >= box/nx ):
+			print("Invalid timestep (courant condition violation), dt must be < {:g}".format( box/nx ) , file = sys.stderr)
+			return
 
 		# Allocate the simulation object
 		self._thisptr = <t_simulation *> calloc(1, sizeof(t_simulation))

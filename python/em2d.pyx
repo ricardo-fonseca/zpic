@@ -69,17 +69,6 @@ cdef class Density:
 	def end(self,value):
 		self._thisptr.end = value
 
-cdef class SpeciesDiag:
-	charge	   = CHARGE
-	pha	       = PHA
-	particles  = PARTICLES
-	x1		   = X1
-	x2		   = X2
-	u1		   = U1
-	u2		   = U2
-	u3		   = U3
-
-
 cdef class Species:
 	"""Extension type to wrap t_species objects"""
 
@@ -87,6 +76,10 @@ cdef class Species:
 	cdef t_species* _thisptr
 	cdef Density _density
 	cdef str _name
+
+	# Diagnostic types
+	_diag_types  = { 'charge':CHARGE, 'pha':PHA, 'particles':PARTICLES }
+	_pha_quants = { 'x1':X1, 'x2':X2, 'u1':U1, 'u2':U2, 'u3':U3 }
 
 	def __cinit__( self, str name, const float m_q, list ppc = [1,1], *,
 				  list ufl = [0.,0.,0.], list uth = [0.,0.,0.], Density density = None):
@@ -101,7 +94,8 @@ cdef class Species:
 		if ( density ):
 			self._density = density.copy()
 		else:
-			self._density._thisptr = NULL
+			# Use default uniform density
+			self._density = Density()
 
 	cdef new( self, t_species* ptr, int nx[], float box[], float dt ):
 		self._thisptr = ptr
@@ -109,17 +103,22 @@ cdef class Species:
 			self._this.ufl, self._this.uth,
 			nx, box, dt, self._density._thisptr )
 
-	def report( self, str type, *, pha_nx = 0, pha_range = 0 ):
+	def report( self, str type, *, list quants = [], list pha_nx = [], list pha_range = [] ):
 		cdef int _nx[2]
 		cdef float _range[2][2]
 
-		if ( type == PARTICLES or type == CHARGE ):
-			spec_report( self._thisptr, type, NULL, NULL )
-		else:
-			# Phasespace diagnostic
+		cdef int rep_type = self._diag_types[type]
+
+		if ( rep_type == PHA ):
+			# Phasespace diagnostics get special treatment
 			_nx = np.array( pha_nx, dtype = np.int32)
 			_range = np.array( pha_range, dtype = np.float32)
-			spec_report( self._thisptr, type, _nx, _range )
+			rep_type = PHASESPACE( self._pha_quants[quants[0]],
+				                   self._pha_quants[quants[1]])
+			spec_report( self._thisptr, rep_type, _nx, _range )
+		else:
+			# Other diagnostic
+			spec_report( self._thisptr, rep_type, NULL, NULL )
 
 	@property
 	def dx(self):
@@ -141,14 +140,11 @@ cdef class Species:
 		return charge[ 0 : self._thisptr.nx[1], 0 : self._thisptr.nx[0] ]
 
 	def phasespace( self, list quants, pha_nx, pha_range ):
+
 		cdef int _nx[2]
 		cdef float _range[2][2]
-
-		_PhasespaceQuants = {'x1':X1, 'x2':X2,
-		                     'u1':U1, 'u2':U2, 'u3':U3 }
-
-		cdef int rep_type = PHASESPACE(_PhasespaceQuants[quants[0]],
-			                           _PhasespaceQuants[quants[1]])
+		cdef int rep_type = PHASESPACE( self._pha_quants[quants[0]],
+				                        self._pha_quants[quants[1]])
 
 		_nx = np.array( pha_nx, dtype = np.int32)
 		_range = np.array( pha_range, dtype = np.float32)
@@ -171,14 +167,14 @@ cdef class EMF:
 	cdef t_emf* _thisptr
 
 	# Diagnostic types
-	efld = EFLD
-	bfld = BFLD
+	_diag_types = { 'E' : EFLD,	'B' : BFLD }
 
 	cdef associate( self, t_emf* ptr ):
 		self._thisptr = ptr
 
-	def report( self, char field, char fc ):
-		emf_report( self._thisptr, field, fc )
+	def report( self, str type, char fc ):
+		cdef int rep_type = self._diag_types[type];
+		emf_report( self._thisptr, rep_type, fc )
 
 	def get_energy( self ):
 		cdef double energy[6]
@@ -256,14 +252,16 @@ cdef class Laser:
 
 	cdef t_emf_laser * _thisptr
 
+	# Laser types
+	_laser_types = {'plane':PLANE,'gaussian':GAUSSIAN }
+
 	def __cinit__( self, *, type = 'plane', float start = 0.0, float fwhm = 0.0,
 		           float rise = 0.0, float flat = 0.0, float fall = 0.0,
 	               float a0 = 0.0, float omega0 = 0.0, float polarization = 0.0,
 	               float W0 = 0.0, float focus = 0.0, float axis = 0.0 ):
 		self._thisptr = <t_emf_laser *> calloc(1, sizeof(t_emf_laser))
 
-		_LaserType = {'plane':PLANE,'gaussian':GAUSSIAN }
-		self._thisptr.type = _LaserType[type]
+		self._thisptr.type = self._laser_types[type]
 
 		self._thisptr.start = start
 		self._thisptr.fwhm = fwhm
@@ -414,19 +412,18 @@ cdef class Smooth:
 
 	cdef t_smooth* _thisptr
 
-	none        = NONE
-	binomial    = BINOMIAL
-	compensated = COMPENSATED
+    # Filter types
+	_filter_types = {'none'        : NONE,
+                     'binomial'    : BINOMIAL,
+                     'compensated' : COMPENSATED}
 
-	def __cinit__( self, *, xtype = 'none', ytype = 'none', 
+	def __cinit__( self, *, str xtype = 'none', str ytype = 'none',
 		           int xlevel = 0, int ylevel = 0 ):
-
-		_SmoothType = {'none':NONE, 'binomial':BINOMIAL, 'compensated':COMPENSATED }
 
 		self._thisptr = <t_smooth *> calloc(1, sizeof(t_smooth))
 
-		self._thisptr.xtype = _SmoothType[ xtype ]
-		self._thisptr.ytype = _SmoothType[ ytype ]
+		self._thisptr.xtype = self._filter_types[ xtype ]
+		self._thisptr.ytype = self._filter_types[ ytype ]
 
 		self._thisptr.xlevel = xlevel
 		self._thisptr.ylevel = ylevel

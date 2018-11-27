@@ -14,6 +14,9 @@ cflags += ' -std=c99'
 
 sysconfig._config_vars['CFLAGS'] = cflags
 
+# Set custom compiler
+sysconfig._config_vars['CC'] = 'gcc-8.2.0'
+
 # Finit difference Electromagnetic codes
 em1d = Extension("em1d",
                 sources=["em1d.pyx",
@@ -54,6 +57,7 @@ es1d = Extension("es1d",
 # Spectral Electromagnetic codes
 em1ds = Extension("em1ds",
                 sources=["em1ds.pyx",
+				"../em1ds/filter.c",
 				"../em1ds/charge.c",
 				"../em1ds/current.c",
 				"../em1ds/emf.c",
@@ -82,5 +86,8 @@ em2ds = Extension("em2ds",
 )
 
 
+#setup(name="zpic",
+#      ext_modules = cythonize([em1d, em2d, es1d, em1ds, em2ds]))
+
 setup(name="zpic",
-      ext_modules = cythonize([em1d, em2d, es1d, em1ds, em2ds]))
+      ext_modules = cythonize([em1ds]))

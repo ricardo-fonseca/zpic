@@ -123,7 +123,8 @@ cdef class Species:
 		if ( density ):
 			self._density = density.copy()
 		else:
-			self._density._thisptr = NULL
+			# Use default uniform density
+			self._density = Density()
 
 	cdef new( self, t_species* ptr, int nx, float box, float dt ):
 		self._thisptr = ptr

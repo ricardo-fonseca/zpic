@@ -69,6 +69,20 @@ cdef extern from "../em1ds/fft.h":
 		t_fft_cfg cfg
 		float complex *phase
 
+
+
+#########################################################################################
+# Spectral Filter
+#
+cdef extern from "../em1ds/filter.h":
+	cdef enum filter_type:
+		FILTER_NONE, FILTER_GAUSS, FILTER_SHARP
+
+	ctypedef struct t_filter:
+		int type
+		int nk
+		float *Sk
+
 #########################################################################################
 # Particles
 #
@@ -137,6 +151,7 @@ cdef extern from "../em1ds/particles.h":
 	void spec_deposit_pha( const t_species *spec, const int rep_type,
 			  const int pha_nx[], const float pha_range[][2], float* buf )
 
+
 #########################################################################################
 # Charge
 #
@@ -148,10 +163,11 @@ cdef extern from "../em1ds/charge.h":
 		t_scalar_grid neutral
 		t_cscalar_grid frho
 		float box
-		float dx;
+		float dx
 		float dt
 		int iter;
 		t_fftr_cfg *fft_forward
+		t_filter *filter
 
 	void charge_report( const t_charge *charge )
 
@@ -169,6 +185,7 @@ cdef extern from "../em1ds/current.h":
 		float dt
 		int iter
 		t_fftr_cfg *fft_forward
+		t_filter *filter
 
 	void current_report( const t_current *current, const char jc )
 
@@ -204,6 +221,7 @@ cdef extern from "../em1ds/emf.h":
 		int iter
 		t_fftr_cfg *fft_forward
 		t_fftr_cfg *fft_backward
+		t_filter *filter
 		t_vfld_grid *E_part
 		t_vfld_grid *B_part
 		t_emf_ext_fld ext_fld
@@ -221,7 +239,7 @@ cdef extern from "../em1ds/emf.h":
 
 	void emf_report( const t_emf *emf, const char field, const char fc )
 	void emf_get_energy( const t_emf *emf, double energy[] )
-	void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld )
+	int emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld )
 
 #########################################################################################
 # Simulation
@@ -239,9 +257,11 @@ cdef extern from "../em1ds/simulation.h":
 		t_charge charge
 		t_fftr_cfg *fft_forward
 		t_fftr_cfg *fft_backward
+		t_filter *filter
 
 	void sim_new( t_simulation* sim, int nx, float box, float dt, float tmax, int ndump, t_species* species, int n_species )
 
+	int  sim_filter_set( t_simulation* sim, int type, float ck )
 	void sim_add_laser( t_simulation* sim,  t_emf_laser* laser )
 	void sim_add_neutral_bkg( t_simulation* sim )
 
