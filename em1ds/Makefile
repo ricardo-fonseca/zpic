@@ -13,8 +13,8 @@ CFLAGS = -Ofast -std=c99 -pedantic
 LDFLAGS =
 
 
-SOURCE = charge.c current.c emf.c particles.c grid.c fft.c random.c timer.c main.c simulation.c \
-         zdf.c
+SOURCE = filter.c charge.c current.c emf.c particles.c grid.c \
+         fft.c random.c timer.c main.c simulation.c zdf.c
 
 TARGET = zpic
 

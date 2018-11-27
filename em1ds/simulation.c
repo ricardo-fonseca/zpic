@@ -55,10 +55,13 @@ void sim_new( t_simulation* sim, int nx, float box, float dt, float tmax, int nd
 	fftr_init_cfg( &sim -> fft_forward, nx, FFT_FORWARD, FFTR_CCS);
 	fftr_init_cfg( &sim -> fft_backward, nx, FFT_BACKWARD, FFTR_CCS);
 
+	// Initialize filtering
+	filter_new( &sim -> filter, nx/2 + 1 );
+
 	// Initialize simulation data
-	emf_new( &sim -> emf, nx, box, dt, & sim -> fft_forward, &sim->fft_backward );
-	current_new(&sim -> current, nx, box, dt, &sim->fft_forward );
-	charge_new(&sim -> charge, nx, box, dt, &sim->fft_forward );
+	emf_new( &sim -> emf, nx, box, dt, & sim -> fft_forward, &sim->fft_backward, &sim -> filter );
+	current_new(&sim -> current, nx, box, dt, &sim->fft_forward, &sim -> filter );
+	charge_new(&sim -> charge, nx, box, dt, &sim->fft_forward, &sim -> filter );
 
 	sim -> n_species = n_species;
 	sim -> species = species;
@@ -66,10 +69,18 @@ void sim_new( t_simulation* sim, int nx, float box, float dt, float tmax, int nd
 	// Check time step
 	float cour = sim->emf.dx;
 	if ( dt >= cour ){
-		printf("Invalid timestep, courant condition violation, dtmax = %f \n", cour );
+		fprintf(stderr,"Invalid timestep, courant condition violation, dtmax = %f \n", cour );
 		exit(-1);
 	}
 
+}
+
+int sim_filter_set( t_simulation* const sim, enum filter_type const type, float const ck ){
+	if ( filter_set( &sim -> filter, type, ck ) ){
+		fprintf(stderr,"Unable to set filter\n" );
+		return -1;
+	}
+	return 0;
 }
 
 void sim_add_laser( t_simulation* sim,  t_emf_laser* laser ){
@@ -99,6 +110,8 @@ void sim_delete( t_simulation* sim ) {
 	charge_delete( &sim->charge );
 	current_delete( &sim->current );
 	emf_delete( &sim->emf );
+
+	filter_delete( &sim->filter );
 
 	fftr_cleanup_cfg( &sim -> fft_backward );
 	fftr_cleanup_cfg( &sim -> fft_forward );

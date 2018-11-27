@@ -15,6 +15,7 @@
 #include "grid.h"
 #include "current.h"
 #include "charge.h"
+#include "filter.h"
 
 enum emf_ext_fld { EMF_EXT_FLD_NONE, EMF_EXT_FLD_UNIFORM };
 
@@ -62,6 +63,9 @@ typedef struct {
 	// FFT configuration
 	t_fftr_cfg *fft_forward, *fft_backward;
 
+	// Spectral filtering
+	t_filter *filter;
+
 	// Fields seen by particles
 	// When using external fields these will be a combination of the simulation
 	// fields and the externally imposed ones. When external fields are off
@@ -94,7 +98,7 @@ typedef struct {
 
 
 void emf_new( t_emf *emf, int nx, t_fld box, const float dt, t_fftr_cfg *fft_forward,
-	t_fftr_cfg *fft_backward );
+	t_fftr_cfg *fft_backward, t_filter *filter );
 
 void emf_delete( t_emf *emf );
 
@@ -114,7 +118,6 @@ double emf_time( void );
 
 void emf_get_energy( const t_emf *emf, double energy[] );
 
-void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld );
-
+int emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld );
 
 #endif

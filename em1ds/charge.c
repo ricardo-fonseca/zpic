@@ -4,10 +4,12 @@
 #include "charge.h"
 #include "zdf.h"
 #include "fft.h"
+#include "filter.h"
 
 
-void charge_new( t_charge *charge, int nx, t_fld box, float dt, t_fftr_cfg *fft_forward )
-{   
+void charge_new( t_charge *charge, int nx, t_fld box, float dt, t_fftr_cfg *fft_forward,
+                 t_filter *filter )
+{
 
 	if ( nx % 2 ) {
 		fprintf(stderr,"(*error*) Only even grid sizes are supported.");
@@ -15,15 +17,18 @@ void charge_new( t_charge *charge, int nx, t_fld box, float dt, t_fftr_cfg *fft_
 	}
 
 	// Number of guard cells for linear interpolation
-	int gc[2] = {1,2}; 
-	
+	int gc[2] = {1,2};
+
 	// Store pointer to required FFT configuration
 	charge -> fft_forward = fft_forward;
+
+	// Store pointer to spectral filter data
+	charge -> filter = filter;
 
 	// Initialize grids
 	scalar_grid_init( &charge->rho, nx, gc );
 	cscalar_grid_init( &charge->frho, nx/2+1, NULL );
-	
+
 	// Set cell sizes and box limits
 	charge -> box = box;
 	charge -> dx  = box / nx;
@@ -35,7 +40,7 @@ void charge_new( t_charge *charge, int nx, t_fld box, float dt, t_fftr_cfg *fft_
     // Zero initial charge
     // This is only relevant for diagnostics, charge is always zeroed before deposition
 	scalar_grid_zero( &charge -> rho );
-	
+
 	// Default is not to have a neutralizing background
 	charge -> neutral.nx = 0;
 }
@@ -54,7 +59,7 @@ void charge_delete( t_charge *charge )
 	if ( charge -> neutral.nx > 0 ) {
 		scalar_grid_cleanup( &charge -> neutral );
 	}
-	
+
 }
 
 void charge_zero( t_charge *charge )
@@ -79,7 +84,7 @@ void charge_update( t_charge *charge )
 		rho[ i ] += rho[ nx + i ];
 	}
 
-	// upper - just copy the values from the lower boundary 
+	// upper - just copy the values from the lower boundary
 	for (i=-gc0; i<gc1; i++) {
 		rho[ nx + i ] = rho[ i ];
 	}
@@ -98,8 +103,11 @@ void charge_update( t_charge *charge )
 	fftr_r2c( charge->fft_forward, rho, frho );
 
 	// Filter charge
-	for ( i = charge -> frho.nx/2; i < charge -> frho.nx; i++) {
-		charge -> frho.s[i] = 0;
+	if ( charge -> filter -> type > FILTER_NONE ) {
+	    float * const restrict Sk = charge -> filter -> Sk;
+		for ( i = 0; i < charge -> frho.nx; i++) {
+			charge -> frho.s[i] *= Sk[i];
+		}
 	}
 
 
@@ -111,8 +119,8 @@ void charge_update_neutral_bkg( t_charge *charge )
 	int i;
 
 	int const nx  = charge->neutral.nx;
-	int const gc0 = charge->neutral.gc[0]; 
-	int const gc1 = charge->neutral.gc[1]; 
+	int const gc0 = charge->neutral.gc[0];
+	int const gc1 = charge->neutral.gc[1];
 
 	// Update boundaries
 	for (i = -gc0; i < gc1; i++) {
@@ -135,9 +143,9 @@ void charge_update_neutral_bkg( t_charge *charge )
 void charge_report( const t_charge *charge )
 {
 	char vfname[] = "charge density";
-		
+
 	float *buf = charge -> rho.s;
-	
+
     t_zdf_grid_axis axis[1];
     axis[0] = (t_zdf_grid_axis) {
     	.min = 0.0,
@@ -162,5 +170,5 @@ void charge_report( const t_charge *charge )
     };
 
 	zdf_save_grid( buf, &info, &iter, "CHARGE" );
-		
+
 }

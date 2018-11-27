@@ -33,7 +33,7 @@ double emf_time()
 
 
 void emf_new( t_emf *emf, int nx, t_fld box, const float dt, t_fftr_cfg *fft_forward,
-	t_fftr_cfg *fft_backward )
+	t_fftr_cfg *fft_backward, t_filter *filter )
 {
 
 	if ( nx % 2 ) {
@@ -47,6 +47,9 @@ void emf_new( t_emf *emf, int nx, t_fld box, const float dt, t_fftr_cfg *fft_for
 	// Store pointer to required FFT configuration
 	emf -> fft_forward = fft_forward;
 	emf -> fft_backward = fft_backward;
+
+	// Store pointer to spectral filter data
+	emf -> filter = filter;
 
 	// Allocate arrays
 	vfld_grid_init( &emf->E, nx, gc );
@@ -79,8 +82,10 @@ void emf_new( t_emf *emf, int nx, t_fld box, const float dt, t_fftr_cfg *fft_for
 	emf -> E_part = &emf->E;
 	emf -> B_part = &emf->B;
 
-	// Set default solver type to Pseudo-spectral Time Domain
-	emf -> solver_type = EMF_SOLVER_PSTD;
+	// Set default solver type to Pseudo-spectral Analytic Time Domain
+	emf -> solver_type = EMF_SOLVER_PSATD;
+
+
 }
 
 void emf_delete( t_emf *emf )
@@ -99,7 +104,10 @@ void emf_delete( t_emf *emf )
 		emf->B_part = NULL;
 	}
 
+	emf -> filter = NULL;
+
 }
+
 
 /*********************************************************************************************
 
@@ -288,7 +296,7 @@ void advance_fB( t_emf *emf, const float dt )
 	// Canonical implementation
 	for (i = 0; i < emf -> fB.nx; i++) {
 
-		float kx = i * dk;
+		const float kx = i * dk;
 
 		// fBx[i] += 0;
 		fBy[i] +=  + dt * I * fEtz[i] * kx;
@@ -316,7 +324,7 @@ void advance_fEt( t_emf *emf, const t_current *current, const float dt )
 
 	for (i=0; i < emf->fEt.nx; i++) {
 
-		float kx = i * dk;
+		const float kx = i * dk;
 
 		// fJtx is always 0 in 1D so this is unnecessary
 		// fEtx[i] += dt * (               -  fJtx[i] );
@@ -342,7 +350,7 @@ void update_fEl( t_emf *emf, const t_charge *charge )
 	fElz[0] = 0;
 
     for( i = 1; i < emf -> fEl.nx; i++) {
-    	float kx = i * dk;
+    	const float kx = i * dk;
     	fElx[i] = - I * frho[i] / kx;
     	fEly[i] = 0;
     	fElz[i] = 0;
@@ -374,11 +382,13 @@ void advance_psatd( t_emf *emf, const t_current *current, const float dt )
     const float dk = fft_dk( emf->E.nx, emf->dx );
 	int i;
 
+
 	for (i=1; i < emf->fEt.nx; i++) {
 
-		float kx = i * dk;
-		float C = cosf( kx * dt );
-		float S = sinf( kx * dt );
+		const float kx = i * dk;
+
+		const float C = cosf( kx * dt );
+		const float S = sinf( kx * dt );
 
 		float complex Ey = fEty[i];
 		float complex Ez = fEtz[i];
@@ -387,9 +397,9 @@ void advance_psatd( t_emf *emf, const t_current *current, const float dt )
 		float complex Bz = fBz[i];
 
 		// fJtx is always 0 in 1D so this is unnecessary
-		// Ex[i] += dt * (               -  fJtx[i] );
-		Ey = C * Ey -I * S * fBz[i] - S * fJty[i] / kx;
-		Ez = C * Ez +I * S * fBy[i] - S * fJtz[i] / kx;
+		// Ex[i] += dt * (               -  fJtx[i]);
+		Ey = C * Ey - I * S * fBz[i] - S * fJty[i] / kx;
+		Ez = C * Ez + I * S * fBy[i] - S * fJtz[i] / kx;
 
 		// Bx[i] += 0;
 		By = C * By + I * S * fEtz[i] - (1.0f - C) * fJtz[i] / kx;
@@ -410,12 +420,25 @@ void emf_update( t_emf *emf )
 	int i;
 
 	// Update E field
+	// To save memory we store the complete E field (longitudinal + transverse)
+	// in the longitudinal E field array
 
-	for( i = 0; i < emf -> fEl.nx; i++) {
-		emf -> fEl.x[i] += emf -> fEt.x[i];
-		emf -> fEl.y[i] += emf -> fEt.y[i];
-		emf -> fEl.z[i] += emf -> fEt.z[i];
+	if ( emf -> filter -> type > FILTER_NONE ) {
+	    float * const restrict Sk = emf -> filter -> Sk;
+
+		for( i = 0; i < emf -> fEl.nx; i++) {
+			emf -> fEl.x[i] = Sk[i] * (emf ->fEl.x[i] + emf -> fEt.x[i]);
+			emf -> fEl.y[i] = Sk[i] * (emf ->fEl.y[i] + emf -> fEt.y[i]);
+			emf -> fEl.z[i] = Sk[i] * (emf ->fEl.z[i] + emf -> fEt.z[i]);
+		}
+	} else {
+		for( i = 0; i < emf -> fEl.nx; i++) {
+			emf -> fEl.x[i] = emf ->fEl.x[i] + emf -> fEt.x[i];
+			emf -> fEl.y[i] = emf ->fEl.y[i] + emf -> fEt.y[i];
+			emf -> fEl.z[i] = emf ->fEl.z[i] + emf -> fEt.z[i];
+		}
 	}
+
    	fftr_c2r( emf -> fft_backward, emf -> fEl.x, emf ->E.x );
    	fftr_c2r( emf -> fft_backward, emf -> fEl.y, emf ->E.y );
    	fftr_c2r( emf -> fft_backward, emf -> fEl.z, emf ->E.z );
@@ -427,7 +450,6 @@ void emf_update( t_emf *emf )
 
 
    	// Update guard cells
-
     float* const restrict Ex = emf -> E.x;
     float* const restrict Ey = emf -> E.y;
     float* const restrict Ez = emf -> E.z;
@@ -529,7 +551,7 @@ External Fields
 
  *********************************************************************************************/
 
-void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
+int emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
 
 	emf -> ext_fld.type = ext_fld -> type;
 
@@ -546,7 +568,7 @@ void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
 
 	    	default:
 	    		fprintf(stderr, "Invalid external field type, aborting.\n" );
-				exit(-1);
+				return -1;
 	    }
 
 		// Allocate space for additional field grids
@@ -560,6 +582,9 @@ void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
 	    emf_update_part_fld( emf );
 
 	}
+
+	return 0;
+
 }
 
 /**

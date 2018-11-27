@@ -13,6 +13,8 @@
 #include "zpic.h"
 #include "grid.h"
 #include "fft.h"
+#include "filter.h"
+
 
 typedef struct {
 
@@ -36,9 +38,13 @@ typedef struct {
 	// FFT configuration
 	t_fftr_cfg *fft_forward;
 
+	// Spectral filtering
+	t_filter *filter;
+
 } t_current;
 
-void current_new( t_current *current, int nx, t_fld box, float dt, t_fftr_cfg *fft_forward );
+void current_new( t_current *current, int nx, t_fld box, float dt, t_fftr_cfg *fft_forward,
+	              t_filter *filter );
 void current_delete( t_current *current );
 void current_zero( t_current *current );
 void current_update( t_current *current );

@@ -16,8 +16,9 @@
 
 #include "zdf.h"
 
-void current_new( t_current *current, int nx, t_fld box, float dt, t_fftr_cfg *fft_forward )
-{   
+void current_new( t_current *current, int nx, t_fld box, float dt, t_fftr_cfg *fft_forward,
+                  t_filter *filter )
+{
 
 	if ( nx % 2 ) {
 		fprintf(stderr,"(*error*) Only even grid sizes are supported.");
@@ -25,15 +26,18 @@ void current_new( t_current *current, int nx, t_fld box, float dt, t_fftr_cfg *f
 	}
 
 	// Number of guard cells for linear interpolation
-	int gc[2] = {1,2}; 
-	
+	int gc[2] = {1,2};
+
 	// Store pointer to required FFT configuration
 	current -> fft_forward = fft_forward;
+
+	// Store pointer to spectral filter data
+	current -> filter = filter;
 
 	// Initialize grids
 	vfld_grid_init( &current->J, nx, gc );
 	cvfld_grid_init( &current->fJt, nx/2+1, NULL );
-	
+
 	// Set cell sizes and box limits
 	current -> box = box;
 	current -> dx  = box / nx;
@@ -49,14 +53,14 @@ void current_new( t_current *current, int nx, t_fld box, float dt, t_fftr_cfg *f
 
 	// This avoids setting the fJt.x to zero in current update
 	cvfld_grid_zero( &current -> fJt );
-	
+
 }
 
 void current_delete( t_current *current )
 {
 	vfld_grid_cleanup( &current -> J );
 	cvfld_grid_cleanup( &current -> fJt );
-	
+
 }
 
 void current_zero( t_current *current )
@@ -71,21 +75,21 @@ void current_update( t_current *current )
 	float* restrict const Jx = current -> J.x;
 	float* restrict const Jy = current -> J.y;
 	float* restrict const Jz = current -> J.z;
-	
+
 	int const gc0 = current -> J.gc[0];
 	int const gc1 = current -> J.gc[1];
 	int const nx  = current -> J.nx;
 
 	// x
-		
+
 	// lower - add the values from upper boundary ( both gc and inside box )
 	for (i=-gc0; i<gc1; i++) {
 		Jx[ i ] += Jx[ nx + i ];
 		Jy[ i ] += Jy[ nx + i ];
 		Jz[ i ] += Jz[ nx + i ];
 	}
-	
-	// upper - just copy the values from the lower boundary 
+
+	// upper - just copy the values from the lower boundary
 	for (i=-gc0; i<gc1; i++) {
 		Jx[ nx + i ] = Jx[ i ];
 		Jy[ nx + i ] = Jy[ i ];
@@ -93,24 +97,32 @@ void current_update( t_current *current )
 	}
 
 	// Calculate fJt
-	
+
 	// In 1D we have
 	// fJt.x = 0; fJt.y = fJ.y; fJt.z = fJ.z
 
 	// fJt.x will be always 0 (set on initialization) so there is no need to do an FFT
-	
+
 	// fftr_r2c( &current -> fft_forward, current -> J.x, current -> fJt.x );
 	fftr_r2c( current -> fft_forward, Jy, current -> fJt.y );
 	fftr_r2c( current -> fft_forward, Jz, current -> fJt.z );
 
 	// Filter current
-	for ( i = current -> fJt.nx/2; i < current -> fJt.nx; i++) {
-		current -> fJt.y[i] = 0;
-		current -> fJt.z[i] = 0;
+	if ( current -> filter -> type > FILTER_NONE ) {
+	    float * const restrict Sk = current -> filter -> Sk;
+	    complex float * const restrict fJtx = current -> fJt.x;
+	    complex float * const restrict fJty = current -> fJt.y;
+	    complex float * const restrict fJtz = current -> fJt.z;
+
+		for ( i = 0; i < current -> fJt.nx; i++) {
+			fJtx[i] *= Sk[i];
+			fJty[i] *= Sk[i];
+			fJtz[i] *= Sk[i];
+		}
 	}
 
 	current -> iter++;
-	
+
 }
 
 void current_report( const t_current *current, const char jc )
