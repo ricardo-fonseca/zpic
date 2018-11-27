@@ -51,9 +51,7 @@ The library currently supports the following record types:
 * __ZDF\_INT32__
 * __ZDF\_DOUBLE__
 * __ZDF\_STRING__
-
 * __ZDF\_DATASET__ 
-
 * __ZDF\_ITERATION__ 
 * __ZDF\_GRID_INFO__ 
 * __ZDF\_PART_INFO__ 
