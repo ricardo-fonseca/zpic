@@ -290,11 +290,11 @@ void deposit_current( t_vfld_grid2d* J, const t_part* restrict const part, const
 	int i, di;
 	int j, dj;
 	float x, y;
-	float s0x, s1x, s0y, s1y; 
+	float s0x, s1x, s0y, s1y;
 	float jx, jy, jz;
 
 	const int nrow = J -> nrow;
-	
+
 	// Find position time centered with velocity
 	i = part->ix;
 	x = part->x + 0.5f * dx;

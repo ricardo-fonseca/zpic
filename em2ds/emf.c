@@ -79,6 +79,10 @@ void emf_new( t_emf *emf, const int nx[], t_fld box[], const float dt )
 	// Reset iteration number
 	emf -> iter = 0;
 
+	// Set default solver type to Pseudo-spectral Analytic Time Domain
+	emf -> solver_type = EMF_SOLVER_PSATD;
+//	emf -> solver_type = EMF_SOLVER_PSTD;
+
 }
 
 void emf_delete( t_emf *emf )
@@ -154,8 +158,6 @@ void div_corr_x( t_cvfld_grid2d *fld, const float dk[] )
 
 void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
 {
-	printf("Adding laser...\n");
-
 	int i, j, nrow;
 
 	t_fld z_center, r_center, z, r;
@@ -416,7 +418,7 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 
 /*********************************************************************************************
 
- Field solver
+ Pseudo-spectral Time Domain Field solver
 
  *********************************************************************************************/
 
@@ -463,9 +465,9 @@ void advance_fEt( t_emf *emf, const t_current *current, const float dt )
 	float complex * const restrict fBy = emf -> fB.y;
 	float complex * const restrict fBz = emf -> fB.z;
 
-	float complex * const restrict fJtx = current -> fJt.x;
-	float complex * const restrict fJty = current -> fJt.y;
-	float complex * const restrict fJtz = current -> fJt.z;
+	float complex * const restrict fJx = current -> fJ.x;
+	float complex * const restrict fJy = current -> fJ.y;
+	float complex * const restrict fJz = current -> fJ.z;
 
 	const float dkx = fft_dk( emf->E.nx[0], emf->dx[0] );
 	const float dky = fft_dk( emf->E.nx[1], emf->dx[1] );
@@ -473,32 +475,99 @@ void advance_fEt( t_emf *emf, const t_current *current, const float dt )
 	const int fnrow = emf->fEt.nrow;
 	int i,j;
 
-	// Canonical implementation
-	for (i = 0; i < emf -> fEt.nx[1]; i++) {
-		float kx = i * dkx;
-		for (j = 0; j < emf -> fEt.nx[0]; j++) {
-			float ky = ((j <= emf -> fEt.nx[0]/2) ? j : (j - (int) emf -> fEt.nx[0]) ) * dky;
+	// kx = 0, ky = 0
+	/*
+	Note that we are zeroing the x and y components for k = 0
+	 */
 
+	{
+		// const float complex fJtx = 0;
+		// const float complex fJty = 0;
+		const float complex fJtz = fJz[0];
+
+		// fEtx[0] -= dt * fJtx;
+		// fEty[0] -= dt * fJty;
+		fEtz[0] -= dt * fJtz;
+	}
+
+	// kx = 0, ky != 0
+	for (j = 1; j < emf -> fEt.nx[0]; j++) {
+		const float ky = ((j <= emf -> fEt.nx[0]/2) ? j : (j - (int) emf -> fEt.nx[0]) ) * dky;
+
+		// Get transverse current
+		const float complex fJtx = fJx[j];
+		const float complex fJty = fJy[j] - fJy[j]/ky;
+		const float complex fJtz = fJz[j];
+
+		// Advance field
+		fEtx[j] += dt * ( +I * ky * fBz[j] - fJtx );
+		fEty[j] += dt * (                  - fJty );
+		fEtz[j] += dt * ( -I * ky * fBx[j] - fJtz );
+	}
+
+
+	// kx = 0, ky != 0
+	for (i = 1; i < emf -> fEt.nx[1]; i++) {
+		const float kx = i * dkx;
+		for (j = 0; j < emf -> fEt.nx[0]; j++) {
+			const float ky = ((j <= emf -> fEt.nx[0]/2) ? j : (j - (int) emf -> fEt.nx[0]) ) * dky;
 			const unsigned int idx = i * fnrow + j;
 
-			fEtx[idx] += dt * ( +I *   ky * fBz[idx]                   - fJtx[idx] );
-			fEty[idx] += dt * ( -I *   kx * fBz[idx]                   - fJty[idx] );
-			fEtz[idx] += dt * ( +I * ( kx * fBy[idx] - ky * fBx[idx] ) - fJtz[idx] );
+			// Get transverse current
+			const float complex kdJ_k2 = (kx * fJx[idx] + ky * fJy[idx]) / (kx*kx + ky*ky);
+			const float complex fJtx = fJx[idx] - kx * kdJ_k2;
+			const float complex fJty = fJy[idx] - ky * kdJ_k2;
+			const float complex fJtz = fJz[idx];
+
+			// Advance field
+			fEtx[idx] += dt * ( +I *   ky * fBz[idx]                   - fJtx );
+			fEty[idx] += dt * ( -I *   kx * fBz[idx]                   - fJty );
+			fEtz[idx] += dt * ( +I * ( kx * fBy[idx] - ky * fBx[idx] ) - fJtz );
 
 		}
 	}
+
+#if 0
+	for (i = 0; i < emf -> fEt.nx[1]; i++) {
+		const float kx = i * dkx;
+		for (j = 0; j < emf -> fEt.nx[0]; j++) {
+			const float ky = ((j <= emf -> fEt.nx[0]/2) ? j : (j - (int) emf -> fEt.nx[0]) ) * dky;
+			const unsigned int idx = i * fnrow + j;
+
+			// Get transverse current
+			float complex fJtx, fJty, fJtz;
+			float k2 = kx*kx + ky*ky;
+			if ( k2 > 0 ) {
+				float kdJ_k2 = (kx * fJx[idx] + ky * fJy[idx]) / k2;
+				fJtx = fJx[idx] - kx * kdJ_k2;
+				fJty = fJy[idx] - ky * kdJ_k2;
+			} else {
+				fJtx = 0;
+				fJty = 0;
+			}
+			fJtz = fJz[idx];
+
+			// Advance field
+			fEtx[idx] += dt * ( +I *   ky * fBz[idx]                   - fJtx );
+			fEty[idx] += dt * ( -I *   kx * fBz[idx]                   - fJty );
+			fEtz[idx] += dt * ( +I * ( kx * fBy[idx] - ky * fBx[idx] ) - fJtz );
+
+		}
+	}
+#endif
+
 }
 
 void update_fEl( t_emf *emf, const t_charge *charge )
 {
-  float complex * const restrict frho = charge -> frho.s;
+	float complex * const restrict frho = charge -> frho.s;
 
-  float complex * const restrict fElx = emf -> fEl.x;
-  float complex * const restrict fEly = emf -> fEl.y;
-  float complex * const restrict fElz = emf -> fEl.z;
+	float complex * const restrict fElx = emf -> fEl.x;
+	float complex * const restrict fEly = emf -> fEl.y;
+	float complex * const restrict fElz = emf -> fEl.z;
 
-  const float dkx = fft_dk( emf->E.nx[0], emf->dx[0] );
-  const float dky = fft_dk( emf->E.nx[1], emf->dx[1] );
+	const float dkx = fft_dk( emf->E.nx[0], emf->dx[0] );
+	const float dky = fft_dk( emf->E.nx[1], emf->dx[1] );
 
 	const int fnrow = emf->fEl.nrow;
 	int i,j;
@@ -539,6 +608,210 @@ void update_fEl( t_emf *emf, const t_charge *charge )
 
 
 }
+
+/*********************************************************************************************
+
+ Pseudo-spectral Analytical time domain field solver
+
+ *********************************************************************************************/
+/*
+
+Field advance equations are:
+
+\vec{E}_T^{n+1} = C \vec{E}_T^n + i S \frac{\vec{k} \times \vec{B}^n}{k} - \frac{S}{k}\vec{J_T}
+
+
+
+
+
+ */
+
+
+
+void advance_psatd( t_emf *emf, const t_current *current, const float dt )
+{
+
+    float complex * const restrict fEtx = emf -> fEt.x;
+    float complex * const restrict fEty = emf -> fEt.y;
+    float complex * const restrict fEtz = emf -> fEt.z;
+
+    float complex * const restrict fBx = emf -> fB.x;
+    float complex * const restrict fBy = emf -> fB.y;
+    float complex * const restrict fBz = emf -> fB.z;
+
+    // Full current
+    float complex * const restrict fJx = current -> fJ.x;
+    float complex * const restrict fJy = current -> fJ.y;
+    float complex * const restrict fJz = current -> fJ.z;
+
+	const float dkx = fft_dk( emf->E.nx[0], emf->dx[0] );
+	const float dky = fft_dk( emf->E.nx[1], emf->dx[1] );
+
+	// This is the same value for fEt, fB and fJ
+	const int fnrow = emf->fEt.nrow;
+
+	// kx = ky = 0
+	{
+		/*
+		 Note that we are setting fJtx = fJty = 0 for k = 0, meaning that we are eliminating any
+		 net transverse current along x and y.
+		 */
+
+		// const float complex fJtx = 0;
+		// const float complex fJty = 0;
+		const float complex fJtz = fJz[0];
+
+		//fEtx[0] -= dt * fJtx;		// Not needed because fJtx = 0
+		//fEty[0] -= dt * fJty;		// Not needed because fJty = 0
+		fEtz[0] -= dt * fJtz;
+
+		// fBx[0]  += 0;
+		// fBy[0]  += 0;
+		// fBz[0]  += 0;
+	}
+
+	// kx = 0, ky != 0
+	for (int j = 1; j < emf -> fEt.nx[0]; j++) {
+		const float ky = ((j <= emf -> fEt.nx[0]/2) ? j : (j - (int) emf -> fEt.nx[0]) ) * dky;
+		const float k2 = ky*ky;
+
+		// Calculate transverse current
+		const float complex fJtx = fJx[j];
+		const float complex fJty = fJy[j] - fJy[j] / ky;
+		const float complex fJtz = fJz[j];
+
+		const float C   = cosf( ky * dt );
+		const float S_k = sinf( ky * dt ) / ky;
+		const float complex I1mC_k2 = I * (1.0f - C) / k2;
+
+		// PSATD Field advance equations
+		float complex Ex = fEtx[j];
+		float complex Ey = fEty[j];
+		float complex Ez = fEtz[j];
+
+		float complex Bx = fBx[j];
+		float complex By = fBy[j];
+		float complex Bz = fBz[j];
+
+		Ex = C * Ex + S_k * (  I * ky * fBz[j] - fJtx );
+		Ey = C * Ey + S_k * (                  - fJty );
+		Ez = C * Ez + S_k * ( -I * ky * fBx[j] - fJtz );
+
+		Bx = C * Bx - S_k * I * ky * fEtz[j] + I1mC_k2 * ky * fJz[j];
+		By = C * By;
+		Bz = C * Bz + S_k * I * ky * fEtx[j] - I1mC_k2 * ky * fJx[j];
+
+		fEtx[j] = Ex;
+		fEty[j] = Ey;
+		fEtz[j] = Ez;
+
+		fBx[j]  = Bx;
+		fBy[j]  = By;
+		fBz[j]  = Bz;
+
+	}
+
+
+	// kx > 0
+	for (int i = 1; i < emf -> fEt.nx[1]; i++) {
+		const float kx  = i * dkx;
+
+		for (int j = 0; j < emf -> fEt.nx[0]; j++) {
+			const float ky = ((j <= emf -> fEt.nx[0]/2) ? j : (j - (int) emf -> fEt.nx[0]) ) * dky;
+
+			const float k2 = kx*kx + ky*ky;
+			const float k = sqrtf(k2);
+
+			const unsigned int idx = i * fnrow + j;
+
+			// Calculate transverse current
+			const float complex kdJ_k2 = (kx * fJx[idx] + ky * fJy[idx])/k2;
+			const float complex fJtx = fJx[idx] - kx * kdJ_k2;
+			const float complex fJty = fJy[idx] - ky * kdJ_k2;
+			const float complex fJtz = fJz[idx];
+
+			// PSATD Field advance equations
+			const float C   = cosf( k * dt );
+			const float S_k = sinf( k * dt ) / k;
+			const float complex I1mC_k2 = I * (1.0f - C) / k2;
+
+			float complex Ex = fEtx[idx];
+			float complex Ey = fEty[idx];
+			float complex Ez = fEtz[idx];
+
+			float complex Bx = fBx[idx];
+			float complex By = fBy[idx];
+			float complex Bz = fBz[idx];
+
+			Ex = C * Ex + S_k * ( I * (  ky *  fBz[idx]                  ) - fJtx );
+			Ey = C * Ey + S_k * ( I * ( -kx *  fBz[idx]                  ) - fJty );
+			Ez = C * Ez + S_k * ( I * (  kx *  fBy[idx] - ky *  fBx[idx] ) - fJtz );
+
+			Bx = C * Bx - S_k * ( I * (  ky * fEtz[idx]                  ) ) + I1mC_k2 * (  ky * fJz[idx]                 );
+			By = C * By - S_k * ( I * ( -kx * fEtz[idx]                  ) ) + I1mC_k2 * ( -kx * fJz[idx]                 );
+			Bz = C * Bz - S_k * ( I * (  kx * fEty[idx] - ky * fEtx[idx] ) ) + I1mC_k2 * (  kx * fJy[idx] - ky * fJx[idx] );
+
+			fEtx[idx] = Ex;
+			fEty[idx] = Ey;
+			fEtz[idx] = Ez;
+
+			fBx[idx]  = Bx;
+			fBy[idx]  = By;
+			fBz[idx]  = Bz;
+
+		}
+	}
+
+#if 0
+	// Canonical implementation
+	for (int i = 0; i < emf -> fEt.nx[1]; i++) {
+		const float kx  = i * dkx;
+
+		for (int j = 0; j < emf -> fEt.nx[0]; j++) {
+			const float ky = ((j <= emf -> fEt.nx[0]/2) ? j : (j - (int) emf -> fEt.nx[0]) ) * dky;
+
+			const float k2 = kx*kx + ky*ky;
+			const float k = sqrtf(k2);
+
+			const unsigned int idx = i * fnrow + j;
+
+			// Pre-calculating these gives a marginal (10%) performance boost
+			const float C   = cosf( k * dt );
+			const float S_k = (k2>0) ? sinf( k * dt ) / k : dt;
+			const float complex I1mC_k2 = (k2>0) ? I * (1.0f - C) / k2 : I * dt * dt / 2.0f;
+
+			float complex Ex = fEtx[idx];
+			float complex Ey = fEty[idx];
+			float complex Ez = fEtz[idx];
+
+			float complex Bx = fBx[idx];
+			float complex By = fBy[idx];
+			float complex Bz = fBz[idx];
+
+			Ex = C * Ex + S_k * ( I * (   ky * fBz[idx]                  ) - fJtx[idx] );
+			Ey = C * Ey + S_k * ( I * (  -kx * fBz[idx]                  ) - fJty[idx] );
+			Ez = C * Ez + S_k * ( I * (   kx * fBy[idx] - ky *  fBx[idx] ) - fJtz[idx] );
+
+			Bx = C * Bx - S_k * ( I * (  ky * fEtz[idx]                  ) ) + I1mC_k2 * (  ky * fJz[idx]                  );
+			By = C * By - S_k * ( I * ( -kx * fEtz[idx]                  ) ) + I1mC_k2 * ( -kx * fJz[idx]                  );
+			Bz = C * Bz - S_k * ( I * (  kx * fEty[idx] - ky * fEtx[idx] ) ) + I1mC_k2 * (  kx * fJy[idx] - ky * fJx[idx] );
+
+			fEtx[idx] = Ex;
+			fEty[idx] = Ey;
+			fEtz[idx] = Ez;
+
+			fBx[idx]  = Bx;
+			fBy[idx]  = By;
+			fBz[idx]  = Bz;
+
+		}
+	}
+
+#endif
+
+}
+
+
 
 
 // This code operates with periodic boundaries
@@ -645,11 +918,15 @@ void emf_advance( t_emf *emf, const t_charge *charge, const t_current *current )
 
 
 	// Advance fB, fEt
-	advance_fB( emf, dt/2.0f );
-
-	advance_fEt( emf, current, dt );
-
-	advance_fB( emf, dt/2.0f );
+	if ( emf -> solver_type == EMF_SOLVER_PSATD ) {
+		// Pseudo-spectral Analytical Time-Domain
+		advance_psatd( emf, current, dt );
+	} else {
+		// Pseudo-spectral Time Domain
+		advance_fB( emf, dt/2.0f );
+		advance_fEt( emf, current, dt );
+		advance_fB( emf, dt/2.0f );
+	}
 
 	// Calculate fEl
 	update_fEl( emf, charge );

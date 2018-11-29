@@ -36,7 +36,7 @@ void current_new( t_current *current, const int nx[], t_fld box[], float dt )
 
 	// Initialize grids
 	vfld_grid2d_init( &current->J, (unsigned int *) nx, gc );
-	cvfld_grid2d_init( &current->fJt, fnx, NULL );
+	cvfld_grid2d_init( &current->fJ, fnx, NULL );
 
 	// Initializ FFT transform
 	fftr2d_init_cfg( &current -> fft_forward, nx[0], nx[1],
@@ -46,8 +46,7 @@ void current_new( t_current *current, const int nx[], t_fld box[], float dt )
 	    current -> J.nrow, FFT_BACKWARD );
 
 	// Set cell sizes and box limits
-	unsigned i;
-	for(i = 0; i<2; i++){
+	for(int i = 0; i<2; i++){
 		current -> box[i] = box[i];
 		current -> dx[i]  = box[i] / nx[i];
 	}
@@ -61,14 +60,12 @@ void current_new( t_current *current, const int nx[], t_fld box[], float dt )
   // This is only relevant for diagnostics, current is always zeroed before deposition
 	vfld_grid2d_zero( &current -> J );
 
-	cvfld_grid2d_zero( &current -> fJt );
-
 }
 
 void current_delete( t_current *current )
 {
 	vfld_grid2d_cleanup( &current -> J );
-	cvfld_grid2d_cleanup( &current -> fJt );
+	cvfld_grid2d_cleanup( &current -> fJ );
 
 	fftr2d_cleanup_cfg( &current -> fft_forward );
 
@@ -134,52 +131,20 @@ void current_update( t_current *current )
 
 	}
 
-	// Calculate fJt
+	// Calculate fJ
+	float complex* restrict const fJx = current -> fJ.x;
+	float complex* restrict const fJy = current -> fJ.y;
+	float complex* restrict const fJz = current -> fJ.z;
 
-	float complex* restrict const fJtx = current -> fJt.x;
-	float complex* restrict const fJty = current -> fJt.y;
-	float complex* restrict const fJtz = current -> fJt.z;
-	const int fnrow = current->fJt.nrow;
-
-	fftr2d_r2c( &current -> fft_forward, Jx, fJtx );
-	fftr2d_r2c( &current -> fft_forward, Jy, fJty );
-	fftr2d_r2c( &current -> fft_forward, Jz, fJtz );
-
-	const float dkx = fft_dk( current->J.nx[0], current->dx[0] );
-	const float dky = fft_dk( current->J.nx[1], current->dx[1] );
-
-	// Calculates the transverse component of the current density
-	// $\mathbf{j_T} = \mathbf{j} - \frac{\mathbf{k}( \mathbf{k} \cdot \mathbf{j})}{k^2}$
-
-	fJtx[0] = 0;
-	fJty[0] = 0;
-	//fJtz[0] = 0;
-
-	// i = 0
-	for( j = 1; j < current -> fJt.nx[0]; j++) {
-		float ky = ((j <= current -> fJt.nx[0]/2) ? j : ( j - (int) current -> fJt.nx[0] ) ) * dky;
-		fJty[j] -= fJty[j]/ky;
-	}
-
-
-	for ( i = 1; i < current -> fJt.nx[1]; i++) {
-		float kx = i * dkx;
-		for( j = 0; j < current -> fJt.nx[0]; j++) {
-			unsigned int idx =  i * fnrow + j ;
-
-			float ky = ((j <= current -> fJt.nx[0]/2) ? j : ( j - (int) current -> fJt.nx[0] ) ) * dky;
-			float ksqr = kx*kx + ky*ky;
-			float complex kdJ = kx * fJtx[idx] + ky * fJty[idx];
-
-			fJtx[idx] -= (kx * kdJ)/ksqr;
-			fJty[idx] -= (ky * kdJ)/ksqr;
-		}
-	}
+	fftr2d_r2c( &current -> fft_forward, Jx, fJx );
+	fftr2d_r2c( &current -> fft_forward, Jy, fJy );
+	fftr2d_r2c( &current -> fft_forward, Jz, fJz );
 
 	// Filter current
 	const float cutoff[2] = {0.5f,0.5f};
-	cvfld2d_r2c_filter( &current -> fJt, cutoff );
+	cvfld2d_r2c_filter( &current -> fJ, cutoff );
 
+	// Advance iteration counter
 	current -> iter++;
 
 }

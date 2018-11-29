@@ -33,6 +33,7 @@ along with the ZPIC Educational code suite. If not, see <http://www.gnu.org/lice
 // Include Simulation parameters here
 #include "input/weibel.c"
 //#include "input/laser.c"
+//#include "input/testcurrent.c"
 
 int main (int argc, const char * argv[]) {
     

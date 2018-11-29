@@ -18,6 +18,8 @@
 
 enum emf_diag { EFLD, BFLD };
 
+enum emf_solver { EMF_SOLVER_PSTD, EMF_SOLVER_PSATD };
+
 typedef struct {
 
 	// E and B fields
@@ -42,6 +44,12 @@ typedef struct {
 
 	// FFT configurations
 	t_fftr2d_cfg fft_forward, fft_backward;
+
+	// solver type
+	enum emf_solver solver_type;
+
+	float * psatd_C;
+	float * psatd_S_k;
 
 } t_emf;
 
@@ -79,5 +87,7 @@ void emf_advance( t_emf *emf, const t_charge *charge, const t_current *current )
 void emf_update_gc( t_emf *emf );
 
 double emf_time( void );
+
+void init_psatd( t_emf *emf );
 
 #endif
