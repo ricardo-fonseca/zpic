@@ -496,7 +496,7 @@ void advance_fEt( t_emf *emf, const t_current *current, const float dt )
 
 		// Get transverse current
 		const float complex fJtx = fJx[j];
-		const float complex fJty = fJy[j] - fJy[j]/ky;
+		const float complex fJty = 0;
 		const float complex fJtz = fJz[j];
 
 		// Advance field
@@ -526,36 +526,6 @@ void advance_fEt( t_emf *emf, const t_current *current, const float dt )
 
 		}
 	}
-
-#if 0
-	for (i = 0; i < emf -> fEt.nx[1]; i++) {
-		const float kx = i * dkx;
-		for (j = 0; j < emf -> fEt.nx[0]; j++) {
-			const float ky = ((j <= emf -> fEt.nx[0]/2) ? j : (j - (int) emf -> fEt.nx[0]) ) * dky;
-			const unsigned int idx = i * fnrow + j;
-
-			// Get transverse current
-			float complex fJtx, fJty, fJtz;
-			float k2 = kx*kx + ky*ky;
-			if ( k2 > 0 ) {
-				float kdJ_k2 = (kx * fJx[idx] + ky * fJy[idx]) / k2;
-				fJtx = fJx[idx] - kx * kdJ_k2;
-				fJty = fJy[idx] - ky * kdJ_k2;
-			} else {
-				fJtx = 0;
-				fJty = 0;
-			}
-			fJtz = fJz[idx];
-
-			// Advance field
-			fEtx[idx] += dt * ( +I *   ky * fBz[idx]                   - fJtx );
-			fEty[idx] += dt * ( -I *   kx * fBz[idx]                   - fJty );
-			fEtz[idx] += dt * ( +I * ( kx * fBy[idx] - ky * fBx[idx] ) - fJtz );
-
-		}
-	}
-#endif
-
 }
 
 void update_fEl( t_emf *emf, const t_charge *charge )
@@ -620,10 +590,6 @@ Field advance equations are:
 
 \vec{E}_T^{n+1} = C \vec{E}_T^n + i S \frac{\vec{k} \times \vec{B}^n}{k} - \frac{S}{k}\vec{J_T}
 
-
-
-
-
  */
 
 
@@ -677,7 +643,7 @@ void advance_psatd( t_emf *emf, const t_current *current, const float dt )
 
 		// Calculate transverse current
 		const float complex fJtx = fJx[j];
-		const float complex fJty = fJy[j] - fJy[j] / ky;
+		const float complex fJty = 0;
 		const float complex fJtz = fJz[j];
 
 		const float C   = cosf( ky * dt );
@@ -761,53 +727,6 @@ void advance_psatd( t_emf *emf, const t_current *current, const float dt )
 
 		}
 	}
-
-#if 0
-	// Canonical implementation
-	for (int i = 0; i < emf -> fEt.nx[1]; i++) {
-		const float kx  = i * dkx;
-
-		for (int j = 0; j < emf -> fEt.nx[0]; j++) {
-			const float ky = ((j <= emf -> fEt.nx[0]/2) ? j : (j - (int) emf -> fEt.nx[0]) ) * dky;
-
-			const float k2 = kx*kx + ky*ky;
-			const float k = sqrtf(k2);
-
-			const unsigned int idx = i * fnrow + j;
-
-			// Pre-calculating these gives a marginal (10%) performance boost
-			const float C   = cosf( k * dt );
-			const float S_k = (k2>0) ? sinf( k * dt ) / k : dt;
-			const float complex I1mC_k2 = (k2>0) ? I * (1.0f - C) / k2 : I * dt * dt / 2.0f;
-
-			float complex Ex = fEtx[idx];
-			float complex Ey = fEty[idx];
-			float complex Ez = fEtz[idx];
-
-			float complex Bx = fBx[idx];
-			float complex By = fBy[idx];
-			float complex Bz = fBz[idx];
-
-			Ex = C * Ex + S_k * ( I * (   ky * fBz[idx]                  ) - fJtx[idx] );
-			Ey = C * Ey + S_k * ( I * (  -kx * fBz[idx]                  ) - fJty[idx] );
-			Ez = C * Ez + S_k * ( I * (   kx * fBy[idx] - ky *  fBx[idx] ) - fJtz[idx] );
-
-			Bx = C * Bx - S_k * ( I * (  ky * fEtz[idx]                  ) ) + I1mC_k2 * (  ky * fJz[idx]                  );
-			By = C * By - S_k * ( I * ( -kx * fEtz[idx]                  ) ) + I1mC_k2 * ( -kx * fJz[idx]                  );
-			Bz = C * Bz - S_k * ( I * (  kx * fEty[idx] - ky * fEtx[idx] ) ) + I1mC_k2 * (  kx * fJy[idx] - ky * fJx[idx] );
-
-			fEtx[idx] = Ex;
-			fEty[idx] = Ey;
-			fEtz[idx] = Ez;
-
-			fBx[idx]  = Bx;
-			fBy[idx]  = By;
-			fBz[idx]  = Bz;
-
-		}
-	}
-
-#endif
 
 }
 

@@ -20,8 +20,8 @@ typedef struct {
 
 	t_vfld_grid J;
 
-	// Fourier transform of Jt
-	t_cvfld_grid fJt;
+	// Fourier transform of J
+	t_cvfld_grid fJ;
 
 	// Box size
 	t_fld box;

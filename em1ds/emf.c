@@ -315,21 +315,37 @@ void advance_fEt( t_emf *emf, const t_current *current, const float dt )
     float complex * const restrict fBy = emf -> fB.y;
     float complex * const restrict fBz = emf -> fB.z;
 
-    // float complex * const restrict fJtx = current -> fJt.x;
-    float complex * const restrict fJty = current -> fJt.y;
-    float complex * const restrict fJtz = current -> fJt.z;
+    // float complex * const restrict fJx = current -> fJ.x;
+    float complex * const restrict fJy = current -> fJ.y;
+    float complex * const restrict fJz = current -> fJ.z;
 
     const float dk = fft_dk( emf->E.nx, emf->dx );
-	int i;
 
-	for (i=0; i < emf->fEt.nx; i++) {
+	// kx = 0
+	{
+		// const float complex fJtx = 0;
+		const float complex fJty = fJy[0];
+		const float complex fJtz = fJz[0];
+
+		// fEtx[0] -= dt * fJtx;
+		fEty[0] -= dt * fJty;
+		fEtz[0] -= dt * fJtz;
+	}
+
+	// kx > 1
+	for (int i=1; i < emf->fEt.nx; i++) {
 
 		const float kx = i * dk;
 
-		// fJtx is always 0 in 1D so this is unnecessary
-		// fEtx[i] += dt * (               -  fJtx[i] );
-		fEty[i] += dt * ( -I * fBz[i] * kx -  fJty[i] );
-		fEtz[i] += dt * ( +I * fBy[i] * kx -  fJtz[i] );
+		// Get transverse current
+		//const float complex fJtx = 0;
+		const float complex fJty = fJy[i];
+		const float complex fJtz = fJz[i];
+
+		// Advance field
+		//fEtx[i] += dt * (                  -  fJtx );
+		fEty[i] += dt * ( -I * fBz[i] * kx -  fJty );
+		fEtz[i] += dt * ( +I * fBy[i] * kx -  fJtz );
 
 	}
 }
@@ -345,10 +361,12 @@ void update_fEl( t_emf *emf, const t_charge *charge )
     const float dk = fft_dk( emf->E.nx, emf->dx );
 	int i;
 
+	// kx = 0
 	fElx[0] = 0;
 	fEly[0] = 0;
 	fElz[0] = 0;
 
+	// kx > 0
     for( i = 1; i < emf -> fEl.nx; i++) {
     	const float kx = i * dk;
     	fElx[i] = - I * frho[i] / kx;
@@ -376,16 +394,33 @@ void advance_psatd( t_emf *emf, const t_current *current, const float dt )
     float complex * const restrict fBz = emf -> fB.z;
 
     // float complex * const restrict fJtx = current -> fJt.x;
-    float complex * const restrict fJty = current -> fJt.y;
-    float complex * const restrict fJtz = current -> fJt.z;
+    float complex * const restrict fJy = current -> fJ.y;
+    float complex * const restrict fJz = current -> fJ.z;
 
     const float dk = fft_dk( emf->E.nx, emf->dx );
-	int i;
 
+    // kx = 0
+    {
+		//const float complex fJtx = 0;
+		const float complex fJty = fJy[0];
+		const float complex fJtz = fJz[0];
 
-	for (i=1; i < emf->fEt.nx; i++) {
+		//fEtx[0] -= dt * fJtx;
+		fEty[0] -= dt * fJty;
+		fEtz[0] -= dt * fJtz;
+    }
+
+	// kx > 0
+	for (int i=1; i < emf->fEt.nx; i++) {
 
 		const float kx = i * dk;
+
+		// Get transverse current
+		//const float complex fJtx = 0;
+		const float complex fJty = fJy[i];
+		const float complex fJtz = fJz[i];
+
+		// Advance field
 
 		const float C = cosf( kx * dt );
 		const float S = sinf( kx * dt );
@@ -397,16 +432,19 @@ void advance_psatd( t_emf *emf, const t_current *current, const float dt )
 		float complex Bz = fBz[i];
 
 		// fJtx is always 0 in 1D so this is unnecessary
-		// Ex[i] += dt * (               -  fJtx[i]);
+		// Ex = C * Ex;
 		Ey = C * Ey - I * S * fBz[i] - S * fJty[i] / kx;
 		Ez = C * Ez + I * S * fBy[i] - S * fJtz[i] / kx;
 
-		// Bx[i] += 0;
-		By = C * By + I * S * fEtz[i] - (1.0f - C) * fJtz[i] / kx;
-		Bz = C * Bz - I * S * fEty[i] + (1.0f - C) * fJty[i] / kx;
+		// Bx = C * Bx;
+		By = C * By + I * S * fEtz[i] - I * (1.0f - C) * fJtz[i] / kx;
+		Bz = C * Bz - I * S * fEty[i] + I * (1.0f - C) * fJty[i] / kx;
 
+		// fEtx[i] = Ex;
 		fEty[i] = Ey;
         fEtz[i] = Ez;
+
+        // fBx[i]  = Bx;
         fBy[i]  = By;
         fBz[i]  = Bz;
 
