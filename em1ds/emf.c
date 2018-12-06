@@ -433,12 +433,12 @@ void advance_psatd( t_emf *emf, const t_current *current, const float dt )
 
 		// fJtx is always 0 in 1D so this is unnecessary
 		// Ex = C * Ex;
-		Ey = C * Ey - I * S * fBz[i] - S * fJty[i] / kx;
-		Ez = C * Ez + I * S * fBy[i] - S * fJtz[i] / kx;
+		Ey = C * Ey - I * S * fBz[i] - S * fJty / kx;
+		Ez = C * Ez + I * S * fBy[i] - S * fJtz / kx;
 
 		// Bx = C * Bx;
-		By = C * By + I * S * fEtz[i] - I * (1.0f - C) * fJtz[i] / kx;
-		Bz = C * Bz - I * S * fEty[i] + I * (1.0f - C) * fJty[i] / kx;
+		By = C * By + I * S * fEtz[i] - I * (1.0f - C) * fJtz / kx;
+		Bz = C * Bz - I * S * fEty[i] + I * (1.0f - C) * fJty / kx;
 
 		// fEtx[i] = Ex;
 		fEty[i] = Ey;

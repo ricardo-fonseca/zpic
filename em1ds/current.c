@@ -36,7 +36,7 @@ void current_new( t_current *current, int nx, t_fld box, float dt, t_fftr_cfg *f
 
 	// Initialize grids
 	vfld_grid_init( &current->J, nx, gc );
-	cvfld_grid_init( &current->fJt, nx/2+1, NULL );
+	cvfld_grid_init( &current->fJ, nx/2+1, NULL );
 
 	// Set cell sizes and box limits
 	current -> box = box;
@@ -51,15 +51,15 @@ void current_new( t_current *current, int nx, t_fld box, float dt, t_fftr_cfg *f
     // This is only relevant for diagnostics, current is always zeroed before deposition
 	vfld_grid_zero( &current -> J );
 
-	// This avoids setting the fJt.x to zero in current update
-	cvfld_grid_zero( &current -> fJt );
+	// This avoids setting the fJ.x to zero in current update
+	cvfld_grid_zero( &current -> fJ );
 
 }
 
 void current_delete( t_current *current )
 {
 	vfld_grid_cleanup( &current -> J );
-	cvfld_grid_cleanup( &current -> fJt );
+	cvfld_grid_cleanup( &current -> fJ );
 
 }
 
@@ -104,17 +104,17 @@ void current_update( t_current *current )
 	// fJt.x will be always 0 (set on initialization) so there is no need to do an FFT
 
 	// fftr_r2c( &current -> fft_forward, current -> J.x, current -> fJt.x );
-	fftr_r2c( current -> fft_forward, Jy, current -> fJt.y );
-	fftr_r2c( current -> fft_forward, Jz, current -> fJt.z );
+	fftr_r2c( current -> fft_forward, Jy, current -> fJ.y );
+	fftr_r2c( current -> fft_forward, Jz, current -> fJ.z );
 
 	// Filter current
 	if ( current -> filter -> type > FILTER_NONE ) {
 	    float * const restrict Sk = current -> filter -> Sk;
-	    complex float * const restrict fJtx = current -> fJt.x;
-	    complex float * const restrict fJty = current -> fJt.y;
-	    complex float * const restrict fJtz = current -> fJt.z;
+	    complex float * const restrict fJtx = current -> fJ.x;
+	    complex float * const restrict fJty = current -> fJ.y;
+	    complex float * const restrict fJtz = current -> fJ.z;
 
-		for ( i = 0; i < current -> fJt.nx; i++) {
+		for ( i = 0; i < current -> fJ.nx; i++) {
 			fJtx[i] *= Sk[i];
 			fJty[i] *= Sk[i];
 			fJtz[i] *= Sk[i];
