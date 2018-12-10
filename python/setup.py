@@ -86,8 +86,5 @@ em2ds = Extension("em2ds",
 )
 
 
-#setup(name="zpic",
-#      ext_modules = cythonize([em1d, em2d, es1d, em1ds, em2ds]))
-
 setup(name="zpic",
-      ext_modules = cythonize([em1ds]))
+      ext_modules = cythonize([em1d, em2d, es1d, em1ds, em2ds]))

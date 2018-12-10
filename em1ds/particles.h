@@ -82,6 +82,9 @@ typedef struct {
 	// Iteration number
 	int iter;
 
+	// Sorting frequency
+	int n_sort;
+
 } t_species;
 
 void spec_new( t_species* spec, char name[], const float m_q, const int ppc, 

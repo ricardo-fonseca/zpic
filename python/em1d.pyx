@@ -159,7 +159,7 @@ cdef class Species:
 	@property
 	def particles(self):
 		cdef t_part[::1] buf = <t_part[:self._thisptr.np]>self._thisptr.part
-		return np.asarray( buf, dtype = [('ix','>i4'),('x','>f4'),('ux','>f4'),('uy','>f4'),('uz','>f4')] )
+		return np.asarray( buf )
 
 	def charge(self):
 		charge = np.zeros( shape = self._thisptr.nx+1, dtype = np.float32 )
@@ -185,6 +185,18 @@ cdef class Species:
 		spec_deposit_pha( self._thisptr, rep_type, _nx, _range, &buf[0,0] )
 
 		return pha
+
+	@property
+	def n_sort(self):
+		return self._thisptr.dx
+
+	@n_sort.setter
+	def n_sort(self, int value):
+		if ( value < 0 ):
+			print("(*error*) Invalid value for n_sort, must be >= 0.", file = sys.stderr)
+			return
+		self._thisptr.n_sort = value
+
 
 
 def phasespace( int a, int b ):
@@ -277,42 +289,42 @@ cdef class EMF:
 	def Ex( self ):
 		cdef float *buf = <float *> self._thisptr.E_buf
 		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
-		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		tmp = np.asarray( <float [:size, :3]> buf )
 		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
 
 	@property
 	def Ey( self ):
 		cdef float *buf = <float *> self._thisptr.E_buf
 		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
-		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		tmp = np.asarray( <float [:size, :3]> buf )
 		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 1 ]
 
 	@property
 	def Ez( self ):
 		cdef float *buf = <float *> self._thisptr.E_buf
 		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
-		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		tmp = np.asarray( <float [:size, :3]> buf )
 		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 2 ]
 
 	@property
 	def Bx( self ):
 		cdef float *buf = <float *> self._thisptr.B_buf
 		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
-		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		tmp = np.asarray( <float [:size, :3]> buf )
 		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
 
 	@property
 	def By( self ):
 		cdef float *buf = <float *> self._thisptr.B_buf
 		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
-		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		tmp = np.asarray( <float [:size, :3]> buf )
 		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 1 ]
 
 	@property
 	def Bz( self ):
 		cdef float *buf = <float *> self._thisptr.B_buf
 		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
-		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		tmp = np.asarray( <float [:size, :3]> buf )
 		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 2 ]
 
 cdef class Laser:
@@ -417,21 +429,21 @@ cdef class Current:
 	def Jx( self ):
 		cdef float *buf = <float *> self._thisptr.J_buf
 		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
-		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		tmp = np.asarray( <float [:size, :3]> buf )
 		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
 
 	@property
 	def Jy( self ):
 		cdef float *buf = <float *> self._thisptr.J_buf
 		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
-		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		tmp = np.asarray( <float [:size, :3]> buf )
 		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
 
 	@property
 	def Jz( self ):
 		cdef float *buf = <float *> self._thisptr.J_buf
 		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
-		tmp = np.asarray( <float [:size, :3]> buf, dtype = np.float32 )
+		tmp = np.asarray( <float [:size, :3]> buf )
 		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
 
 

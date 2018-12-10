@@ -57,14 +57,67 @@ double spec_perf( void )
  */
 void spec_set_u( t_species* spec, const int start, const int end )
 {
-	int i;
-
-	for (i = start; i <= end; i++) {
+#if 0
+	for (int i = start; i <= end; i++) {
 		spec->part[i].ux = spec -> ufl[0] + spec -> uth[0] * rand_norm();
 		spec->part[i].uy = spec -> ufl[1] + spec -> uth[1] * rand_norm();
 		spec->part[i].uz = spec -> ufl[2] + spec -> uth[2] * rand_norm();
 	}
+#else
+	/**
+	 * Version 1 momentum initialization
+	 */
 
+	// Initialize thermal component
+	for (int i = start; i <= end; i++) {
+		spec->part[i].ux = spec -> uth[0] * rand_norm();
+		spec->part[i].uy = spec -> uth[1] * rand_norm();
+		spec->part[i].uz = spec -> uth[2] * rand_norm();
+	}
+
+	// Calculate net momentum in each cell
+	t_vfld * restrict net_u = (t_vfld *) malloc( spec->nx * sizeof(t_vfld));
+	int * restrict    npc   = (int *) malloc( spec->nx * sizeof(int));
+
+	// Zero momentum grids
+	memset(net_u, 0, spec->nx * sizeof(t_vfld) );
+	memset(npc, 0, (spec->nx) * sizeof(int) );
+
+	// Accumulate momentum in each cell
+	for (int i = start; i <= end; i++) {
+		const int idx  = spec -> part[i].ix;
+
+		net_u[ idx ].x += spec->part[i].ux;
+		net_u[ idx ].y += spec->part[i].uy;
+		net_u[ idx ].z += spec->part[i].uz;
+
+		npc[ idx ] += 1;
+	}
+
+	// Normalize to the number of particles in each cell to get the
+	// average momentum in each cell
+	for(int i =0; i< spec->nx; i++ ) {
+		const float norm = (npc[ i ] > 0) ? 1.0f/npc[i] : 0;
+
+		net_u[ i ].x *= norm;
+		net_u[ i ].y *= norm;
+		net_u[ i ].z *= norm;
+	}
+
+	// Subtract average momentum and add fluid component
+	for (int i = start; i <= end; i++) {
+		const int idx  = spec -> part[i].ix;
+
+		spec->part[i].ux += spec -> ufl[0] - net_u[ idx ].x;
+		spec->part[i].uy += spec -> ufl[1] - net_u[ idx ].y;
+		spec->part[i].uz += spec -> ufl[2] - net_u[ idx ].z;
+	}
+
+	// Free temporary memory
+	free( npc );
+	free( net_u );
+
+#endif
 }
 
 /**
@@ -456,6 +509,9 @@ void spec_new( t_species* spec, char name[], const float m_q, const int ppc,
 
     spec_inject_particles( spec, range );
 
+    // Set default sorting frequency
+    spec -> n_sort = 16;
+
 }
 
 void spec_move_window( t_species *spec ){
@@ -626,33 +682,31 @@ void dep_current_zamb( int ix0, int di,
 
 void spec_sort( t_species* spec )
 {
-	int *idx, *npic;
 
-	int ncell = spec->nx;
+	const int ncell = spec->nx;
 
 	// Allocate index memory
-	idx  = malloc(spec->np*sizeof(int));
+	int * restrict idx  = (int *) malloc(spec->np*sizeof(int));
 
 	// Allocate temp. array with number of particles in cell
-	npic = malloc( ncell * sizeof(int));
+	int * restrict npic = (int *) malloc( ncell * sizeof(int));
 	memset( npic, 0, ncell * sizeof(int));
 
 	// Generate sorted index
-    int i;
-	for (i=0; i<spec->np; i++) {
+	for (int i=0; i<spec->np; i++) {
 		idx[i] = spec->part[i].ix;
 		npic[idx[i]]++;
 	}
 
-	int isum = 0, j;
-	for (i=0; i<ncell; i++) {
-		j = npic[i];
+	int isum = 0;
+	for (int i=0; i<ncell; i++) {
+		int j = npic[i];
 		npic[i] = isum;
 		isum += j;
 	}
 
-	for (i=0; i< spec->np; i++) {
-		j = idx[i];
+	for (int i=0; i< spec->np; i++) {
+		int j = idx[i];
 		idx[i] = npic[j]++;
 	}
 
@@ -660,19 +714,14 @@ void spec_sort( t_species* spec )
 	free(npic);
 
 	// low mem
-	for (i=0; i < spec->np; i++) {
-		t_part tmp;
-		int k;
-
-		k = idx[i];
+	for (int i=0; i < spec->np; i++) {
+		int k = idx[i];
 		while ( k > i ) {
-			int t;
-
-			tmp = spec->part[k];
+			t_part tmp = spec->part[k];
 			spec->part[k] = spec->part[i];
 			spec->part[i] = tmp;
 
-			t = idx[k];
+			int t = idx[k];
 			idx[k] = -1;
 			k = t;
 		}
@@ -865,8 +914,10 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 		}
 	}
 
-	// Sort species at every 16 time steps
-	if ( ! (spec -> iter % 16) ) spec_sort( spec );
+	// Sort species at every n_sort time steps
+	if ( spec -> n_sort > 0 ) {
+		if ( ! (spec -> iter % spec -> n_sort) ) spec_sort( spec );
+	}
 
 	_spec_time += timer_interval_seconds( t0, timer_ticks() );
 }

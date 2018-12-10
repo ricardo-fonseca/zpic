@@ -151,7 +151,7 @@ cdef class Species:
 	@property
 	def particles(self):
 		cdef t_part[::1] buf = <t_part[:self._thisptr.np]>self._thisptr.part
-		return np.asarray( buf, dtype = [('ix','>i4'),('x','>f4'),('vx','>f4')] )
+		return np.asarray( buf )
 
 	def charge(self):
 		charge = np.zeros( shape = self._thisptr.nx+1, dtype = np.float32 )
@@ -207,7 +207,7 @@ cdef class Field:
 	@property
 	def E( self ):
 		cdef float *buf = <float *> self._thisptr.E.s
-		return np.asarray( <float [:self._thisptr.E.nx]> buf, dtype = np.float32 )
+		return np.asarray( <float [:self._thisptr.E.nx]> buf )
 
 
 cdef class Charge:
@@ -224,7 +224,7 @@ cdef class Charge:
 	@property
 	def rho( self ):
 		cdef float *buf = <float *> self._thisptr.rho.s
-		return np.asarray( <float [:self._thisptr.rho.nx]> buf, dtype = np.float32 )
+		return np.asarray( <float [:self._thisptr.rho.nx]> buf )
 
 
 cdef class Simulation:
