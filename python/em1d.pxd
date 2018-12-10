@@ -60,6 +60,7 @@ cdef extern from "../em1d/particles.h":
 		int moving_window
 		int n_move
 		int bc_type
+		int n_sort
 
 	void spec_new( t_species* spec, char name[], const float m_q, const int ppc,
 				  const float ufl[], const float uth[],

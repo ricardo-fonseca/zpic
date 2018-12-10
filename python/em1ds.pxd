@@ -128,6 +128,7 @@ cdef extern from "../em1ds/particles.h":
 		float box
 		int iter
 		float dt
+		int n_sort
 
 	void spec_new( t_species* spec, char name[], const float m_q, const int ppc,
 				  const float ufl[], const float uth[],
