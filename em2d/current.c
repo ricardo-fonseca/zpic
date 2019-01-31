@@ -105,7 +105,7 @@ void current_update( t_current *current )
 			}
 			
 			// upper - just copy the values from the lower boundary 
-			for (i=0; i<current->gc[0][1]; i++) {
+			for (i=-current->gc[0][0]; i<current->gc[0][1]; i++) {
 				J[ current->nx[0] + i + j*nrow ] = J[ i  + j*nrow ];
 			}
 			
@@ -123,7 +123,7 @@ void current_update( t_current *current )
 		}
 		
 		// upper - just copy the values from the lower boundary 
-		for (j=0; j<current->gc[1][1]; j++) {
+		for (j=-current->gc[1][0]; j<current->gc[1][1]; j++) {
 			J[ i + (current->nx[1]+j)*nrow ] = J[ i + j*nrow ];
 		}
 		
