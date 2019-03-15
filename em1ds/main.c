@@ -31,11 +31,10 @@ along with the ZPIC Educational code suite. If not, see <http://www.gnu.org/lice
 #include "timer.h"
 
 // Include Simulation parameters here
-//#include "input/twostream.c"
+#include "input/twostream.c"
 //#include "input/lwfa.c"
 //#include "input/density.c"
 
-#include "input/laser.c"
 
 int main (int argc, const char * argv[]) {
 
