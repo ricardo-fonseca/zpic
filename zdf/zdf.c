@@ -21,15 +21,19 @@ along with the ZPIC Educational code suite. If not, see <http://www.gnu.org/lice
 /**
  * ZDF version 1
  *
- * This ZDF version is totally self contained. It does not depend on XDR.
+ * This ZDF version is totally self contained. It does not depend on XDR or any other
+ * external libraries.
+ *
  * Current implementation should also work on big endian systems (untested)
- * This version is not compatible is version 0 (it has the opposite endianess)
- * 
+ * This version is not compatible is version 0 (files have the opposite endianess)
+ *
  */
 
 
-#include "zdf.h"
+#define _POSIX_C_SOURCE 200809L
+#define _FILE_OFFSET_BITS 64
 
+#include "zdf.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,32 +51,12 @@ along with the ZPIC Educational code suite. If not, see <http://www.gnu.org/lice
 #endif
 
 /**
- * Number of bytes in each ZDF file unit
- */
-#define BYTES_PER_ZDF_UNIT	(4)
-
-
-/**
  * Number of bytes required for writing data to ZDF file
  * (round up to multiple of BYTES_PER_ZDF_UNIT)
  */
 #define RNDUP(x)  ((((x) + BYTES_PER_ZDF_UNIT - 1) / BYTES_PER_ZDF_UNIT) \
 		    * BYTES_PER_ZDF_UNIT)
 
-
-/**
- * Magic byte sequence identifying ZDF files
- */
-#define ZDF_MAGIC_LENGTH BYTES_PER_ZDF_UNIT
-const char zdf_magic[ZDF_MAGIC_LENGTH] = {'Z','D','F','1'};
-
-/**
- * ZDF datatypes - Currently only float32 and float64 are supported
- */
-enum zdf_data_type{ zdf_null,
-	                zdf_int8,  zdf_uint8,  zdf_int16, zdf_uint16, 
-	                zdf_int32, zdf_uint32, zdf_int64, zdf_uint64,
-	                zdf_float32, zdf_float64 };
 
 /**
  * Buffer size for converting big endian to little endian data
@@ -84,6 +68,7 @@ enum zdf_data_type{ zdf_null,
  */
 const unsigned size_zdf_int32   = 4;
 const unsigned size_zdf_uint32  = 4;
+const unsigned size_zdf_int64   = 8;
 const unsigned size_zdf_uint64  = 8;
 const unsigned size_zdf_double  = 8;
 const unsigned size_zdf_float   = 4;
@@ -92,15 +77,19 @@ const unsigned size_zdf_float   = 4;
 /**
  * IDs of ZDF records
  */
-#define ZDF_INT32_ID     0x00010000
-#define ZDF_DOUBLE_ID    0x00020000
-#define ZDF_STRING_ID    0x00030000
+#define ZDF_INT32_ID     	0x00010000
+#define ZDF_DOUBLE_ID    	0x00020000
+#define ZDF_STRING_ID    	0x00030000
 
-#define ZDF_DATASET_ID   0x00100000
+#define ZDF_DATASET_ID      0x00100001
+#define ZDF_CDSET_START_ID  0x00110000
+#define ZDF_CDSET_CHUNK_ID  0x00120000
+#define ZDF_CDSET_END_ID	0x00130000
 
-#define ZDF_ITERATION_ID 0x00200000
-#define ZDF_GRID_INFO_ID 0x00210000
-#define ZDF_PART_INFO_ID 0x00220000
+#define ZDF_ITERATION_ID 	0x00200000
+#define ZDF_GRID_INFO_ID 	0x00210000
+#define ZDF_PART_INFO_ID 	0x00220001
+#define ZDF_TRACK_INFO_ID 	0x00230000
 
 /* -----------------------------------------------------------------------------------------------
   recursively create path if required
@@ -115,21 +104,21 @@ int create_path( const char path[] )
 {
 	char uppath[256], *p;
 	int ierr = 0;
-	
+
 	if (mkdir(path,S_IRWXU | (S_IRGRP | S_IXGRP ) | (S_IROTH | S_IXOTH) )) {
 		switch (errno) {
 			case ENOENT : // A component of the path does not exist 
-				
+
 				// get upper path
 				strncpy(uppath, path, 256);
 				p = uppath + strlen(uppath);
 				while(*p!='/') p--;
 				*p=0;
-				
+
 				//recursively build the path
 				if ( !create_path( uppath ) ) ierr = create_path( path );
 				break;
-				
+
 			case EEXIST : /* if directory already exists ignore the error */
 				ierr = 0;
 				break;
@@ -139,6 +128,34 @@ int create_path( const char path[] )
 	return ierr;
 }
 
+
+/**
+ * Returns size of ZDF datatype
+ * @param  data_type Data type id
+ * @return           Returns type size in bytes or 0 for an invalid data type
+ */
+size_t zdf_sizeof( enum zdf_data_type data_type ) {
+	switch( data_type ) {
+        case zdf_null:
+        	return(0);
+        case zdf_int8:
+        case zdf_uint8:
+        	return(1);
+        case zdf_int16:
+        case zdf_uint16:
+        	return(2);
+        case zdf_int32:
+        case zdf_uint32:
+        case zdf_float32:
+        	return(4);
+        case zdf_int64:
+        case zdf_uint64:
+        case zdf_float64:
+        	return(8);
+	}
+	return(0);
+}
+
 /* -----------------------------------------------------------------------------------------------
   Open / Close ZDF file
 -------------------------------------------------------------------------------------------------- */
@@ -146,43 +163,46 @@ int create_path( const char path[] )
 /**
  * Closes ZDF file
  * @param  zdf ZDF file to close
- * @return     Returns 0 on success, -1 otherwise
+ * @return     Returns 1 on success, 0 on error
  */
 int zdf_close_file( t_zdf_file* zdf ) {
 
 	if ( fclose( zdf->fp ) ) {
 		perror("(*error*) Unable to close ZDF file");
-		return(-1);
+		return(0);
 	}
 	zdf -> fp = NULL;
-	return(0);
+	return(1);
 }
 
 /**
  * Opens ZDF file
  * @param  zdf      ZDF file to open
  * @param  filename Filename of the ZDF file to open, including path
- * @param  mode     Can be one of ZDF_WRITE (for writing) or ZDF_READ (for reading)
- * @return          Returns 0 on success, -1 otherwise
+ * @param  mode     Can be one of ZDF_CREATE, ZDF_READ, or ZDF_UPDATE
+ * @return          Returns 1 on success, 0 on error
  */
-int zdf_open_file( t_zdf_file* zdf, char* filename, enum zdf_file_access_mode mode ){
+int zdf_open_file( t_zdf_file* zdf, const char* filename, enum zdf_file_access_mode mode ){
+
+	char test_magic[4];
 
 	zdf -> mode = mode;
 
 	switch( mode ) {
-		case ZDF_WRITE :
+		case ZDF_CREATE :
 			// Open file for writing
 			// The "wb" mode must be used for compatibility with Windows
-			if (!(zdf->fp = fopen( filename, "wb"))) {
+			if (!(zdf->fp = fopen( filename, "w+b"))) {
 				perror("(*error*) Unable to open ZDF file for writing");
-				return(-1);
+				return(0);
 			}
-			
+
 			// Write magic number
-			if (!fwrite( (void *) &zdf_magic, sizeof(char), 4, zdf->fp )) {
-				fprintf(stderr, "(*error*) Unable to write magic number to ZDF file.");
+			if ( fwrite( (void *) zdf_magic, sizeof(char), ZDF_MAGIC_LENGTH, zdf->fp )
+			     != ZDF_MAGIC_LENGTH ) {
+				fprintf(stderr, "(*error*) Unable to write magic number to ZDF file.\n");
 				zdf_close_file( zdf );
-				return(-1);
+				return(0);
 			}
 
 			break;
@@ -191,33 +211,64 @@ int zdf_open_file( t_zdf_file* zdf, char* filename, enum zdf_file_access_mode mo
 			// Open file for reading
 			if (!(zdf->fp = fopen( filename, "r"))) {
 				perror("(*error*) Unable to open ZDF file for reading");
-				return(-1);
+				return(0);
 			}
 
 			// Read magic number
-			char test_magic[4];
-			if (! fread( (void *) &test_magic, sizeof(char), 4, zdf->fp )) {
-				fprintf(stderr, "(*error*) Unable to read magic number from ZDF file.");
+			if ( fread( (void *) test_magic, sizeof(char), ZDF_MAGIC_LENGTH, zdf->fp )
+				!= ZDF_MAGIC_LENGTH) {
+				fprintf(stderr, "(*error*) Unable to read magic number from ZDF file.\n");
 				zdf_close_file( zdf );
-				return(-1);
+				return(0);
 			}
 
-            // Check magic number
-            for( int i = 0; i < ZDF_MAGIC_LENGTH; i++) {
-	            if ( test_magic[i] != zdf_magic[i] ) {
-					fprintf(stderr, "(*error*) Invalid magic number, file is not a proper ZDF file.");
+			// Check magic number
+			for( int i = 0; i < ZDF_MAGIC_LENGTH; i++) {
+				if ( test_magic[i] != zdf_magic[i] ) {
+					fprintf(stderr, "(*error*) Invalid magic number, file is not a proper ZDF file.\n");
 					zdf_close_file( zdf );
-					return(-1);
+					return(0);
 				}
 			}
 			break;
 
+		case ZDF_UPDATE :
+			// Open file for reading and writing
+			if (!(zdf->fp = fopen( filename, "r+"))) {
+				perror("(*error*) Unable to open ZDF file for reading / writing.\n");
+				return(0);
+			}
+
+			// Read magic number
+			if (fread( (void *) test_magic, sizeof(char), ZDF_MAGIC_LENGTH, zdf->fp )
+				!= ZDF_MAGIC_LENGTH) {
+				fprintf(stderr, "(*error*) Unable to read magic number from ZDF file.\n");
+				zdf_close_file( zdf );
+				return(0);
+			}
+
+			// Check magic number
+      		for( int i = 0; i < ZDF_MAGIC_LENGTH; i++) {
+	    		if ( test_magic[i] != zdf_magic[i] ) {
+					fprintf(stderr, "(*error*) Invalid magic number, file is not a proper ZDF file.\n");
+					zdf_close_file( zdf );
+					return(0);
+				}
+			}
+
+			// Position the file pointer at the end of the file
+			fseeko( zdf->fp, 0, SEEK_END );
+
+			break;
+
 		default:
-			fprintf(stderr, "(*error*) zdf_open_file: unsupported mode\n");
-			return(-1);
+			fprintf(stderr, "(*error*) zdf_open_file: unsupported mode.\n");
+			return(0);
 	}
 
-	return(0);
+	zdf -> ndatasets = 0;
+
+	return(1);
 }
 
 /* -----------------------------------------------------------------------------------------------
@@ -234,75 +285,154 @@ int zdf_open_file( t_zdf_file* zdf, char* filename, enum zdf_file_access_mode mo
  */
 
 /**
- * Writes int32 value to file
+ * Writes scalar int32 value to file
  * @param  zdf ZDF file descriptor
  * @param  i   int32_t value to write
- * @return     Returns 0 on success, other value on error
+ * @return     Returns number of bytes written on success, 0 on error
  */
-int zdf_int32_write( t_zdf_file* zdf, const int32_t i ){
-	return ( fwrite( (void *) &i, sizeof(int32_t), 1, zdf -> fp ) == 1 );
+size_t zdf_int32_write( t_zdf_file* zdf, const int32_t i ){
+	if ( fwrite( (void *) &i, sizeof(int32_t), 1, zdf -> fp ) != 1 )
+		return(0);
+	return ( sizeof(int32_t) );
 }
 
 /**
- * Writes uint32 value to file
+ * Reads scalar int32 value from file
+ * @param  zdf ZDF file descriptor
+ * @param  i   int32_t value read
+ * @return     Returns number of bytes written on success, 0 on error
+ */
+size_t zdf_int32_read( t_zdf_file* zdf, int32_t* i ){
+	if ( fread( (void *) i, sizeof(int32_t), 1, zdf -> fp ) != 1 )
+		return(0);
+	return ( sizeof(int32_t) );
+}
+
+/**
+ * Writes scalar uint32 value to file
  * @param  zdf ZDF file descriptor
  * @param  u   uint32_t value to write
- * @return     Returns 0 on success, other value on error
+ * @return     Returns number of bytes written on success, 0 on error
  */
-int zdf_uint32_write( t_zdf_file* zdf, const uint32_t u ){
-	return ( fwrite( (void *) &u, sizeof(uint32_t), 1, zdf -> fp ) == 1 );
+size_t zdf_uint32_write( t_zdf_file* zdf, const uint32_t u ){
+	if ( fwrite( (void *) &u, sizeof(uint32_t), 1, zdf -> fp ) != 1 )
+		return(0);
+	return(sizeof(uint32_t));
 }
 
 /**
- * Writes int64 value to file
+ * Reads scalar uint32 value from file
+ * @param  zdf ZDF file descriptor
+ * @param  u   uint32_t value read
+ * @return     Returns number of bytes written on success, 0 on error
+ */
+size_t zdf_uint32_read( t_zdf_file* zdf, uint32_t* u ){
+	if ( fread( (void *) u, sizeof(uint32_t), 1, zdf -> fp ) != 1 )
+		return(0);
+	return(sizeof(uint32_t));
+}
+
+/**
+ * Writes scalar int64 value to file
  * @param  zdf ZDF file descriptor
  * @param  i   int64_t value to write
- * @return     Returns 0 on success, other value on error
+ * @return     Returns number of bytes written on success, 0 on error
  */
-int zdf_int64_write( t_zdf_file* zdf, const int64_t i ){
-	return ( fwrite( (void *) &i, sizeof(int64_t), 1, zdf -> fp ) == 1 );
+size_t zdf_int64_write( t_zdf_file* zdf, const int64_t i ){
+	if ( fwrite( (void *) &i, sizeof(int64_t), 1, zdf -> fp ) != 1 )
+		return(0);
+	return(sizeof(int64_t));
 }
 
 /**
- * Writes uint64_t value to file
+ * Reads scalar int64 value from file
+ * @param  zdf ZDF file descriptor
+ * @param  i   int64_t value read
+ * @return     Returns number of bytes written on success, 0 on error
+ */
+size_t zdf_int64_read( t_zdf_file* zdf, int64_t *i ){
+	if ( fread( (void *) i, sizeof(int64_t), 1, zdf -> fp ) != 1 )
+		return(0);
+	return(sizeof(int64_t));
+}
+
+/**
+ * Writes scalar uint64_t value to file
  * @param  zdf ZDF file descriptor
  * @param  u   uint64_t value to write
- * @return     Returns 0 on success, other value on error
+ * @return     Returns number of bytes written on success, 0 on error
  */
-int zdf_uint64_write( t_zdf_file* zdf, const uint64_t u ){
-	return ( fwrite( (void *) &u, sizeof(uint64_t), 1, zdf -> fp ) == 1 );
+size_t zdf_uint64_write( t_zdf_file* zdf, const uint64_t u ){
+	if ( fwrite( (void *) &u, sizeof(uint64_t), 1, zdf -> fp ) != 1 )
+		return(0);
+	return(sizeof(uint64_t));
 }
 
 /**
- * Writes double (float64) value to file
+ * Reads scalar int64 value from file
+ * @param  zdf ZDF file descriptor
+ * @param  u   uint64_t value read
+ * @return     Returns number of bytes written on success, 0 on error
+ */
+size_t zdf_uint64_read( t_zdf_file* zdf, uint64_t *u ){
+	if ( fread( (void *) u, sizeof(int64_t), 1, zdf -> fp ) != 1 )
+		return(0);
+	return(sizeof(uint64_t));
+}
+
+
+/**
+ * Writes scalar double (float64) value to file
  * @param  zdf ZDF file descriptor
  * @param  d   double value to write
- * @return     Returns 0 on success, other value on error
+ * @return     Returns number of bytes written on success, 0 on error
  */
-int zdf_double_write( t_zdf_file* zdf, const double d ){
-	return ( fwrite( (void *) &d, sizeof(double), 1, zdf -> fp ) == 1 );
+size_t zdf_double_write( t_zdf_file* zdf, const double d ){
+	if ( fwrite( (void *) &d, sizeof(double), 1, zdf -> fp ) != 1 )
+		return(0);
+	return(sizeof(double));
 }
 
 /**
- * Write float (float32) vector to file
- * @param  zdf  ZDF file descriptor
- * @param  data Pointer to float (float32) data to write
- * @param  len  Number of vector elements
- * @return      Returns 0 on success, other value on error
+ * Write arbitraty 16bit type vector to file
+ * @param  zdf          ZDF file descriptor
+ * @param  data         Pointer to data to write
+ * @param  element_size Size of vector element
+ * @param  len          Number of vector elements
+ * @return              Returns number of bytes written on success, 0 on error
  */
-int zdf_float_vector_write( t_zdf_file* zdf,  float const * const data, size_t len ) {
-	return( fwrite( (void *) data, sizeof(float), len, zdf -> fp ) != len );
+size_t zdf_vector16_write( t_zdf_file* zdf, void const * const data, size_t len ) {
+	if ( fwrite( data, sizeof(int16_t), len, zdf -> fp ) != len )
+		return(0);
+	return( len * sizeof(int16_t) );
 }
 
 /**
- * Write double (float64) vector to file
- * @param  zdf  ZDF file descriptor
- * @param  data Pointer to float (float64) data to write
- * @param  len  Number of vector elements
- * @return      Returns 0 on success, other value on error
+ * Write arbitraty 32bit type vector to file
+ * @param  zdf          ZDF file descriptor
+ * @param  data         Pointer to data to write
+ * @param  element_size Size of vector element
+ * @param  len          Number of vector elements
+ * @return              Returns number of bytes written on success, 0 on error
  */
-int zdf_double_vector_write( t_zdf_file* zdf,  double const * const data, size_t len ) {
-	return( fwrite( (void *) data, sizeof(double), len, zdf -> fp ) != len );
+size_t zdf_vector32_write( t_zdf_file* zdf, void const * const data, size_t len ) {
+	if ( fwrite( data, sizeof(int32_t), len, zdf -> fp ) != len )
+		return(0);
+	return( len * sizeof(int32_t) );
+}
+
+/**
+ * Write arbitraty 64bit type vector to file
+ * @param  zdf          ZDF file descriptor
+ * @param  data         Pointer to data to write
+ * @param  element_size Size of vector element
+ * @param  len          Number of vector elements
+ * @return              Returns number of bytes written on success, 0 on error
+ */
+size_t zdf_vector64_write( t_zdf_file* zdf, void const * const data, size_t len ) {
+	if( fwrite( data, sizeof(int64_t), len, zdf -> fp ) != len )
+		return(0);
+	return( len * sizeof(int64_t) );
 }
 
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
@@ -318,8 +448,11 @@ int zdf_double_vector_write( t_zdf_file* zdf,  double const * const data, size_t
  */
 
 
-/*
-// Not required
+/**
+ * Swap bytes for 16 bit number
+ * @param  x 16 bit number to convert
+ * @return   byte-swapped version of x
+ */
 #define bswap_16(x) \
 ({ \
 	uint16_t __x = (x); \
@@ -327,7 +460,6 @@ int zdf_double_vector_write( t_zdf_file* zdf,  double const * const data, size_t
 		(((uint16_t)(__x) & (uint16_t)0x00ffU) << 8) | \
 		(((uint16_t)(__x) & (uint16_t)0xff00U) >> 8) )); \
 })
-*/
 
 /**
  * Swap bytes for 32 bit number
@@ -367,65 +499,158 @@ int zdf_double_vector_write( t_zdf_file* zdf,  double const * const data, size_t
  * Writes int32 value to file
  * @param  zdf ZDF file descriptor
  * @param  i   int32_t value to write
- * @return     Returns 0 on success, other value on error
+ * @return     Returns number of bytes written on success, 0 on error
  */
-int zdf_int32_write( t_zdf_file* zdf, const int32_t i ){
+size_t zdf_int32_write( t_zdf_file* zdf, const int32_t i ){
 	uint32_t tmp = bswap_32((uint32_t)i);
-	return ( fwrite( (void *) &tmp, sizeof(uint32_t), 1, zdf -> fp ) == 1 );
+	if ( fwrite( (void *) &tmp, sizeof(uint32_t), 1, zdf -> fp ) != 1 )
+		return(0);
+	return( sizeof(uint32_t));
+}
+
+/**
+ * Reads scalar int32 value from file
+ * @param  zdf ZDF file descriptor
+ * @param  i   int32_t value read
+ * @return     Returns number of bytes read on success, 0 on error
+ */
+size_t zdf_int32_read( t_zdf_file* zdf, int32_t* i ){
+	uint32_t tmp;
+	if ( fread( (void *) &tmp, sizeof(uint32_t), 1, zdf -> fp ) != 1 )
+		return(0);
+	*i = (int32_t) bswap_32(tmp);
+	return( sizeof(uint32_t));
 }
 
 /**
  * Writes uint32 value to file
  * @param  zdf ZDF file descriptor
  * @param  u   uint32_t value to write
- * @return     Returns 0 on success, other value on error
+ * @return     Returns number of bytes written on success, 0 on error
  */
-int zdf_uint32_write( t_zdf_file* zdf, const uint32_t u ){
+size_t zdf_uint32_write( t_zdf_file* zdf, const uint32_t u ){
 	uint32_t tmp = bswap_32(u);
-	return ( fwrite( (void *) &tmp, sizeof(uint32_t), 1, zdf -> fp ) == 1 );
+	if ( fwrite( (void *) &tmp, sizeof(uint32_t), 1, zdf -> fp ) != 1 )
+		return(0);
+	return(sizeof(uint32_t));
+}
+
+/**
+ * Reads scalar uint32 value from file
+ * @param  zdf ZDF file descriptor
+ * @param  i   uint32_t value read
+ * @return     Returns number of bytes read on success, 0 on error
+ */
+size_t zdf_uint32_read( t_zdf_file* zdf, uint32_t* u ){
+	uint32_t tmp;
+	if ( fread( (void *) &tmp, sizeof(uint32_t), 1, zdf -> fp ) != 1 )
+		return(0);
+	*u = bswap_32(tmp);
+	return(sizeof(uint32_t));
 }
 
 /**
  * Writes int64 value to file
  * @param  zdf ZDF file descriptor
  * @param  i   int64_t value to write
- * @return     Returns 0 on success, other value on error
+ * @return     Returns number of bytes written on success, 0 on error
  */
-int zdf_int64_write( t_zdf_file* zdf, const int64_t i ){
+size_t zdf_int64_write( t_zdf_file* zdf, const int64_t i ){
 	uint64_t tmp = bswap_64((uint64_t)i);
-	return ( fwrite( (void *) &tmp, sizeof(uint64_t), 1, zdf -> fp ) == 1 );
+	if ( fwrite( (void *) &tmp, sizeof(uint64_t), 1, zdf -> fp ) != 1 )
+		return(0);
+	return(sizeof(uint64_t));
+}
+
+/**
+ * Reads scalar int64 value from file
+ * @param  zdf ZDF file descriptor
+ * @param  i   int64_t value read
+ * @return     Returns number of bytes read on success, 0 on error
+ */
+size_t zdf_int64_read( t_zdf_file* zdf, int64_t* i ){
+	uint64_t tmp;
+	if ( fread( (void *) &tmp, sizeof(uint64_t), 1, zdf -> fp ) != 1 )
+		return(0);
+	*i = (int64_t) bswap_64(tmp);
+	return(sizeof(uint64_t));
 }
 
 /**
  * Writes uint64_t value to file
  * @param  zdf ZDF file descriptor
  * @param  u   uint64_t value to write
- * @return     Returns 0 on success, other value on error
+ * @return     Returns number of bytes read on success, 0 on error
  */
-int zdf_uint64_write( t_zdf_file* zdf, const uint64_t u ){
+size_t zdf_uint64_write( t_zdf_file* zdf, const uint64_t u ){
 	uint64_t tmp = bswap_64(u);
-	return ( fwrite( (void *) &tmp, sizeof(uint64_t), 1, zdf -> fp ) == 1 );
+	if ( fwrite( (void *) &tmp, sizeof(uint64_t), 1, zdf -> fp ) != 1 )
+		return(0);
+	return(sizeof(uint64_t));
+}
+
+/**
+ * Reads scalar uint64 value from file
+ * @param  zdf ZDF file descriptor
+ * @param  i   uint64_t value read
+ * @return     Returns number of bytes read on success, 0 on error
+ */
+size_t zdf_uint64_read( t_zdf_file* zdf, uint64_t* i ){
+	uint64_t tmp;
+	if ( fread( (void *) &tmp, sizeof(uint64_t), 1, zdf -> fp ) != 1 )
+		return(0);
+	*i = bswap_64(tmp);
+	return(sizeof(uint64_t));
 }
 
 /**
  * Writes double (float64) value to file
  * @param  zdf ZDF file descriptor
  * @param  d   double value to write
- * @return     Returns 0 on success, other value on error
+ * @return     Returns number of bytes written on success, 0 on error
  */
-int zdf_double_write( t_zdf_file* zdf, const double d ){
+size_t zdf_double_write( t_zdf_file* zdf, const double d ){
 	uint64_t tmp = bswap_64((uint64_t)d);
-	return ( fwrite( (void *) &tmp, sizeof(uint64_t), 1, zdf -> fp ) == 1 );
+	if ( fwrite( (void *) &tmp, sizeof(uint64_t), 1, zdf -> fp ) != 1 )
+		return(0);
+	return(sizeof(uint64_t));
 }
 
 /**
- * Write float (float32) vector to file
+ * Write arbitraty 16bit type vector to file
  * @param  zdf  ZDF file descriptor
- * @param  data Pointer to float (float32) data to write
+ * @param  data Pointer to 16 bit data to write
  * @param  len  Number of vector elements
- * @return      Returns 0 on success, other value on error
+ * @return      Returns number of bytes written on success, 0 on error
  */
-int zdf_float_vector_write( t_zdf_file* zdf,  float const * const data, size_t len ) {
+size_t zdf_vector16_write( t_zdf_file* zdf,  void const * const data, size_t len ) {
+
+	uint16_t buffer[ENDIAN_CONV_BUF_SIZE];
+
+	for( size_t offset = 0; offset < len; offset += ENDIAN_CONV_BUF_SIZE ) {
+
+		// Number of values in chunk
+		size_t chunk_len = (offset + ENDIAN_CONV_BUF_SIZE < len ) ? ENDIAN_CONV_BUF_SIZE : len - offset;
+
+		// Convert chunk to little endian
+		for( size_t i = 0; i < chunk_len; i++) buffer[i] = bswap_16( data[offset+i]);
+
+		// Write chunk
+		if ( fwrite( (void *) buffer, sizeof(uint16_t), chunk_len, zdf -> fp) != chunk_len ) 
+			return(0);
+    }
+
+	return( len * sizeof(uint16_t) );
+}
+
+/**
+ * Write arbitraty 32bit type vector to file
+ * @param  zdf  ZDF file descriptor
+ * @param  data Pointer to 32 bit data to write
+ * @param  len  Number of vector elements
+ * @return      Returns number of bytes written on success, 0 on error
+ */
+size_t zdf_vector32_write( t_zdf_file* zdf,  void const * const data, size_t len ) {
 
 	uint32_t buffer[ENDIAN_CONV_BUF_SIZE];
 
@@ -433,42 +658,42 @@ int zdf_float_vector_write( t_zdf_file* zdf,  float const * const data, size_t l
 
 		// Number of values in chunk
 		size_t chunk_len = (offset + ENDIAN_CONV_BUF_SIZE < len ) ? ENDIAN_CONV_BUF_SIZE : len - offset;
-		
+
 		// Convert chunk to little endian
-		for( size_t i = 0; i < chunk_len; i++) buffer[i] = bswap_32( (uint32_t) data[offset+i]);
-		
+		for( size_t i = 0; i < chunk_len; i++) buffer[i] = bswap_32( data[offset+i]);
+
 		// Write chunk
 		if ( fwrite( (void *) buffer, sizeof(uint32_t), chunk_len, zdf -> fp) != chunk_len ) 
 			return(0);
     }
 
-	return( 1 );
+	return( len * sizeof(uint32_t) );
 }
 
 /**
- * Write double (float64) vector to file
+ * Write arbitraty 64bit type vector to file
  * @param  zdf  ZDF file descriptor
- * @param  data Pointer to float (float64) data to write
+ * @param  data Pointer to 64 bit data to write
  * @param  len  Number of vector elements
- * @return      Returns 0 on success, other value on error
+ * @return      Returns number of bytes written on success, 0 on error
  */
-int zdf_double_vector_write( t_zdf_file* zdf,  double const * const data, size_t len ) {
+size_t zdf_vector64_write( t_zdf_file* zdf,  void const * const data, size_t len ) {
 	uint64_t buffer[ENDIAN_CONV_BUF_SIZE];
 
 	for( size_t offset = 0; offset < len; offset += ENDIAN_CONV_BUF_SIZE ) {
 
 		// Number of values in chunk
 		size_t chunk_len = (offset + ENDIAN_CONV_BUF_SIZE < len ) ? ENDIAN_CONV_BUF_SIZE : len - offset;
-		
+
 		// Convert chunk to little endian
-		for( size_t i = 0; i < chunk_len; i++) buffer[i] = bswap_64( (uint64_t) data[offset+i]);
-		
+		for( size_t i = 0; i < chunk_len; i++) buffer[i] = bswap_64( data[offset+i] );
+
 		// Write chunk
 		if ( fwrite( (void *) buffer, sizeof(uint64_t), chunk_len, zdf -> fp) != chunk_len ) 
 			return(0);
     }
 
-	return( 1 );
+	return( len * sizeof(uint64_t) );
 }
 
 
@@ -479,15 +704,16 @@ int zdf_double_vector_write( t_zdf_file* zdf,  double const * const data, size_t
 #endif
 
 /**
- * Write a sequence of bytes to file
+ * Write arbitraty 8bit type vector to file. Adds padding at the end of the vector if
+ * necessary to maitain alignment.
  * @param  zdf ZDF file descriptor
- * @param  u   Pointer to byte data
- * @param  len Number of bytes to write
- * @return     Returns 0 on success, other value on error
+ * @param  u   Pointer to 8 bit data
+ * @param  len Number of vector elements
+ * @return     Returns number of bytes written (including padding), 0 on error
  */
-int zdf_bytes_write( t_zdf_file* zdf, const uint8_t *u, size_t len ){
-	
-	if ( fwrite( (void *) u, sizeof(uint8_t), len, zdf -> fp ) != len ) {
+size_t zdf_vector8_write( t_zdf_file* zdf, void const * const u, size_t len ){
+
+	if ( fwrite( u, sizeof(uint8_t), len, zdf -> fp ) != len ) {
 		return(0);
 	}
 
@@ -503,6 +729,37 @@ int zdf_bytes_write( t_zdf_file* zdf, const uint8_t *u, size_t len ){
 	return( RNDUP(len) );
 }
 
+/**
+ * Writes a vector of the specified datatype to file
+ * @param  zdf       ZDF file descriptor
+ * @param  data      Pointer to data
+ * @param  data_type Data type descriptor
+ * @param  len       Number of elements in vector
+ * @return           Returns number of bytes written on success, 0 on error
+ */
+size_t zdf_vector_write( t_zdf_file* zdf, const void * data, enum zdf_data_type data_type, size_t len ){
+
+ 	switch ( data_type ) {
+    	case zdf_int8:
+    	case zdf_uint8:
+    		return ( zdf_vector8_write( zdf, data, len ));
+    	case zdf_int16:
+    	case zdf_uint16:
+    	    return ( zdf_vector16_write( zdf, data, len ) );
+    	case zdf_int32:
+    	case zdf_uint32:
+    	case zdf_float32:
+    	    return ( zdf_vector32_write( zdf, data, len ) );
+    	case zdf_int64:
+    	case zdf_uint64:
+    	case zdf_float64:
+    	    return ( zdf_vector64_write( zdf, data, len ) );
+    	default:
+    		fprintf(stderr,"(*error*) zdf_vector_write: Unsupported datatype.\n");
+ 	}
+	return(0);
+ }
+
 
 /* -----------------------------------------------------------------------------------------------
   zdf_string
@@ -512,20 +769,51 @@ int zdf_bytes_write( t_zdf_file* zdf, const uint8_t *u, size_t len ){
  * Write a string to file
  * @param  zdf ZDF file descriptor
  * @param  str C string (char *) to write
- * @return     Returns 0 on success, 1 on error
+ * @return     Returns number of bytes written on success, 0 on error
  */
-int zdf_string_write( t_zdf_file* zdf, const char * str ){
+size_t zdf_string_write( t_zdf_file* zdf, const char * str ){
 
 	uint32_t len;
+	int count;
 
 	len = ( str ) ? strlen( str ) : 0;
-	if ( !zdf_uint32_write( zdf, len ) ) return(0);
+	if ( ! zdf_uint32_write( zdf, len ) ) return(0);
 
 	if ( len > 0 ) {
-		if ( !zdf_bytes_write( zdf, (const uint8_t *) str, len ) ) return(0);
+		if ( !(count = zdf_vector8_write( zdf, (void *) str, len ) ) )
+			return(0);
+	} else {
+		count = 0;
 	}
 
-	return(1);
+	return( sizeof(uint32_t) + count );
+}
+
+/**
+ * Read a string from file
+ * @param  zdf ZDF file descriptor
+ * @param  str C string (char *) to read. The routine will allocate memory using
+ *             malloc() for storing the string data.
+ * @return     Returns number of bytes read on success, 0 on error
+ */
+size_t zdf_string_read( t_zdf_file* zdf, char * * str ){
+
+	uint32_t len;
+	if ( ! zdf_uint32_read( zdf, &len) ) return(0);
+
+	uint32_t flen = RNDUP(len);
+
+    char * buffer = (char *) malloc( (flen+1) * sizeof(uint8_t) );
+
+	if ( len > 0 ) {
+		if ( fread( (void *) buffer, sizeof(uint8_t), flen, zdf -> fp ) != flen ) return(0);
+	}
+
+	buffer[len] = 0;
+
+	*str = buffer;
+
+	return( sizeof(uint32_t) + flen );
 }
 
 /**
@@ -533,7 +821,7 @@ int zdf_string_write( t_zdf_file* zdf, const char * str ){
  * @param  s C string (char *) to write
  * @return   The number of bytes required for writing the string data
  */
-uint64_t size_zdf_string( const char *s )
+size_t size_zdf_string( const char *s )
 {
 	unsigned len = ( s ) ? strlen( s ) : 0;
 	return size_zdf_uint32 + ((len > 0) ? RNDUP(len) : 0);
@@ -550,60 +838,122 @@ typedef struct {
 	uint64_t length;
 } t_zdf_record;
 
+/**
+ * Adds ZDF record header to file
+ * @param  zdf ZDF file descriptor
+ * @param  rec ZDF record
+ * @return     Returns number of bytes written on success, 0 on error
+ */
+size_t zdf_record_write( t_zdf_file* zdf, const t_zdf_record* rec ){
 
-int zdf_record_write( t_zdf_file* zdf, const t_zdf_record* rec ){
+  if ( ! zdf_uint32_write( zdf, rec -> id_version ) ) return(0);
+  size_t len;	if ( ! (len=zdf_string_write( zdf, rec -> name )) ) return(0);
+	if ( ! zdf_uint64_write( zdf, rec -> length )     ) return(0);
 
-    if ( !zdf_uint32_write( zdf, rec -> id_version ) ) return(0);
- 	if ( !zdf_string_write( zdf, rec -> name ) ) return(0);
-	if ( !zdf_uint64_write( zdf, rec -> length ) ) return(0);
-
- 	return(1);
+ 	return( sizeof(uint32_t) + len + sizeof(uint64_t) );
 }
 
+/**
+ * Reads ZDF record header from file
+ * @param  zdf ZDF file descriptor
+ * @param  rec ZDF record
+ * @return     Returns number of bytes read on success, 0 on error
+ */
+size_t zdf_record_read( t_zdf_file* zdf, t_zdf_record* rec ){
+
+  if ( ! zdf_uint32_read( zdf, & rec -> id_version ) ) return(0);
+  size_t len; if ( ! (len=zdf_string_read( zdf, & rec -> name )) ) return(0);
+	if ( ! zdf_uint64_read( zdf, & rec -> length )     ) return(0);
+
+ 	return( sizeof(uint32_t) + len + sizeof(uint64_t) );
+}
+
+/**
+ * Skips to the end of ZDF record. File pointer is assumed to be after the record header.
+ * @param  zdf ZDF file descriptor
+ * @param  rec ZDF record
+ * @return     Returns 1 on success, 0 on error
+ */
+int zdf_record_skip( t_zdf_file* zdf, const t_zdf_record* rec ){
+
+    off_t offset = rec -> length;
+    return ( ! fseeko( zdf -> fp, offset, SEEK_CUR ) ? 1 : 0 );
+}
 
 /* -----------------------------------------------------------------------------------------------
   zdf basic data tags
 -------------------------------------------------------------------------------------------------- */
-int zdf_add_string( t_zdf_file* zdf, char* name, const char* str ){
-	
+
+/**
+ * Adds string element to ZDF file
+ * @param  zdf  ZDF File handle
+ * @param  name Element name
+ * @param  str  String value
+ * @return      Returns number of bytes written on success, 0 on error
+ */
+size_t zdf_add_string( t_zdf_file* zdf, const char* name, const char* str ){
+
 	t_zdf_record rec = {
 		.id_version = ZDF_STRING_ID,
-		.name = name,
+		.name = (char *)name,
 		.length = size_zdf_string( str )
 	};
 
-    if ( !zdf_record_write( zdf, &rec) ) return(-1);
-    if ( !zdf_string_write( zdf, str) ) return(-1);
+    size_t ok, len;
+    len = ( ok = zdf_record_write( zdf, &rec ) );
+    if ( !ok ) return(0);
 
-    return(0);
+    len += ( ok = zdf_string_write( zdf, str) );
+    if ( !ok ) return(0);
+
+    return(len);
 }
 
-int zdf_add_int32( t_zdf_file* zdf, char* name, const int32_t value ){
-	
+/**
+ * Adds int32 element to ZDF file
+ * @param  zdf    ZDF File handle
+ * @param  name   Element name
+ * @param  value  int32 value
+ * @return        Returns number of bytes written on success, 0 on error
+ */
+size_t zdf_add_int32( t_zdf_file* zdf, const char* name, const int32_t value ){
+
 	t_zdf_record rec = {
 		.id_version = ZDF_INT32_ID,
-		.name = name,
+		.name = (char *)name,
 		.length = size_zdf_int32
 	};
 
-    if ( !zdf_record_write(zdf, &rec) ) return(-1);
-    if ( !zdf_int32_write(zdf, value) ) return(-1);
+    size_t ok, len;
+    len = ( ok = zdf_record_write(zdf, &rec) );
+    if (!ok) return(0);
 
-    return(0);
+    len += ( ok = zdf_int32_write(zdf, value) );
+    if (!ok) return(0);
+
+    return( len );
 }
 
-int zdf_add_double( t_zdf_file* zdf, char* name, const double value )
+/**
+ * Adds float64 element to ZDF file
+ * @param  zdf    ZDF file handle
+ * @param  name   Element name
+ * @param  value  float64 value
+ * @return        Returns number of bytes written on success, 0 on error
+ */
+size_t zdf_add_double( t_zdf_file* zdf, const char* name, const double value )
 {
 	t_zdf_record rec = {
 		.id_version = ZDF_DOUBLE_ID,
-		.name = name,
+		.name = (char *)name,
 		.length = size_zdf_double
 	};
 
-    if ( !zdf_record_write(zdf, &rec) ) return(-1);
-    if ( !zdf_double_write(zdf, value) ) return(-1);
+    size_t ok, len;
+    len = (ok = zdf_record_write(zdf, &rec) );    if ( !ok ) return(0);
+    len += ( ok = zdf_double_write(zdf, value) ); if ( !ok ) return(0);
 
-    return(0);
+    return(len);
 }
 
 
@@ -611,28 +961,40 @@ int zdf_add_double( t_zdf_file* zdf, char* name, const double value )
   zdf compound metadata tags
 -------------------------------------------------------------------------------------------------- */
 
-int zdf_add_iteration( t_zdf_file* zdf, const char* name, const t_zdf_iteration* iter ){
+/**
+ * Adds iteration metadata group to ZDF file
+ * @param  zdf  ZDF file handle
+ * @param  name Name of metadata group
+ * @param  iter Iteration info
+ * @return      Number of bytes written on success, 0 on error
+ */
+size_t zdf_add_iteration( t_zdf_file* zdf, const char* name, const t_zdf_iteration* iter ){
 
 	t_zdf_record rec = {
 		.id_version = ZDF_ITERATION_ID,
 		.name = (char *) name,
-		.length = size_zdf_uint32 + 
+		.length = size_zdf_uint32 +
 		             size_zdf_double +
 		             size_zdf_string( iter -> time_units )
 	};
 
-    if ( !zdf_record_write( zdf, &rec) ) return(-1);
+    size_t ok, len;
 
- 	if ( !zdf_int32_write( zdf, iter ->n ) ) return(-1);
-	if ( !zdf_double_write( zdf, iter->t ) ) return(-1);
- 	if ( !zdf_string_write( zdf, iter->time_units ) ) return(-1);
+    len = ( ok = zdf_record_write( zdf, &rec) );      if ( !ok ) return(0);
+ 	len += ( ok = zdf_int32_write( zdf, iter ->n ) ); if ( !ok ) return(0);
+	len += ( ok = zdf_double_write( zdf, iter->t ) ); if ( !ok ) return(0);
+ 	len += ( ok = zdf_string_write( zdf, iter->time_units ) ); if ( !ok ) return(0);
 
- 	return(0);
+ 	return(len);
 }
 
-
-uint64_t size_xdr_zdf_grid_info(const t_zdf_grid_info* grid) {
-	uint64_t size;
+/**
+ * Returns size of grid information metadata element
+ * @param  grid Grid info
+ * @return Metadata group size in bytes
+ */
+size_t size_zdf_grid_info(const t_zdf_grid_info* grid) {
+	size_t size;
 
 	size = size_zdf_uint32 + grid -> ndims * size_zdf_uint64 +
 	        size_zdf_string(grid->label) +  size_zdf_string(grid->units);
@@ -641,10 +1003,9 @@ uint64_t size_xdr_zdf_grid_info(const t_zdf_grid_info* grid) {
    	size += size_zdf_int32;
     if ( grid -> axis ) {
 
-    	int i;
-    	for(i=0; i<grid -> ndims; i++) 
-    		size += size_zdf_int32 + 
-    	            2 * size_zdf_double + 
+    	for(unsigned i=0; i<grid -> ndims; i++)
+    		size += size_zdf_int32 +
+    	            2 * size_zdf_double +
     	            size_zdf_string( grid -> axis[i].label ) +
     	            size_zdf_string( grid -> axis[i].units );
     }
@@ -652,299 +1013,617 @@ uint64_t size_xdr_zdf_grid_info(const t_zdf_grid_info* grid) {
 	return size;
 }
 
-int zdf_add_grid_info( t_zdf_file* zdf, const char* name, const t_zdf_grid_info* grid ){
+/**
+ * Adds grid information metadata group to file
+ * @param  zdf  File handle
+ * @param  name Name of metadata group
+ * @param  grid Grid information
+ * @return      Number of bytes written on success, 0 on error
+ */
+size_t zdf_add_grid_info( t_zdf_file* zdf, const char* name, const t_zdf_grid_info* grid ){
+
+	size_t reclen;
 
 	t_zdf_record rec = {
 		.id_version = ZDF_GRID_INFO_ID,
 		.name = (char *) name,
-		.length = size_xdr_zdf_grid_info( grid )
+		.length = size_zdf_grid_info( grid )
 	};
 
-    if ( !zdf_record_write( zdf, &rec) ) return(-1);
+  if ( !( reclen = zdf_record_write( zdf, &rec ) )  ) return(0);
+ 	if ( ! zdf_uint32_write( zdf, grid -> ndims ) ) return(0);
+    for( unsigned i=0; i < grid -> ndims; i++) {
+	 	if ( ! zdf_uint64_write( zdf, grid -> count[i] ) ) return(0);
+  }
 
- 	if ( !zdf_uint32_write( zdf, grid -> ndims ) ) return(-1);
+ 	if ( !zdf_string_write( zdf, grid->label ) ) return(0);
+ 	if ( !zdf_string_write( zdf, grid->units ) ) return(0);
 
-    unsigned int i;
-    for( i=0; i < grid -> ndims; i++) {
-	 	if ( !zdf_uint64_write( zdf, grid -> nx[i] ) ) return(-1);
-    }
- 	
- 	if ( !zdf_string_write( zdf, grid->label ) ) return(-1);
- 	if ( !zdf_string_write( zdf, grid->units ) ) return(-1);
-
-    int32_t has_axis = ( grid -> axis != NULL);
- 	if ( !zdf_int32_write( zdf, has_axis ) ) return(-1);
+  int32_t has_axis = ( grid -> axis != NULL);
+ 	if ( !zdf_int32_write( zdf, has_axis ) ) return(0);
 
  	if ( has_axis ) {
 
-	    for( i=0; i < grid -> ndims; i++) {
+	    for( unsigned i=0; i < grid -> ndims; i++) {
 
-		    if ( !zdf_int32_write( zdf, grid -> axis[i].type ) ) return(-1);
-		    if ( !zdf_double_write( zdf, grid -> axis[i].min ) ) return(-1);
-		    if ( !zdf_double_write( zdf, grid -> axis[i].max ) ) return(-1);
-
-		    if ( !zdf_string_write( zdf, grid -> axis[i].label ) ) return(-1);
-		    if ( !zdf_string_write( zdf, grid -> axis[i].units ) ) return(-1);
+		    if ( !zdf_int32_write(  zdf, grid -> axis[i].type  ) ) return(0);
+		    if ( !zdf_double_write( zdf, grid -> axis[i].min   ) ) return(0);
+		    if ( !zdf_double_write( zdf, grid -> axis[i].max   ) ) return(0);
+		    if ( !zdf_string_write( zdf, grid -> axis[i].label ) ) return(0);
+		    if ( !zdf_string_write( zdf, grid -> axis[i].units ) ) return(0);
 	    }
  	}
 
- 	return(0);
+ 	return( reclen + size_zdf_grid_info( grid ) );
 }
 
+/**
+ * Returns size of particles information metadata group
+ * @param  part Particles information
+ * @return      Metadata group size in bytes
+ */
+size_t size_zdf_part_info(const t_zdf_part_info* part) {
+	size_t size = size_zdf_string(part->name) +	// name
+			size_zdf_uint64 + 						// np
+			size_zdf_uint32; 						// nquants
 
-uint64_t size_xdr_zdf_part_info(const t_zdf_part_info* part) {
-	uint64_t size = size_zdf_string(part->name) +	// name
-			size_zdf_uint32; 								// nquants
-
-	unsigned int i;
-	for( i = 0; i < part -> nquants; i++) {
+	for( unsigned i = 0; i < part -> nquants; i++) {
 		size += size_zdf_string( part -> quants[i] ) +
+				size_zdf_string( part -> labels[i] ) +
 				size_zdf_string( part -> units[i] );
 	}
-
-	size += size_zdf_uint64; 					// np
 
 	return size;
 }
 
-int zdf_add_part_info( t_zdf_file* zdf, char* name, t_zdf_part_info* part ){
+/**
+ * Adds particle information metadata group to file
+ * @param  zdf  File handle
+ * @param  name Metadata group name
+ * @param  part Particle information
+ * @return      Number of bytes written on success, 0 on error
+ */
+size_t zdf_add_part_info( t_zdf_file* zdf, const char* name, t_zdf_part_info* part ){
+
+	size_t reclen;
 
 	t_zdf_record rec = {
 		.id_version = ZDF_PART_INFO_ID,
-		.name = name,
-		.length = size_xdr_zdf_part_info( part )
+		.name = (char *)name,
+		.length = size_zdf_part_info( part )
 	};
 
-    if ( !zdf_record_write( zdf, &rec) ) return(-1);
-	if ( !zdf_string_write( zdf, part->name ) ) return(-1);
- 	if ( !zdf_uint32_write( zdf, part -> nquants ) ) return(-1);
+    if ( !( reclen = zdf_record_write( zdf, &rec ) ) ) return(0);
+	if ( !zdf_string_write( zdf, part -> name )      ) return(0);
+ 	if ( !zdf_uint64_write( zdf, part -> np )        ) return(0);
+ 	if ( !zdf_uint32_write( zdf, part -> nquants )   ) return(0);
 
-    unsigned int i;
-    for( i=0; i < part -> nquants; i++) {
-		if ( !zdf_string_write( zdf, part->quants[i] ) ) return(-1);
+    for( unsigned i=0; i < part -> nquants; i++) {
+		if ( !zdf_string_write( zdf, part -> quants[i] ) ) return(0);
     }
-    for( i=0; i < part -> nquants; i++) {
-		if ( !zdf_string_write( zdf, part->units[i] ) ) return(-1);
+    for( unsigned i=0; i < part -> nquants; i++) {
+		if ( !zdf_string_write( zdf, part -> labels[i] ) ) return(0);
     }
- 	
- 	if ( !zdf_uint64_write( zdf, part -> np ) ) return(-1);
+    for( unsigned i=0; i < part -> nquants; i++) {
+		if ( !zdf_string_write( zdf, part -> units[i] )  ) return(0);
+    }
 
- 	return(0);
+ 	return( reclen + size_zdf_part_info( part ) );
 }
 
+/**
+ * Returns size of tracks information metadata group
+ * @param  tracks Tracks information
+ * @return        Metadata group size in bytes
+ */
+size_t size_zdf_track_info(const t_zdf_track_info* tracks) {
+	size_t size = size_zdf_string(tracks->name) +	// name
+			4 * size_zdf_uint32; // ntracks, ndump, niter, nquants
+
+	for( unsigned i = 0; i < tracks -> nquants; i++) {
+		size += size_zdf_string( tracks -> quants[i] ) +
+				size_zdf_string( tracks -> labels[i] ) +
+				size_zdf_string( tracks -> units[i] );
+	}
+
+	return size;
+}
+
+/**
+ * Adds tracks information metadata group to file
+ * @param  zdf    File handle
+ * @param  name   Metadata group name
+ * @param  tracks Tracks information
+ * @return        Number of bytes written on success, 0 on error
+ */
+size_t zdf_add_track_info( t_zdf_file* zdf, const char* name, t_zdf_track_info* tracks ){
+
+	int reclen;
+
+	t_zdf_record rec = {
+		.id_version = ZDF_TRACK_INFO_ID,
+		.name = (char *)name,
+		.length = size_zdf_track_info( tracks )
+	};
+
+	if ( !( reclen = zdf_record_write( zdf, &rec ) ) ) return(0);
+	if ( !zdf_string_write( zdf, tracks -> name )    ) return(0);
+ 	if ( !zdf_uint32_write( zdf, tracks -> ntracks ) ) return(0);
+ 	if ( !zdf_uint32_write( zdf, tracks -> ndump )   ) return(0);
+ 	if ( !zdf_uint32_write( zdf, tracks -> niter )   ) return(0);
+ 	if ( !zdf_uint32_write( zdf, tracks -> nquants ) ) return(0);
+
+	for( unsigned i=0; i < tracks -> nquants; i++) {
+		if ( !zdf_string_write( zdf, tracks -> quants[i] ) ) return(0);
+	}
+	for( unsigned i=0; i < tracks -> nquants; i++) {
+		if ( !zdf_string_write( zdf, tracks -> labels[i] ) ) return(0);
+	}
+	for( unsigned i=0; i < tracks -> nquants; i++) {
+		if ( !zdf_string_write( zdf, tracks -> units[i] ) ) return(0);
+	}
+
+ 	return( reclen + size_zdf_track_info( tracks ) );
+}
 /* -----------------------------------------------------------------------------------------------
   zdf dataset
 -------------------------------------------------------------------------------------------------- */
 
-typedef struct {
-	enum zdf_data_type data_type;
-	uint32_t ndims;
-	uint64_t nx[zdf_max_dims];
-
-	uint8_t* data;
-} t_zdf_dataset;
-
-
-uint64_t zdf_datatype_size( enum zdf_data_type data_type ) {
-    uint64_t size;
-
-    switch ( data_type ) {
-    	case zdf_float32: size = size_zdf_float; break;
-    	case zdf_float64: size = size_zdf_double; break;
-    	default : size = 0;
-    }
-
-    return(size);
+/**
+ * [size_zdf_dataset_header description]
+ * @param  dataset [description]
+ * @return         [description]
+ */
+size_t size_zdf_dataset_header( const t_zdf_dataset* dataset ) {
+	return size_zdf_uint32 + size_zdf_int32 + size_zdf_uint32 +
+		dataset -> ndims * size_zdf_uint64;
 }
 
-uint64_t size_zdf_dataset(const t_zdf_dataset* dataset) {
-	
-	unsigned int i;
-    uint64_t data_size;
+/**
+ * Write dataset header to file and modify the dataset object to include the
+ * file position where the dataset is stored.
+ *
+ * @param  zdf     ZDF file handle
+ * @param  dataset Dataset object
+ * @return         Number of bytes written on success, 0 on error
+ */
+size_t zdf_dataset_header_write( t_zdf_file* zdf, t_zdf_dataset* dataset ) {
 
-    data_size = zdf_datatype_size( dataset -> data_type );
-    for( i = 0; i < dataset -> ndims; i++ ) {
-    	data_size *= dataset -> nx[i];
+	// Get the file position for the dataset header and store it
+	off_t offset = ftello( zdf -> fp );
+	if ( offset < 0 ) return(0);
+	dataset -> offset = offset;
+
+ 	// Version 0x0001
+ 	uint32_t id = dataset -> id;
+ 	if ( !zdf_uint32_write( zdf, id )                  ) return(0);
+ 	if ( !zdf_int32_write( zdf, dataset -> data_type ) ) return(0);
+	if ( !zdf_uint32_write( zdf, dataset -> ndims )    ) return(0);
+
+    for( unsigned i=0; i < dataset -> ndims; i++) {
+	 	if ( !zdf_uint64_write( zdf, dataset -> count[i] ) ) return(0);
     }
-
-	return size_zdf_int32 + size_zdf_uint32 + 
-	       dataset -> ndims * size_zdf_uint64 +
-	       data_size ;
+    return( size_zdf_dataset_header( dataset ) );
 }
 
-int zdf_add_dataset( t_zdf_file* zdf, char* name, t_zdf_dataset* dataset ){
+/**
+ * Read dataset header from file and store the file position where the dataset
+ * header is stored.
+ *
+ * @param  zdf     ZDF file handle
+ * @param  dataset Dataset object
+ * @return         Number of bytes written on success, 0 on error
+ */
+size_t zdf_dataset_header_read( t_zdf_file* zdf, t_zdf_dataset* dataset ) {
+
+	// Get the file position for the dataset header and store it
+	off_t offset = ftello( zdf -> fp );
+	if ( offset < 0 ) return(0);
+	dataset -> offset = offset;
+
+ 	// Version 0x0001
+ 	uint32_t id;
+	if ( !zdf_uint32_read( zdf, &id ) ) return(0);
+	dataset -> id = id;
+
+ 	if ( !zdf_int32_read( zdf, (int32_t *) &dataset -> data_type ) ) return(0);
+	if ( !zdf_uint32_read( zdf, &dataset -> ndims ) ) return(0);
+
+    for( unsigned i=0; i < dataset -> ndims; i++) {
+	 	if ( !zdf_uint64_read( zdf, &dataset -> count[i] ) ) return(0);
+    }
+    return( size_zdf_dataset_header( dataset ) );
+}
+
+/**
+ * Adds dataset to file
+ * @param  zdf     ZDF file handle
+ * @param  name    Dataset name
+ * @param  dataset Dataset object (includes pointer to data)
+ * @return         Number of bytes written on success, 0 on error. The dataset object is also
+ *                 modified to include a unique id.
+ */
+size_t zdf_add_dataset( t_zdf_file* zdf, const char* name, t_zdf_dataset* dataset ){
+
+	size_t length;
+
+    length = zdf_sizeof( dataset -> data_type );
+    for( unsigned i = 0; i < dataset -> ndims; i++ ) {
+    	length *= dataset -> count[i];
+    }
+
+	length += size_zdf_dataset_header( dataset ) ;
 
 	t_zdf_record rec = {
 		.id_version = ZDF_DATASET_ID,
-		.name       = name,
-		.length     = size_zdf_dataset( dataset )
+		.name       = (char *)name,
+		.length     = length
     };
 
-    if ( !zdf_record_write( zdf, &rec) ) return(-1);
+  size_t reclen;
+  if ( !( reclen = zdf_record_write( zdf, &rec ) ) ) return(0);
 
- 	if ( !zdf_int32_write( zdf, dataset -> data_type ) ) return(-1);
-	if ( !zdf_uint32_write( zdf, dataset -> ndims ) ) return(-1);
+ 	dataset -> id = ++ zdf -> ndatasets;
+  if ( !zdf_dataset_header_write( zdf, dataset ) ) return(0);
 
-    unsigned int i;
- 	unsigned int count;
-    for( i=0, count = 1; i < dataset -> ndims; i++) {
-    	count *= dataset -> nx[i];
-	 	if ( !zdf_uint64_write( zdf, dataset -> nx[i] ) ) return(-1);
-    }
+ 	size_t count = 1;
+  for( unsigned i=0; i < dataset -> ndims; i++) count *= dataset -> count[i];
 
- 	switch ( dataset -> data_type ) {
-    	case zdf_float32: 
-    	    if ( !zdf_float_vector_write( zdf, (float *) dataset -> data, count ) ) return(-1);
-    	    break;
-    	case zdf_float64:
-    	    if ( !zdf_double_vector_write( zdf, (double *) dataset -> data, count ) ) return(-1);
-    	    break;
-    	default: 
-    		fprintf(stderr,"(*error*) zdf_add_dataset: Unsupported datatype.");
-    		return(-1);
-    		break;
- 	}
- 	
- 	return(0);
+ 	if ( !zdf_vector_write( zdf, dataset -> data, dataset -> data_type, count ) ) return(0);
+
+ 	return( reclen + length );
 }
 
+/**
+ * Adds a chunked dataset header to file
+ * @param  zdf     ZDF file handle
+ * @param  name    Dataset name
+ * @param  dataset Dataset object
+ * @return         Number of bytes written on success, 0 on error. The dataset object is also
+ *                 modified to include a unique id.
+ */
+size_t zdf_start_cdset( t_zdf_file* zdf, const char* name, t_zdf_dataset* dataset ) {
+
+	t_zdf_record rec = {
+		.id_version = ZDF_CDSET_START_ID,
+		.name       = (char *)name,
+		.length     = size_zdf_dataset_header( dataset )
+	};
+
+	size_t ok, len;
+
+	len = ( ok =  zdf_record_write( zdf, &rec ) );
+	if ( !ok ) return(0);
+
+ 	dataset -> id = ++ zdf -> ndatasets;
+	len += (ok = zdf_dataset_header_write( zdf, dataset ) );
+	if ( !ok ) return(0);
+
+	return( len );
+}
+
+/**
+ * Returns size of chunk header
+ * @param  dataset Dataset object
+ * @return         Chunk header size in bytes
+ */
+size_t size_zdf_chunk_header(const t_zdf_dataset* dataset) {
+
+	return size_zdf_uint32 + (size_zdf_uint32 + 16) + size_zdf_uint64 + 
+	       size_zdf_uint32 + 3 * dataset -> ndims * size_zdf_uint64;
+}
+
+/**
+ * Adds a chunk header to file
+ * @param  zdf     ZDF file handle
+ * @param  dataset Dataset object
+ * @param  chunk   Chunk object
+ * @return         Number of bytes written on success, 0 on error.
+ */
+size_t zdf_write_chunk_header( t_zdf_file* zdf, t_zdf_dataset* dataset, t_zdf_chunk* chunk ){
+
+	char name[16];
+	snprintf( name, 16, "%08llx-chunk", dataset -> id);
+
+	size_t length;
+	length = zdf_sizeof( dataset -> data_type );
+	for( unsigned i = 0; i < dataset -> ndims; i++ ) {
+	    	length *= chunk -> count[i];
+	    }
+	length += size_zdf_uint32 + 3 * dataset -> ndims * size_zdf_uint64;
+
+	t_zdf_record rec = {
+		.id_version = ZDF_CDSET_CHUNK_ID,
+		.name       = (char *)name,
+		.length     = length
+	};
+
+	size_t reclen;
+	if ( !( reclen = zdf_record_write( zdf, &rec ) ) ) return(0);
+
+	// ID of dataset this chunk belongs to
+	if ( !zdf_uint32_write( zdf, dataset -> id ) ) return(0);
+
+	// Size of chunk
+	for( unsigned i=0; i < dataset -> ndims; i++) {
+	 	if ( !zdf_uint64_write( zdf, chunk -> count[i] ) ) return(0);
+	}
+
+	// Start position
+	for( unsigned i = 0; i < dataset -> ndims; i++) {
+		if ( !zdf_uint64_write( zdf, chunk -> start[i] ) ) return(0);
+	}
+
+	// Stride
+	for( unsigned i = 0; i < dataset -> ndims; i++) {
+		if ( !zdf_uint64_write( zdf, chunk -> stride[i] ) ) return(0);
+	}
+
+	return( reclen + size_zdf_uint32 + 3 * dataset -> ndims * size_zdf_uint64 );
+
+}
+
+
+/**
+ * Adds a chunk of dataset data to file
+ * @param  zdf     ZDF file handle
+ * @param  dataset Dataset object
+ * @param  chunk   Chunk object (includes pointer to data). Data is expected to be contiguos in memory
+ * @return         Number of bytes written on success, 0 on error.
+ */
+size_t zdf_write_cdset( t_zdf_file* zdf, t_zdf_dataset* dataset, t_zdf_chunk* chunk ){
+
+	size_t headerlen = zdf_write_chunk_header( zdf, dataset, chunk );
+    if ( !headerlen ) return(0);
+
+ 	// Chunk data
+ 	size_t count = 1;
+ 	for( unsigned i = 0; i < dataset -> ndims; i++ ) count *= chunk -> count[i];
+
+ 	size_t vectorlen;
+ 	if ( !( vectorlen = zdf_vector_write( zdf, chunk -> data, dataset -> data_type, count ) ) )
+ 			return(0);
+
+ 	return( headerlen + vectorlen );
+}
+
+/**
+ * Add an end marker for a chunked dataset to file
+ * @param  zdf     ZDF file handle
+ * @param  dataset Dataset object
+ * @return         Number of bytes written on success, 0 on error.
+ */
+size_t zdf_end_cdset( t_zdf_file* zdf, t_zdf_dataset* dataset ){
+
+	char name[16];
+	snprintf( name, 16, "%08llx-end", dataset -> id);
+
+	t_zdf_record rec = {
+		.id_version = ZDF_CDSET_END_ID,
+		.name       = name,
+		.length     = 0
+    };
+
+    size_t reclen;
+    if ( !( reclen = zdf_record_write( zdf, &rec ) ) ) return(0);
+
+ 	return(reclen);
+}
+
+
+/**
+ * Open a dataset and read the header. The dataset is selected by name.
+ * @param  zdf     ZDF file handle
+ * @param  name    Name of the dataset to be opened
+ * @param  dataset Dataset object
+ * @return         Returns 1 if successful, 0 on error.
+ */
+size_t zdf_open_dataset( t_zdf_file* zdf, const char* name, t_zdf_dataset* dataset ) {
+
+	// Set file position after the magic number
+	if ( fseek( zdf -> fp, 4, SEEK_SET ) ) return(-1);
+
+	// Locate the requested dataset
+	// If the dataset is not found there will be an EOF error signaled
+	// and the routine returns -1
+	int found = 0;
+	while(!feof(zdf -> fp)) {
+		t_zdf_record rec = { .name = NULL };
+
+		if ( !zdf_record_read( zdf, &rec ) ) return(0);
+
+		if ( rec.id_version == ZDF_CDSET_START_ID || rec.id_version == ZDF_DATASET_ID ) {
+			int diff = strcmp( name, rec.name );
+			free( rec.name );
+
+			if ( diff == 0 ) {
+				// Read the dataset header
+				if ( !zdf_dataset_header_read( zdf, dataset ) ) return(0);
+				found = 1;
+				break;
+			} else {
+				// Skip the record
+				if ( !zdf_record_skip( zdf, &rec ) ) return(0);
+			}
+		} else {
+			free( rec.name );
+			if ( !zdf_record_skip( zdf, &rec ) ) return(0);
+		}
+	}
+
+	if ( !found ) {
+		fprintf(stderr,"(*error*) Unable to find dataset %s\n", name);
+		return(-1);
+	}
+
+	// re-position the file pointer at the end of the file
+	if ( fseeko( zdf->fp, 0, SEEK_END ) ) return(0);
+	return(1);
+
+}
+
+/**
+ * Extends dataset dimensions. After this call the file pointer is positioned at the
+ * end of the file.
+ *
+ * @param  zdf       ZDF file handle
+ * @param  dataset   Datasete object
+ * @param  new_count New dimensions for the dataset, must be >= than the previous
+ *                   dimensions.
+ * @return           Returns 1 if successful, 0 otherwise.
+ */
+int zdf_extend_dataset( t_zdf_file* zdf, t_zdf_dataset* dataset, uint64_t* new_count ) {
+
+	for( unsigned i = 0; i < dataset -> ndims; i++ ) {
+		if ( new_count[i] < dataset -> count[i] ) {
+ 	  		fprintf(stderr,"(*error*) Invalid value for zdf_extend_dataset.\n");
+ 	  		fprintf(stderr,"(*error*) New size is smaller than original size.\n");
+ 			return(-1);
+		}
+		dataset -> count[i] = new_count[i];
+	}
+
+    off_t offset = dataset -> offset;
+	if ( fseeko( zdf -> fp, offset , SEEK_SET ) ) return(0);
+    if ( ! zdf_dataset_header_write( zdf, dataset ) ) return(0);
+	if ( fseeko( zdf->fp, 0, SEEK_END ) ) return(0);
+
+	return(1);
+}
 
 /* -----------------------------------------------------------------------------------------------
   zdf high level interface
 -------------------------------------------------------------------------------------------------- */
 
-int zdf_save_grid( const float* data, const t_zdf_grid_info *_info, 
-	const t_zdf_iteration *_iteration, char const path[] )
-{
+/**
+ * Opens ZDF file and adds TYPE, GRID, and ITERATION metadata
+ * @param  zdf       File handle
+ * @param  info      Grid information
+ * @param  iteration Iteration information
+ * @param  path      File path
+ * @return           Returns 1 on success, 0 on error
+ */
+int zdf_open_grid_file( t_zdf_file *zdf, const t_zdf_grid_info *info,
+	const t_zdf_iteration *iteration, char const path[] ){
 
-	int i;
 	char filename[1024];
-
-    // Set iteration info
-    t_zdf_iteration iteration = { .n = _iteration->n, 
-    	                          .t = _iteration->t, 
-    	                          .time_units = _iteration->time_units};
-
-    // Set axis info
-    t_zdf_grid_axis axis[zdf_max_dims];
-
-    if ( _info -> axis ) {
-	    // Copy axis info
-	    for( i = 0; i < _info->ndims; i ++) {
-	    	axis[i] = (t_zdf_grid_axis) 
-	    	          { .type = zdf_linear,
-	    	            .min = _info -> axis[i].min,
-	    	            .max = _info -> axis[i].max,
-	    	            .label = _info -> axis[i].label ,
-	    	            .units = _info -> axis[i].units };
-	    	}
-
-    } else {
-    	// set default axis info
-	    for( i = 0; i < _info->ndims; i ++) {
-	    	axis[i] = (t_zdf_grid_axis) 
-	    	          { .type = zdf_linear,
-	    	            .min = 0,
-	    	            .max = _info -> nx[i],
-	    	            .label = "",
-	    	            .units = "" };
-	    	}
-    }
-
-    // Set grid info
-    t_zdf_grid_info   grid_info = {
-    	.ndims = _info->  ndims,
-    	.label = _info -> label,
-    	.units = _info -> units,
-    	.axis  = axis
-    };
-    for( i = 0; i < _info->ndims; i ++) grid_info.nx[i] = _info->nx[i];
-
-    // Set data
-    t_zdf_dataset dataset = {
-    	.data_type = zdf_float32,
-    	.ndims = _info->ndims,
-    	.data = (uint8_t *) data 
-    };
-    for( i = 0; i < _info->ndims; i ++) dataset.nx[i] = _info->nx[i];
 
 	// Ensure that the path is available
 	create_path( path );
-	
+
 	// Build filename
-	sprintf( filename, "%s/%s-%06u.zdf", path, _info->label, _iteration -> n );
+	sprintf( filename, "%s/%s-%06u.zdf", path, info->label, (unsigned) iteration -> n );
     // printf("Saving filename %s\n", filename );
-	
+
     // Create ZDF file
-    t_zdf_file zdf;
-    if ( zdf_open_file( &zdf, filename, ZDF_WRITE ) ) {
-    	fprintf(stderr,"(*error*) Unable to open ZDF file, aborting.");
+    if ( !zdf_open_file( zdf, filename, ZDF_CREATE ) ) {
+    	fprintf(stderr,"(*error*) Unable to open ZDF file, aborting.\n");
     	return(-1);
     }
 
     // Add file type
-    zdf_add_string( &zdf, "TYPE", "grid");
+    if ( !zdf_add_string( zdf, "TYPE", "grid") ) return(0);
 
     // Add grid info
-    zdf_add_grid_info( &zdf, "GRID", &grid_info );
+    if ( !zdf_add_grid_info( zdf, "GRID", info ) ) return(0);
 
     // Add iteration info
-    zdf_add_iteration( &zdf, "ITERATION", &iteration );
+    if ( !zdf_add_iteration( zdf, "ITERATION", iteration ) ) return(0);
+
+    return( 1 );
+}
+
+
+/**
+ * Saves a ZDF grid file
+ * @param  data       Pointer to grid data
+ * @param  data_type  ZDF Data type of grid data
+ * @param  info       Grid information
+ * @param  iteration  Iteration information
+ * @param  path       File path
+ * @return            Returns 1 on success, 0 on error
+ */
+int zdf_save_grid( const void * data, const enum zdf_data_type data_type, const t_zdf_grid_info *info,
+	const t_zdf_iteration *iteration, char const path[] )
+{
+
+    t_zdf_file zdf;
+
+    // Open grid file
+    if ( !zdf_open_grid_file( &zdf, info, iteration, path ) ) return(0);
 
     // Add dataset
-    zdf_add_dataset( &zdf, "DATA", &dataset );
+    t_zdf_dataset dataset = {
+    	.data_type = data_type,
+    	.ndims = info->ndims,
+    	.data = (void *) data
+    };
+    for( unsigned i = 0; i < info->ndims; i ++) dataset.count[i] = info->count[i];
+
+    if ( !zdf_add_dataset( &zdf, "DATA", &dataset ) ) return(0);
 
     // Close ZDF file and return
     return( zdf_close_file( &zdf ) );
 }
 
-int zdf_part_file_open( t_zdf_file *zdf, t_zdf_part_info *_info, 
-	const t_zdf_iteration *_iteration, char const path[] ){
+/**
+ * Opens ZDF file and adds TYPE, PARTICLES, and ITERATION metadata
+ * @param  zdf        File handle
+ * @param  info       Particles information
+ * @param  iteration  Iteration information
+ * @param  path       File path
+ * @return            1 on sucess, 0 on error
+ */
+int zdf_open_part_file( t_zdf_file *zdf, t_zdf_part_info *info,
+	const t_zdf_iteration *iteration, char const path[] ){
 
 	char filename[1024];
 
-    t_zdf_iteration iteration = *_iteration;
-    t_zdf_part_info info = *_info;
-
 	// Ensure that the path is available
 	create_path( path );
-	
+
 	// Build filename
-	sprintf( filename, "%s/%s-%s-%06u.zdf", path, "particles", _info->name, _iteration -> n );
+	sprintf( filename, "%s/%s-%s-%06u.zdf", path, "particles", info->name, (unsigned) iteration -> n );
     //printf("Saving filename %s\n", filename );
-	
+
     // Create ZDF file
-    if ( zdf_open_file( zdf, filename, ZDF_WRITE ) ) {
-    	fprintf(stderr,"(*error*) Unable to open ZDF file, aborting.");
+    if ( !zdf_open_file( zdf, filename, ZDF_CREATE ) ) {
+    	fprintf(stderr,"(*error*) Unable to open ZDF file, aborting.\n");
     	return(-1);
     }
 
     // Add file type
-    zdf_add_string( zdf, "TYPE", "particles");
+    if ( !zdf_add_string( zdf, "TYPE", "particles") ) return(0);
 
     // Add particle info
-    zdf_add_part_info( zdf, "PARTICLES", &info );
+    if ( !zdf_add_part_info( zdf, "PARTICLES", info ) ) return(0);
 
     // Add iteration info
-    zdf_add_iteration( zdf, "ITERATION", &iteration );
+    if ( !zdf_add_iteration( zdf, "ITERATION", iteration ) ) return(0);
 
-    return(0);
+    return(1);
 }
 
-int zdf_part_file_add_quant( t_zdf_file *zdf, const char *name, const float* data, 
-	const unsigned np ) {
+/**
+ * Adds individual particle quantity to file
+ * @param  zdf  File handle
+ * @param  name Quantity name
+ * @param  data Quantity data (float32)
+ * @param  np   Number of particles
+ * @return      Number of bytes written on success, 0 on error
+ */
+int zdf_add_quant_part_file( t_zdf_file *zdf, const char *name, const float* data,
+	const uint64_t np ) {
 
     t_zdf_dataset dataset = {
     	.data_type = zdf_float32,
     	.ndims = 1,
-    	.data = (uint8_t *) data
+    	.data = (void *) data
     };
 
-    dataset.nx[0] = np;
+    dataset.count[0] = np;
 
-    zdf_add_dataset( zdf, (char *) name, &dataset );
-
-    return(0);
+    return( zdf_add_dataset( zdf, (char *) name, &dataset ) );
 
 }
 
@@ -977,7 +1656,7 @@ int main (int argc, const char * argv[]) {
     	.axis = axis
     };
 
-    info.nx[0] = NX;
+    info.count[0] = NX;
 
     t_zdf_iteration iter = {
     	.n = 123,
@@ -985,10 +1664,79 @@ int main (int argc, const char * argv[]) {
     	.time_units = "time units"
     };
 
-	zdf_save_grid( buf, &info, &iter, "V1TEST" );
+	zdf_save_grid( (void *) buf, zdf_float32, &info, &iter, "V1TEST" );
 
 	return 0;
 }
+
+
+#if 0
+int main (int argc, const char * argv[]) {
+
+	const unsigned NX = 128;
+	float buf[NX];
+
+	for(unsigned i = 0; i < NX; i++) {
+		float x = 8 * (M_PI/NX) * (i+1);
+		buf[i] = sin(x)/x;
+	}
+
+    t_zdf_grid_axis axis[1];
+    axis[0] = (t_zdf_grid_axis) {
+    	.min = -1.0,
+    	.max =  1.0,
+    	.label = "axis label",
+    	.units = "axis units"
+    };
+
+    t_zdf_grid_info info = {
+    	.ndims = 1,
+    	.label = "data label",
+    	.units = "data units",
+    	.axis = axis
+    };
+
+    info.count[0] = NX;
+
+    t_zdf_iteration iter = {
+    	.n = 123,
+    	.t = 12.3,
+    	.time_units = "time units"
+    };
+
+	// Open file
+	t_zdf_file file;
+	zdf_open_grid_file( &file, &info, &iter, "chunk_test" );
+
+	// Write chunked dataset header
+	t_zdf_dataset dset = {
+		.data_type = zdf_float32,
+		.ndims = 1
+	};
+	dset.count[0] = 128;
+	zdf_start_cdset( &file, "DATA", &dset );
+
+	// Write chunks
+	t_zdf_chunk chunk;
+	chunk.count[0] = 16;
+	chunk.start[0] = 0;
+	chunk.stride[0] = 1;
+	for( int i = 0; i < 8; i ++) {
+		chunk.data = &buf[i*16];
+		zdf_write_cdset( &file, &dset, &chunk );
+		chunk.start[0] += 16;
+	}
+
+	// End dataset (optional)
+    zdf_end_cdset( &file, &dset );
+
+    // Close file
+	zdf_close_file( &file );
+
+	return 0;
+}
+
+#endif
 
 #endif
 
