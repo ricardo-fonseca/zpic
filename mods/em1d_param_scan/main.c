@@ -21,7 +21,11 @@ along with the ZPIC Educational code suite. If not, see <http://www.gnu.org/lice
 #include <stdlib.h>
 #include <math.h>
 #include <unistd.h>
-#include <limits.h>
+#ifdef __linux__
+#   include <linux/limits.h>
+#else
+#   include <limits.h>
+#endif
 
 #ifdef _MPI_
 #include <mpi.h>
