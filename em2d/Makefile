@@ -1,17 +1,17 @@
 # GCC options
 CC = gcc
 CFLAGS = -Ofast -std=c99 -pedantic
+LDFLAGS = -lm
 
 # Intel icc compiler
 #CC = icc
 #CFLAGS = -restrict -Ofast -std=c99 -pedantic
+#LDFLAGS =
 
 # Clang options
 #CC = clang
 #CFLAGS = -Ofast
-
-LDFLAGS =
-
+#LDFLAGS = -lm
 
 SOURCE = current.c emf.c particles.c random.c timer.c main.c simulation.c zdf.c
 
