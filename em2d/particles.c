@@ -673,14 +673,16 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 	const int nx0 = spec -> nx[0];
 	const int nx1 = spec -> nx[1];
 
+	double energy = 0;
+
 	// Advance particles
 	for (i=0; i<spec->np; i++) {
 				
 		t_vfld Ep, Bp;
 		t_part_data utx, uty, utz;
 		t_part_data ux, uy, uz, rg;
-		t_part_data gtem, otsq;
-		
+		t_part_data tem_gamma, otsq;
+		t_part_data utsq, gamma;
 		t_part_data x1, y1;
 		
 		int di, dj;
@@ -703,12 +705,19 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 		uty = uy + Ep.y;
 		utz = uz + Ep.z;
 
+ 		// Get time centered gamma
+        utsq = utx*utx + uty*uty + utz*utz;
+        gamma = sqrtf( 1.0f + utsq );
+
+        // Get time centered energy
+        energy += utsq / (gamma + 1);
+
 		// Perform first half of the rotation
-		gtem = tem / sqrtf( 1.0f + utx*utx + uty*uty + utz*utz );
+		tem_gamma = tem / gamma;
 		
-		Bp.x *= gtem;
-		Bp.y *= gtem;
-		Bp.z *= gtem;
+		Bp.x *= tem_gamma;
+		Bp.y *= tem_gamma;
+		Bp.z *= tem_gamma;
 
 		otsq = 2.0f / ( 1.0f + Bp.x*Bp.x + Bp.y*Bp.y + Bp.z*Bp.z );
 
@@ -771,6 +780,9 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 		spec -> part[i].iy += dj;
 		
 	}
+
+	// Store energy
+	spec -> energy = spec-> q * spec -> m_q * energy * spec -> dx[0] * spec -> dx[1];
 
 	// Advance internal iteration number
     spec -> iter += 1;

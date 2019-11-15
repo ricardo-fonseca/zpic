@@ -1,3 +1,5 @@
+#cython: language_level=3
+
 from libc.stdint cimport uint32_t
 
 cdef extern from "../em1ds/random.h":

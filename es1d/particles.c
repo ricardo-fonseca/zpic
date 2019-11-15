@@ -625,7 +625,7 @@ void spec_advance( t_species* spec, t_field* field, t_charge* charge )
 	spec -> energy = 0.5 * spec-> q * spec -> m_q * energy * spec -> dx;
 
 	// Advance internal iteration number
-  spec -> iter += 1;
+    spec -> iter += 1;
 	
 	// Sort species at every 16 time steps
 	if ( ! (spec -> iter % 16) ) spec_sort( spec );

@@ -886,6 +886,9 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 
 	}
 
+	// Store energy
+	spec -> energy = spec-> q * spec -> m_q * energy * spec -> dx;
+
 	// Advance internal iteration number
     spec -> iter += 1;
     _spec_npush += spec -> np;
