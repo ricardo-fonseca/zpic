@@ -31,7 +31,7 @@ OBJ = $(SOURCE:.c=.o)
 all : $(SOURCE) $(TARGET)
 
 $(TARGET) : $(OBJ)
-	$(CC)    $(CFLAGS) $(LDFLAGS) $(OBJ) -o $@
+	$(CC) $(CFLAGS) $(OBJ) $(LDFLAGS) -o $@
 
 .c.o:
 	$(CC) -c $(CFLAGS) $< -o $@
