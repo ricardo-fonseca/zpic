@@ -1,16 +1,17 @@
 # GCC options
 CC = gcc
 CFLAGS = -Ofast -std=c99 -pedantic
+LDFLAGS = -lm
 
 # Intel icc compiler
 #CC = icc
 #CFLAGS = -restrict -Ofast -std=c99 -pedantic -Wall
+#LDFLAGS =
 
 # Clang options
 #CC = clang
 #CFLAGS = -Ofast -std=c99 -pedantic -Wall
-
-LDFLAGS =
+#LDFLAGS = -lm
 
 
 SOURCE = filter.c charge.c current.c emf.c particles.c grid.c \
@@ -23,7 +24,7 @@ OBJ = $(SOURCE:.c=.o)
 all : $(SOURCE) $(TARGET)
 
 $(TARGET) : $(OBJ)
-	$(CC)    $(CFLAGS) $(LDFLAGS) $(OBJ) -o $@
+	$(CC) $(CFLAGS) $(OBJ) $(LDFLAGS) -o $@
 
 .c.o:
 	$(CC) -c $(CFLAGS) $< -o $@
