@@ -43,3 +43,5 @@ __pycache__
 /python/em2ds.c
 /python/es1d.c
 /zpic.code-workspace
+/python/cas
+/em2d-omp
