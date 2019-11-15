@@ -6,6 +6,7 @@
 #ifndef __FFT__
 #define __FFT__
 
+#include "zpic.h"
 #include <complex.h>
 
 #define MAX_FACTORS 32

@@ -35,7 +35,7 @@ $(TARGET) : $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) $(LDFLAGS) -o $@
 
 .c.o:
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(CC) -I. -c $(CFLAGS) $< -o $@
 
 clean:
 	@touch $(TARGET) $(OBJ)
