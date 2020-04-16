@@ -77,7 +77,7 @@ t_density density = {
 
 ### Custom
 
-The custom type injects a density profile set by a user defined function. The function must accept two parameters: one parameter of type _float_ (the position at which the density is to be evaluated in simulation units) and a void pointer (which can be used to send additional data to the function). It must returns the density value as a value of type _float_. Note that density values are normalized to _n_.
+The custom type injects a density profile set by a user defined function. The function must accept two parameters: one parameter of type _float_ (the position at which the density is to be evaluated in simulation units) and a void pointer (which can be used to send additional data to the function). It must return the density value as a value of type _float_. Note that density values are normalized to _n_.
 
 ```C
 // Custom density example
@@ -116,3 +116,31 @@ The `t_density` structure in 2D has the following options:
 | custom_x | Pointer to a function defining the $n_x(x)$ function of a custom density profile $n(x,y) = n_x(x) \times n_y(y)$, normalized to _n_ |
 | custom_y | Pointer to a function defining the $n_y(y)$ function of a custom density profile $n(x,y) = n_x(x) \times n_y(y)$, normalized to _n_  |
 
+### Custom
+
+The custom type injects a density profile set by two user defined functions. The functions must accept two parameters: one parameter of type _float_ (the position x or y at which the density is to be evaluated in simulation units) and a void pointer (which can be used to send additional data to the function). They must return the density value as a value of type _float_. Note that density values are normalized to _n_.
+
+```C
+// 2D Custom density example
+// The 2D density will be the product of nx * ny
+// It will oscillate between 0 and 0.1 - note the n parameter below
+
+float nx( float x, void *data ) {
+	return sin(x/M_PI)*sin(x/M_PI);
+}
+
+float ny( float y, void *data ) {
+	return cos(y/M_PI)*cos(y/M_PI);
+}
+
+(...)
+
+t_density density = {
+  .type = CUSTOM,
+  .n = 0.1,
+  .custom_x = &nx,
+  .custom_y = &ny,
+};
+```
+
+# 
