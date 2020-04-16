@@ -199,10 +199,10 @@ int spec_np_inj( t_species* spec, const int range[] )
 			// Integrate total charge
 			double q = 0.5 * ( (*spec -> density.custom)((range[0] + spec -> n_move) * spec->dx,
 				                                         spec -> density.custom_data) +
-				               (*spec -> density.custom)((range[1] + spec -> n_move) * spec->dx,
+				               (*spec -> density.custom)((range[1] + 1 + spec -> n_move) * spec->dx,
 				               	                         spec -> density.custom_data) );
 
-			for( int i = range[0]+1; i < range[1]; i++) {
+			for( int i = range[0]+1; i <= range[1]; i++) {
 				q += (*spec -> density.custom)((i + spec -> n_move) * spec->dx,
 					                           spec -> density.custom_data);
 			}

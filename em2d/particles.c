@@ -169,6 +169,14 @@ void spec_set_x( t_species* spec, const int range[][2] )
             int ix0 = range[0][0];
             int iy0 = range[1][0];
 
+            printf("Testing custom functions...\n");
+            double tmp = (*spec -> density.custom_x)
+                (1.0, spec -> density.custom_data_x);
+            printf("Custom x function: %g ok\n",tmp);
+            tmp = (*spec -> density.custom_y)
+                (1.0, spec -> density.custom_data_y);
+            printf("Custom y function: %g ok\n",tmp);
+
             // Initial injection parameters along x
 
             // Either start from the bottom of the box or continue
@@ -195,7 +203,6 @@ void spec_set_x( t_species* spec, const int range[][2] )
                 (iy0 * dy, spec -> density.custom_data_y);
             
             // Loop over x cells
-            d1x = d0x;
             for( int ix = ix0; ix <= range[0][1]; ix++ ) {
                 // Get x density on the edges of current cell
                 n0x = n1x;
@@ -230,7 +237,6 @@ void spec_set_x( t_species* spec, const int range[][2] )
 
                         double Rsy;
                         while( (Rsy = (ky+0.5)*cppy) < d1y) {
-
                             double y = 2 * (Rsy-d0y) /( sqrt( n0y*n0y + 2 * (n1y-n0y) * (Rsy-d0y) ) + n0y );
                             
                             double ny = (0.5-y)*n0y + (0.5+y)*n1y;
@@ -332,12 +338,12 @@ int spec_np_inj( t_species* spec, const int range[][2] )
             double x = (range[0][0] + spec -> n_move) * spec->dx[0];
 			double qx = (*spec -> density.custom_x)(x,spec -> density.custom_data_x);
             
-            x = (range[0][1] + spec -> n_move) * spec->dx[0];
+            x = (range[0][1] + 1 + spec -> n_move) * spec->dx[0];
 			qx += (*spec -> density.custom_x)(x,spec -> density.custom_data_x);
             
             qx *= 0.5;
 
-			for( int i = range[0][0]+1; i < range[0][1]; i++) {
+			for( int i = range[0][0]+1; i <= range[0][1]; i++) {
 				x = (i + spec -> n_move) * spec->dx[0];
                 qx += (*spec -> density.custom_x)(x,spec -> density.custom_data_x);
 			}
@@ -346,12 +352,12 @@ int spec_np_inj( t_species* spec, const int range[][2] )
             double y = range[1][0] * spec->dx[1];
 			double qy = (*spec -> density.custom_y)(y,spec -> density.custom_data_y);
             
-            y = range[1][1] * spec->dx[1];
+            y = (range[1][1]+1) * spec->dx[1];
 			qy += (*spec -> density.custom_y)(y,spec -> density.custom_data_y);
             
             qy *= 0.5;
 
-			for( int j = range[1][0]+1; j < range[1][1]; j++) {
+			for( int j = range[1][0]+1; j <= range[1][1]; j++) {
 				y = j * spec->dx[1];
                 qy += (*spec -> density.custom_y)(y,spec -> density.custom_data_y);
 			}
@@ -362,10 +368,11 @@ int spec_np_inj( t_species* spec, const int range[][2] )
 		break;
 
 	default: // Uniform density
-		np_inj = ( range[0][1] - range[0][0] + 1 ) * spec -> ppc[0] *
+        np_inj = ( range[0][1] - range[0][0] + 1 ) * spec -> ppc[0] *
                  ( range[1][1] - range[1][0] + 1 ) * spec -> ppc[1];
 	}
 
+    printf("Will inject up to %d particles\n",np_inj);
     return np_inj;
 }
 
@@ -401,9 +408,13 @@ void spec_init_density( t_species* spec )
 
     // Additional initialization for CUSTOM density
     if ( spec -> density.type == CUSTOM ) {
-        if ( !spec -> density.custom_x ) spec -> density.custom_x = &one;
-        if ( !spec -> density.custom_y ) spec -> density.custom_y = &one;
-        
+        if ( spec -> density.custom_x == NULL ) {
+            spec -> density.custom_x = &one;
+        }
+        if ( spec -> density.custom_y == NULL ) {
+            spec -> density.custom_y = &one;
+        }
+
         spec -> density.custom_x_total_part = 0;
         spec -> density.custom_x_total_q = 0;
     }
