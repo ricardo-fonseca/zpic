@@ -3,7 +3,7 @@
 Particle injection is controlled through a _t\_density_ structure that is supplied to the _spec\_new()_ routine when initializing the particle species. It accepts the following parameters:
 
 
-| Density parameters||
+| Density parameters ||
 |---|---|
 | n | Reference density (default 1.0) |
 | type | Density profile type: UNIFORM (default), STEP, SLAB, RAMP, or CUSTOM |
@@ -14,7 +14,7 @@ Particle injection is controlled through a _t\_density_ structure that is suppli
 
 Particle injection also relies on the _ppc_ (particles per cell) parameter supplied to the _spec\_new()_ routine. The individual particle charge $q_p$is calculated so that:
 
-$ n = \frac{ ppc \, q_p }{\Delta x}$
+$n = \frac{ ppc \, q_p }{\Delta x}$
 
 with $\Delta x$ being the cell size, meaning that a cell with _ppc_ particles will have a charge density of _n_.
 
@@ -103,11 +103,11 @@ t_density density = {
 Particle injection in 2D is similar to 1D, with two differences:
 
 * The `ramp` density profile is not available, and
-* The `custom` density profile requires that the density can bes described by a separable function in the $x$ and $y$ coordinates, i.e., $n(x,y) = n_x(x) \times n_y(y)$, and these two functions are defined separably.
+* The `custom` density profile requires that the density can be described by a separable function in the $x$ and $y$ coordinates, i.e., $n(x,y) = n_x(x) \times n_y(y)$, and these two functions are defined separably.
 
 The `t_density` structure in 2D has the following options:
 
-| Density parameters||
+| Density parameters ||
 |---|---|
 | n | Reference density (default 1.0) |
 | type | Density profile type: UNIFORM (default), STEP, SLAB, or CUSTOM |
@@ -115,6 +115,10 @@ The `t_density` structure in 2D has the following options:
 | end  | End of the particle injection region (SLAB) |
 | custom_x | Pointer to a function defining the $n_x(x)$ function of a custom density profile $n(x,y) = n_x(x) \times n_y(y)$, normalized to _n_ |
 | custom_y | Pointer to a function defining the $n_y(y)$ function of a custom density profile $n(x,y) = n_x(x) \times n_y(y)$, normalized to _n_  |
+
+## Density profile types
+
+The types `UNIFORM`, `STEP`, and `SLAB` work exactly the same way as in the 1D version. 
 
 ### Custom
 
@@ -142,5 +146,3 @@ t_density density = {
   .custom_y = &ny,
 };
 ```
-
-# 
