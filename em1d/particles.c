@@ -339,7 +339,7 @@ void spec_set_x( t_species* spec, const int range[] )
 		// printf("Injected %d particles with ramp injection \n", ip - spec -> np );
 		break;
 
-	case CUSTOM: // ramp like density profile
+	case CUSTOM: // custom density profile
 
 		{
 

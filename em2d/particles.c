@@ -49,6 +49,17 @@ double spec_perf( void )
  *********************************************************************************************/
 
 /**
+ * Dummy custom density function that always return 1.
+ * This is used when a custom density profile is chosen, but no function is supplied
+ * @param   x       Position
+ * @param   data    Pointer to custom data (used when the custom function is defined in Python)
+ * @return          Always returns 1.0
+ */
+float one( float x, void *data ) {
+    return 1.0;
+}
+
+/**
  * Sets the momentum of the range of particles supplieds using a thermal distribution
  * @param spec  Particle species
  * @param start Index of the first particle to set the momentum
@@ -66,6 +77,12 @@ void spec_set_u( t_species* spec, const int start, const int end )
 
 }	
 
+/**
+ * Injects particles inside the specified cell range according to the set density type
+ * Note that particle momentum is not set
+ * @param spec      Particle species
+ * @param range     Cell range in which to inject the particles
+ */
 void spec_set_x( t_species* spec, const int range[][2] )
 {
 
@@ -135,7 +152,100 @@ void spec_set_x( t_species* spec, const int range[][2] )
 			}
 		}
 		break;
+    
+    case CUSTOM:
+        {
+            const double dx = spec -> dx[0];
+            const double dy = spec -> dx[1];
 
+			const double cppx = 1.0 / spec->ppc[0];
+			const double cppy = 1.0 / spec->ppc[1];
+
+            const int n_movex = spec -> n_move;
+            
+            int ix0 = range[0][0];
+            int iy0 = range[1][0];
+
+            // Initial injection parameters along x
+
+            // Either start from the bottom of the box or continue
+            // from previous injection in a moving window
+            unsigned long kx;
+            double d0x, d1x;
+            kx  = spec -> density.custom_x_total_part;
+            d1x = spec -> density.custom_x_total_q;
+
+            // X density at the lower injection point 
+            // will be copied onto n0x later
+            double n0x, n1x;
+            n1x = (*spec -> density.custom_x)
+                ((ix0 + n_movex) * dx, spec -> density.custom_data_x);
+
+            // Initial injection parameters along y
+
+            // Always starts from the bottom of the box
+            unsigned long const ky0 = 0;
+            double const d0y0 = 0;
+                        
+            // Y density at the lower injection point
+            double n0y0 = (*spec -> density.custom_y)
+                (iy0 * dy, spec -> density.custom_data_y);
+            
+            // Loop over x cells
+            d1x = d0x;
+            for( int ix = ix0; ix <= range[0][1]; ix++ ) {
+                // Get x density on the edges of current cell
+                n0x = n1x;
+                n1x = (*spec -> density.custom_x)
+                    ((ix + 1 + n_movex) * dx, spec -> density.custom_data_x);
+				// Get cumulative x density on the edges of current cell
+				d0x = d1x;
+				d1x += 0.5 * (n0x+n1x);
+
+                double Rsx;
+                while( (Rsx = (kx+0.5)*cppx) < d1x) {
+                    // x position of particles to inject
+                    double x = 2 * (Rsx-d0x) /( sqrt( n0x*n0x + 2 * (n1x-n0x) * (Rsx-d0x) ) + n0x );
+
+                    // Find y position of particles to inject
+                    int ky = ky0;
+
+                    double n0y;
+                    double n1y = n0y0;
+
+                    double d0y;
+                    double d1y = d0y0;
+                    
+                    for( int iy = iy0; iy <= range[1][1]; iy++ ) {
+                        n0y = n1y;
+                        n1y = (*spec -> density.custom_y)
+                                ((iy+1) * dy, spec -> density.custom_data_y);
+                        d0y = d1y;
+                        d1y += 0.5*(n0y+n1y);
+
+                        double Rsy;
+                        while( (Rsy = (ky+0.5)*cppy) < d1y) {
+                            double y = 2 * (Rsy-d0y) /( sqrt( n0y*n0y + 2 * (n1y-n0y) * (Rsy-d0y) ) + n0y );
+                            spec->part[ip].ix = ix;
+                            spec->part[ip].iy = iy;
+                            spec->part[ip].x = x;
+                            spec->part[ip].y = y;
+                            ip++;
+                            
+                            // Move to next y position
+                            ky++;
+                        }
+                    }
+                    // Move to next x position
+                    kx++;
+                }
+            }
+
+            spec -> density.custom_x_total_q = d1x;
+            spec -> density.custom_x_total_part = kx;
+
+        }
+        break;
 	default: // Uniform density
 		for (j = range[1][0]; j <= range[1][1]; j++) {
 			for (i = range[0][0]; i <= range[0][1]; i++) {
@@ -157,13 +267,104 @@ void spec_set_x( t_species* spec, const int range[][2] )
 	
 }
 
+/**
+ * Gets number of particles to be injected.
+ *
+ * Calculates the number of particles to be injected in the specified range according
+ * to the specified density profile. The returned value is not exact but it is
+ * guaranteed to be larger than the actual number of particles to be injected
+ *
+ * @param spec          Particle species
+ * @param range[][2]    Range of cells in which to inject
+ * @return              Number of particles to be injected
+ */
+
+int spec_np_inj( t_species* spec, const int range[][2] )
+{
+    int np_inj;
+
+	switch ( spec -> density.type ) {
+	case STEP: // Step like density profile
+		{
+			int i0 = spec -> density.start / spec -> dx[0] - spec -> n_move;
+
+			if ( i0 > range[0][1] ) {
+				np_inj = 0;
+			} else {
+				if ( i0 < range[0][0] ) i0 = range[0][0];
+				np_inj = ( range[0][1] - i0 + 1 ) * spec -> ppc[0];
+			}
+
+            np_inj *= ( range[1][1] - range[1][0] + 1 ) * spec -> ppc[1];
+		}
+		break;
+
+	case SLAB: // Slab like density profile
+		{
+			int i0 = spec -> density.start / spec -> dx[0] - spec -> n_move;
+			int i1 = spec -> density.end / spec -> dx[1] - spec -> n_move;
+
+			if ( (i0 > range[0][1]) || (i1 < range[0][0]) ) {
+				np_inj = 0;
+			} else {
+				if ( i0 < range[0][0] ) i0 = range[0][0];
+				if ( i1 > range[0][1] ) i1 = range[0][1];
+				np_inj = ( i1 - i0 + 1 ) * spec -> ppc[0];
+			}
+
+            np_inj *= ( range[1][1] - range[1][0] + 1 ) * spec -> ppc[1];
+		}
+		break;
+
+	case CUSTOM: // custom density profile
+		{
+            // Integrate total charge along x
+            double x = (range[0][0] + spec -> n_move) * spec->dx[0];
+			double qx = (*spec -> density.custom_x)(x,spec -> density.custom_data_x);
+            
+            x = (range[0][1] + spec -> n_move) * spec->dx[0];
+			qx += (*spec -> density.custom_x)(x,spec -> density.custom_data_x);
+            
+            qx *= 0.5;
+
+			for( int i = range[0][0]+1; i < range[0][1]; i++) {
+				x = (i + spec -> n_move) * spec->dx[0];
+                qx += (*spec -> density.custom_x)(x,spec -> density.custom_data_x);
+			}
+
+            // Integrate total charge along y
+            double y = range[1][0] * spec->dx[1];
+			double qy = (*spec -> density.custom_y)(y,spec -> density.custom_data_y);
+            
+            y = range[1][1] * spec->dx[1];
+			qy += (*spec -> density.custom_y)(y,spec -> density.custom_data_y);
+            
+            qy *= 0.5;
+
+			for( int j = range[1][0]+1; j < range[1][1]; j++) {
+				y = j * spec->dx[1];
+                qy += (*spec -> density.custom_y)(y,spec -> density.custom_data_y);
+			}
+
+			// Get corresponding number of simulation particles, rounding up
+			np_inj = ceil(qx * spec -> ppc[0]) * ceil(qy * spec -> ppc[1]);
+		}
+		break;
+
+	default: // Uniform density
+		np_inj = ( range[0][1] - range[0][0] + 1 ) * spec -> ppc[0] *
+                 ( range[1][1] - range[1][0] + 1 ) * spec -> ppc[1];
+	}
+
+    return np_inj;
+}
+
 void spec_inject_particles( t_species* spec, const int range[][2] )
 {
 	int start = spec -> np;
 
 	// Get maximum number of particles to inject
-	int np_inj = ( range[0][1] - range[0][0] + 1 ) * ( range[1][1] - range[1][0] + 1 ) * 
-	             spec -> ppc[0] * spec -> ppc[1];
+	int np_inj = spec_np_inj( spec, range );
 
 	// Check if buffer is large enough and if not reallocate
 	if ( spec -> np + np_inj > spec -> np_max ) {
@@ -177,6 +378,25 @@ void spec_inject_particles( t_species* spec, const int range[][2] )
 	// Set momentum of injected particles
 	spec_set_u( spec, start, spec -> np - 1 );
 
+}
+
+/**
+ * Initializes the density structure
+ * @param spec  Particle species
+ */
+void spec_init_density( t_species* spec )
+{
+    // If reference density was not set default to 1.0
+    if ( spec -> density.n == 0. ) spec -> density.n = 1.0;
+
+    // Additional initialization for CUSTOM density
+    if ( spec -> density.type == CUSTOM ) {
+        if ( !spec -> density.custom_x ) spec -> density.custom_x = &one;
+        if ( !spec -> density.custom_y ) spec -> density.custom_y = &one;
+        
+        spec -> density.custom_x_total_part = 0;
+        spec -> density.custom_x_total_q = 0;
+    }
 }
 
 void spec_new( t_species* spec, char name[], const t_part_data m_q, const int ppc[], 
@@ -213,11 +433,14 @@ void spec_new( t_species* spec, char name[], const t_part_data m_q, const int pp
 	// Initialize density profile
 	if ( density ) {
 		spec -> density = *density;
-		if ( spec -> density.n == 0. ) spec -> density.n = 1.0;
 	} else {
 		// Default values
 		spec -> density = (t_density) { .type = UNIFORM, .n = 1.0 };
 	}
+    spec_init_density( spec );
+
+	// Density multiplier
+	spec ->q *= fabsf( spec -> density.n );
 
 	// Initialize temperature profile
 	if ( ufl ) {
@@ -225,9 +448,6 @@ void spec_new( t_species* spec, char name[], const t_part_data m_q, const int pp
 	} else {
 		for(i=0; i<3; i++) spec -> ufl[i] = 0;
 	}
-
-	// Density multiplier
-	spec ->q *= fabsf( spec -> density.n );
 
 	if ( uth ) {
 		for(i=0; i<3; i++) spec -> uth[i] = uth[i];

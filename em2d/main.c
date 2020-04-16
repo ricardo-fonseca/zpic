@@ -31,7 +31,8 @@ along with the ZPIC Educational code suite. If not, see <http://www.gnu.org/lice
 
 // Include Simulation parameters here
 //#include "input/weibel.c"
-#include "input/lwfa.c"
+//#include "input/lwfa.c"
+#include "input/density.c"
 
 int main (int argc, const char * argv[]) {
 
