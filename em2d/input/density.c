@@ -42,6 +42,7 @@ void sim_init( t_simulation* sim ){
         .type = CUSTOM, 
         .custom_x = &custom_x,
         .custom_y = &custom_y };
+
 	t_species* species = (t_species *) malloc( n_species * sizeof( t_species ));
 
 	spec_new( &species[0], "electrons", -1.0, ppc, NULL, NULL, nx, box, dt, &density );

@@ -43,7 +43,7 @@ int main (int argc, const char * argv[]) {
 	sim_init( &sim );
 
     // Run simulation
-	int n, i;
+	int n;
 	float t;
 
 	uint64_t t0,t1;
