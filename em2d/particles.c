@@ -155,11 +155,14 @@ void spec_set_x( t_species* spec, const int range[][2] )
     
     case CUSTOM:
         {
+            
             const double dx = spec -> dx[0];
             const double dy = spec -> dx[1];
 
 			const double cppx = 1.0 / spec->ppc[0];
 			const double cppy = 1.0 / spec->ppc[1];
+
+            double thresh = 4 * cppx * cppy;
 
             const int n_movex = spec -> n_move;
             
@@ -207,6 +210,8 @@ void spec_set_x( t_species* spec, const int range[][2] )
                     // x position of particles to inject
                     double x = 2 * (Rsx-d0x) /( sqrt( n0x*n0x + 2 * (n1x-n0x) * (Rsx-d0x) ) + n0x );
 
+                    double nx = (0.5-x)*n0x + (0.5+x)*n1x;
+
                     // Find y position of particles to inject
                     int ky = ky0;
 
@@ -225,13 +230,18 @@ void spec_set_x( t_species* spec, const int range[][2] )
 
                         double Rsy;
                         while( (Rsy = (ky+0.5)*cppy) < d1y) {
+
                             double y = 2 * (Rsy-d0y) /( sqrt( n0y*n0y + 2 * (n1y-n0y) * (Rsy-d0y) ) + n0y );
-                            spec->part[ip].ix = ix;
-                            spec->part[ip].iy = iy;
-                            spec->part[ip].x = x;
-                            spec->part[ip].y = y;
-                            ip++;
                             
+                            double ny = (0.5-y)*n0y + (0.5+y)*n1y;
+                           
+                            if ( nx*ny > thresh ) {
+                                spec->part[ip].ix = ix;
+                                spec->part[ip].iy = iy;
+                                spec->part[ip].x = x;
+                                spec->part[ip].y = y;
+                                ip++;
+                            }
                             // Move to next y position
                             ky++;
                         }
