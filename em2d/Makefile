@@ -1,7 +1,7 @@
 # GCC options
-#CC = gcc
-#CFLAGS = -Ofast -std=c99 -pedantic
-#LDFLAGS = -lm
+CC = gcc
+CFLAGS = -Ofast -std=c99 -pedantic
+LDFLAGS = -lm
 
 # Intel icc compiler
 #CC = icc
@@ -9,10 +9,10 @@
 #LDFLAGS =
 
 # Clang options
-CC = clang
+#CC = clang
 #CFLAGS = -Ofast -std=c99 -Wall -pedantic
-CFLAGS = -Og -g -std=c99 -Wall -pedantic
-LDFLAGS = -lm
+#CFLAGS = -Og -g -std=c99 -Wall -pedantic
+#LDFLAGS = -lm
 
 SOURCE = current.c emf.c particles.c random.c timer.c main.c simulation.c zdf.c
 

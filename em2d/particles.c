@@ -162,20 +162,13 @@ void spec_set_x( t_species* spec, const int range[][2] )
 			const double cppx = 1.0 / spec->ppc[0];
 			const double cppy = 1.0 / spec->ppc[1];
 
+            // Threshold density for particle injection
             double thresh = 4 * cppx * cppy;
 
             const int n_movex = spec -> n_move;
             
             int ix0 = range[0][0];
             int iy0 = range[1][0];
-
-            printf("Testing custom functions...\n");
-            double tmp = (*spec -> density.custom_x)
-                (1.0, spec -> density.custom_data_x);
-            printf("Custom x function: %g ok\n",tmp);
-            tmp = (*spec -> density.custom_y)
-                (1.0, spec -> density.custom_data_y);
-            printf("Custom y function: %g ok\n",tmp);
 
             // Initial injection parameters along x
 
@@ -294,7 +287,6 @@ void spec_set_x( t_species* spec, const int range[][2] )
  * @param range[][2]    Range of cells in which to inject
  * @return              Number of particles to be injected
  */
-
 int spec_np_inj( t_species* spec, const int range[][2] )
 {
     int np_inj;
@@ -372,7 +364,6 @@ int spec_np_inj( t_species* spec, const int range[][2] )
                  ( range[1][1] - range[1][0] + 1 ) * spec -> ppc[1];
 	}
 
-    printf("Will inject up to %d particles\n",np_inj);
     return np_inj;
 }
 
