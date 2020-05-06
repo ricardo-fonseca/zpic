@@ -92,6 +92,14 @@ void emf_delete( t_emf *emf )
 	
 	emf->E_buf = NULL;
 	emf->B_buf = NULL;
+
+	if ( emf -> ext_fld.type > EMF_EXT_FLD_NONE ) {
+		free( emf -> ext_fld.E_part_buf );
+		free( emf -> ext_fld.B_part_buf );
+	}
+
+	emf->E_part = NULL;
+	emf->B_part = NULL;
 	
 }
 
@@ -564,6 +572,9 @@ void emf_advance( t_emf *emf, const t_current *current )
 	// Update guard cells with new values
 	emf_update_gc( emf );
 
+	// Update contribuition of external fields if necessary
+	if ( emf -> ext_fld.type > EMF_EXT_FLD_NONE ) emf_update_part_fld( emf );
+
 	// Advance internal iteration number
     emf -> iter += 1;
 
@@ -598,4 +609,87 @@ void emf_get_energy( const t_emf *emf, double energy[] )
 
 	for( i = 0; i<6; i++) energy[i] *= 0.5 * emf -> dx[0] * emf -> dx[1];
 
+}
+
+/*********************************************************************************************
+
+External Fields
+
+ *********************************************************************************************/
+
+/**
+ * Sets the external fields to be used for the simulation
+ * @param   emf     EM field object
+ * @param   ext_fld External fields
+ */
+void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
+
+	emf -> ext_fld.type = ext_fld -> type;
+
+	if ( emf -> ext_fld.type == EMF_EXT_FLD_NONE ) {
+		// Particle fields just point to the self-consistent fields
+		emf -> E_part = emf -> E;
+		emf -> B_part = emf -> B;
+
+		emf -> ext_fld.E_part_buf = emf -> ext_fld.B_part_buf = NULL;
+	} else {
+	    switch( emf -> ext_fld.type ) {
+	        case( EMF_EXT_FLD_UNIFORM ):
+	        	emf -> ext_fld.E0 = ext_fld->E0;
+	        	emf -> ext_fld.B0 = ext_fld->B0;
+	        	break;
+
+	    	default:
+	    		fprintf(stderr, "Invalid external field type, aborting.\n" );
+				exit(-1);
+	    }
+
+		// Allocate space for additional field grids
+        size_t size = (emf->gc[0][0] + emf->nx[0] + emf->gc[0][1]) * 
+            (emf->gc[1][0] + emf->nx[1] + emf->gc[1][1]) * 
+            sizeof( t_vfld );
+	
+		emf -> ext_fld.E_part_buf = malloc( size );
+		emf -> ext_fld.B_part_buf = malloc( size );
+
+        emf->E_part = emf->ext_fld.E_part_buf + emf->gc[0][0] + emf->gc[1][0] * emf->nrow;
+        emf->E_part = emf->ext_fld.B_part_buf + emf->gc[0][0] + emf->gc[1][0] * emf->nrow;
+
+	    // Initialize values on E/B_part grids
+	    emf_update_part_fld( emf );
+
+	}
+}
+
+/**
+ * Updates field values seen by particles with externally imposed fields
+ * @param emf EMF object holding field data
+ */
+void emf_update_part_fld( t_emf* const emf ) {
+
+    // Restrict pointers to E_part and B_part
+    t_vfld* const restrict E_part = emf->ext_fld.E_part_buf;
+    t_vfld* const restrict B_part = emf->ext_fld.B_part_buf;
+
+    // Currently only EMF_EXT_FLD_UNIFORM is supported
+
+	// Add external field values to self consistent fields
+    size_t size = (emf->gc[0][0] + emf->nx[0] + emf->gc[0][1]) * 
+            (emf->gc[1][0] + emf->nx[1] + emf->gc[1][1]);
+
+	for( int i = 0; i < size; i++ ){
+		t_vfld e = emf -> E_buf[i];
+		t_vfld b = emf -> B_buf[i];
+
+		e.x += emf -> ext_fld.E0.x;
+		e.y += emf -> ext_fld.E0.y;
+		e.z += emf -> ext_fld.E0.z;
+
+		b.x += emf -> ext_fld.B0.x;
+		b.y += emf -> ext_fld.B0.y;
+		b.z += emf -> ext_fld.B0.z;
+
+		E_part[i] = e;
+		B_part[i] = b;
+	}
 }
