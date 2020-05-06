@@ -4,18 +4,31 @@ cimport em2d
 from libc.stdlib cimport calloc, free
 
 import numpy as np
+import sys
+
+cdef float custom_density_x( float x, void *f ):
+	cdef Density d = <object> f
+	return d.custom_func_x(x)
+
+cdef float custom_density_y( float y, void *f ):
+	cdef Density d = <object> f
+	return d.custom_func_y(y)
 
 
 cdef class Density:
 	"""Extension type to wrap t_density objects"""
 	cdef t_density *_thisptr
 
+	cdef object custom_func_x
+	cdef object custom_func_y
+
 	_density_types = {'uniform':UNIFORM,
-	                  'step':STEP,
-	                  'slab':SLAB}
+						'step':STEP,
+						'slab':SLAB,
+						'custom':CUSTOM}
 
 	def __cinit__( self, *, str type = 'uniform', float start = 0.0, float end = 0.0,
-		           float n = 1.0):
+		           float n = 1.0, custom_x = None, custom_y = None ):
 
 		# Allocates the structure and initializes all elements to 0
 		self._thisptr = <t_density *> calloc(1, sizeof(t_density))
@@ -24,6 +37,15 @@ cdef class Density:
 		self._thisptr.n = n
 		self._thisptr.start = start
 		self._thisptr.end = end
+		if ( custom_x ):
+			self.custom_func_x = custom_x
+			self._thisptr.custom_x = custom_density_x
+			self._thisptr.custom_data_x = <void *> self
+		if ( custom_y ):
+			self.custom_func_y = custom_y
+			self._thisptr.custom_y = custom_density_y
+			self._thisptr.custom_data_y = <void *> self
+
 
 	def __dealloc__(self):
 		free( self._thisptr )
@@ -34,6 +56,12 @@ cdef class Density:
 		new.n	 = self.n
 		new.start = self.start
 		new.end   = self.end
+		new.custom_func_x = self.custom_func_x
+		new.custom_func_y = self.custom_func_y
+		new._thisptr.custom_x = self._thisptr.custom_x
+		new._thisptr.custom_y = self._thisptr.custom_y
+		new._thisptr.custom_data_x = self._thisptr.custom_data_x
+		new._thisptr.custom_data_y = self._thisptr.custom_data_y
 
 		return new
 

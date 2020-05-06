@@ -1,9 +1,9 @@
-# Particle injection
+# Particle injection - 1D
 
 Particle injection is controlled through a _t\_density_ structure that is supplied to the _spec\_new()_ routine when initializing the particle species. It accepts the following parameters:
 
 
-| Density parameters||
+| Density parameters ||
 |---|---|
 | n | Reference density (default 1.0) |
 | type | Density profile type: UNIFORM (default), STEP, SLAB, RAMP, or CUSTOM |
@@ -14,7 +14,7 @@ Particle injection is controlled through a _t\_density_ structure that is suppli
 
 Particle injection also relies on the _ppc_ (particles per cell) parameter supplied to the _spec\_new()_ routine. The individual particle charge $q_p$is calculated so that:
 
-$ n = \frac{ ppc \, q_p }{\Delta x}$
+$n = \frac{ ppc \, q_p }{\Delta x}$
 
 with $\Delta x$ being the cell size, meaning that a cell with _ppc_ particles will have a charge density of _n_.
 
@@ -77,7 +77,7 @@ t_density density = {
 
 ### Custom
 
-The custom type injects a density profile set by a user defined function. The function must accept two parameters: one parameter of type _float_ (the position at which the density is to be evaluated in simulation units) and a void pointer (which can be used to send additional data to the function). It must returns the density value as a value of type _float_. Note that density values are normalized to _n_.
+The custom type injects a density profile set by a user defined function. The function must accept two parameters: one parameter of type _float_ (the position at which the density is to be evaluated in simulation units) and a void pointer (which can be used to send additional data to the function). It must return the density value as a value of type _float_. Note that density values are normalized to _n_.
 
 ```C
 // Custom density example
@@ -95,5 +95,54 @@ t_density density = {
   .n = 0.1,
   .custom = &custom_n0,
   .custom_data = NULL,
+};
+```
+
+# Particle Injection - 2D
+
+Particle injection in 2D is similar to 1D, with two differences:
+
+* The `ramp` density profile is not available, and
+* The `custom` density profile requires that the density can be described by a separable function in the $x$ and $y$ coordinates, i.e., $n(x,y) = n_x(x) \times n_y(y)$, and these two functions are defined separably.
+
+The `t_density` structure in 2D has the following options:
+
+| Density parameters ||
+|---|---|
+| n | Reference density (default 1.0) |
+| type | Density profile type: UNIFORM (default), STEP, SLAB, or CUSTOM |
+| start | Start of the particle injection region (STEP, SLAB) |
+| end  | End of the particle injection region (SLAB) |
+| custom_x | Pointer to a function defining the $n_x(x)$ function of a custom density profile $n(x,y) = n_x(x) \times n_y(y)$, normalized to _n_ |
+| custom_y | Pointer to a function defining the $n_y(y)$ function of a custom density profile $n(x,y) = n_x(x) \times n_y(y)$, normalized to _n_  |
+
+## Density profile types
+
+The types `UNIFORM`, `STEP`, and `SLAB` work exactly the same way as in the 1D version. 
+
+### Custom
+
+The custom type injects a density profile set by two user defined functions. The functions must accept two parameters: one parameter of type _float_ (the position x or y at which the density is to be evaluated in simulation units) and a void pointer (which can be used to send additional data to the function). They must return the density value as a value of type _float_. Note that density values are normalized to _n_.
+
+```C
+// 2D Custom density example
+// The 2D density will be the product of nx * ny
+// It will oscillate between 0 and 0.1 - note the n parameter below
+
+float nx( float x, void *data ) {
+	return sin(x/M_PI)*sin(x/M_PI);
+}
+
+float ny( float y, void *data ) {
+	return cos(y/M_PI)*cos(y/M_PI);
+}
+
+(...)
+
+t_density density = {
+  .type = CUSTOM,
+  .n = 0.1,
+  .custom_x = &nx,
+  .custom_y = &ny,
 };
 ```

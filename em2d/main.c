@@ -31,19 +31,20 @@ along with the ZPIC Educational code suite. If not, see <http://www.gnu.org/lice
 
 // Include Simulation parameters here
 //#include "input/weibel.c"
-#include "input/lwfa.c"
+//#include "input/lwfa.c"
+#include "input/density.c"
 
 int main (int argc, const char * argv[]) {
+
+	printf("Starting simulation ...\n\n");
 
 	// Initialize simulation
 	t_simulation sim;
 	sim_init( &sim );
 
     // Run simulation
-	int n, i;
+	int n;
 	float t;
-
-	printf("Starting simulation ...\n\n");
 
 	uint64_t t0,t1;
 	t0 = timer_ticks();

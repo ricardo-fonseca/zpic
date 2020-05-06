@@ -22,7 +22,7 @@ typedef struct {
 	t_part_data ux, uy, uz;
 } t_part;
 
-enum density_type {UNIFORM, STEP, SLAB};
+enum density_type {UNIFORM, STEP, SLAB, CUSTOM};
 
 typedef struct {
 
@@ -30,6 +30,21 @@ typedef struct {
 
 	enum density_type type;		// Density profile type
 	float start, end;		// Position of the plasma start/end, in simulation units
+
+    // Custom density profile parameters
+	
+    // Pointer to custom density function along x
+    float (*custom_x)(float, void*);
+    // Pointer to additional data to be passed to the custom_x function
+	void *custom_data_x;
+    // Pointer to custom density function along y
+	float (*custom_y)(float, void*);
+    // Pointer to additional data to be passed to the custom_y function
+	void *custom_data_y;
+    // Total number of particles already injected along x
+	unsigned long custom_x_total_part;
+    // Total charge injected (density integral) along x	
+	double custom_x_total_q;
 
 } t_density;
 

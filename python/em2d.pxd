@@ -28,13 +28,19 @@ cdef extern from "../em2d/particles.h":
 		float uz
 
 	cdef enum density_type:
-		UNIFORM, STEP, SLAB
+		UNIFORM, STEP, SLAB, CUSTOM
 
 	ctypedef struct t_density:
 		float n
 		density_type type
 		float start
 		float end
+		float (*custom_x)(float, void*)
+		void *custom_data_x
+		float (*custom_y)(float, void*)
+		void *custom_data_y
+		unsigned long custom_x_total_part
+		double custom_x_total_q
 
 	ctypedef struct t_species:
 		char name[MAX_SPNAME_LEN]

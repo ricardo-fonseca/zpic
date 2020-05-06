@@ -10,7 +10,8 @@ LDFLAGS = -lm
 
 # Clang options
 #CC = clang
-#CFLAGS = -Ofast
+#CFLAGS = -Ofast -std=c99 -Wall -pedantic
+#CFLAGS = -Og -g -std=c99 -Wall -pedantic
 #LDFLAGS = -lm
 
 SOURCE = current.c emf.c particles.c random.c timer.c main.c simulation.c zdf.c
