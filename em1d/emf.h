@@ -16,25 +16,32 @@
 #include "current.h"
 
 
-enum emf_ext_fld { EMF_EXT_FLD_NONE, EMF_EXT_FLD_UNIFORM };
-
-/*
-Some headers (e.g. termios.h) define a B0 macro that conflicts with this code
- */
-#ifdef B0
-#undef B0
-#endif
+enum emf_ext_fld { EMF_EXT_FLD_NONE, EMF_EXT_FLD_UNIFORM, EMF_EXT_FLD_CUSTOM };
 
 typedef struct {
-	t_vfld E0;
-	t_vfld B0;
-	int type;
+	// Type of external field
+    enum emf_ext_fld E_type;
+    enum emf_ext_fld B_type;
+	
+    // Uniform external fields
+    t_vfld E_0;
+	t_vfld B_0;
 
+    // Pointer to custom external E-field function
+    t_vfld (*E_custom)(int, float, void*); 
+    t_vfld (*B_custom)(int, float, void*); 
+
+    // Pointer to additional data to be passed to the 
+    // E_custom and B_custom functions
+	void *E_custom_data;
+	void *B_custom_data;
+
+	// Fields seen by particules
 	t_vfld *E_part_buf;
 	t_vfld *B_part_buf;
 } t_emf_ext_fld;
 
-enum emf_diag { EFLD, BFLD };
+enum emf_diag { EFLD, BFLD, EPART, BPART };
 enum emf_boundary { EMF_BC_NONE, EMF_BC_PERIODIC, EMF_BC_OPEN };
 
 typedef struct {

@@ -83,6 +83,13 @@ void emf_new( t_emf *emf, int nx[], t_fld box[], const float dt )
 	// Reset moving window information
 	emf -> moving_window = 0;
 	emf -> n_move = 0;
+
+    // Disable external fields by default
+	emf -> ext_fld.E_type = EMF_EXT_FLD_NONE;
+	emf -> ext_fld.B_type = EMF_EXT_FLD_NONE;
+	emf -> E_part = emf->E;
+	emf -> B_part = emf->B;
+
 }
 
 void emf_delete( t_emf *emf )
@@ -93,8 +100,11 @@ void emf_delete( t_emf *emf )
 	emf->E_buf = NULL;
 	emf->B_buf = NULL;
 
-	if ( emf -> ext_fld.type > EMF_EXT_FLD_NONE ) {
+	if ( emf -> ext_fld.E_type > EMF_EXT_FLD_NONE ) {
 		free( emf -> ext_fld.E_part_buf );
+	}
+
+	if ( emf -> ext_fld.B_type > EMF_EXT_FLD_NONE ) {
 		free( emf -> ext_fld.B_part_buf );
 	}
 
@@ -294,18 +304,26 @@ void emf_add_laser( t_emf* const emf,  t_emf_laser*  laser )
 void emf_report( const t_emf *emf, const char field, const char fc )
 {
 	int i, j;
-	char vfname[3];
+	char vfname[16];
 
 	// Choose field to save
 	t_vfld * restrict f;
 	switch (field) {
 		case EFLD:
 			f = emf->E;
-			vfname[0] = 'E';
+            snprintf(vfname,16,"E%1d",fc);
 			break;
 		case BFLD:
 			f = emf->B;
-			vfname[0] = 'B';
+            snprintf(vfname,16,"B%1d",fc);
+			break;
+		case EPART:
+			f = emf->E_part;
+            snprintf(vfname,16,"E%1d-part",fc);
+			break;
+		case BPART:
+			f = emf->B_part;
+            snprintf(vfname,16,"B%1d-part",fc);
 			break;
 		default:
 			fprintf(stderr, "Invalid field type selected, returning\n");
@@ -324,7 +342,6 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 				p += emf->nx[0];
 				f += emf->nrow;
 			}
-			vfname[1] = '1';
 			break;
 		case 1:
 			for( j = 0; j < emf->nx[1]; j++) {
@@ -334,7 +351,6 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 				p += emf->nx[0];
 				f += emf->nrow;
 			}
-			vfname[1] = '2';
 			break;
 		case 2:
 			for( j = 0; j < emf->nx[1]; j++) {
@@ -344,13 +360,11 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 				p += emf->nx[0];
 				f += emf->nrow;
 			}
-			vfname[1] = '3';
 			break;
 		default:
 			fprintf(stderr, "Invalid field component selected, returning\n");
 			return;
 	}
-	vfname[2] = 0;
 
     t_zdf_grid_axis axis[2];
     axis[0] = (t_zdf_grid_axis) {
@@ -573,7 +587,7 @@ void emf_advance( t_emf *emf, const t_current *current )
 	emf_update_gc( emf );
 
 	// Update contribuition of external fields if necessary
-	if ( emf -> ext_fld.type > EMF_EXT_FLD_NONE ) emf_update_part_fld( emf );
+	emf_update_part_fld( emf );
 
 	// Advance internal iteration number
     emf -> iter += 1;
@@ -624,19 +638,21 @@ External Fields
  */
 void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
 
-	emf -> ext_fld.type = ext_fld -> type;
+	emf -> ext_fld.E_type = ext_fld -> E_type;
 
-	if ( emf -> ext_fld.type == EMF_EXT_FLD_NONE ) {
+	if ( emf -> ext_fld.E_type == EMF_EXT_FLD_NONE ) {
 		// Particle fields just point to the self-consistent fields
 		emf -> E_part = emf -> E;
-		emf -> B_part = emf -> B;
-
-		emf -> ext_fld.E_part_buf = emf -> ext_fld.B_part_buf = NULL;
+		emf -> ext_fld.E_part_buf = NULL;
 	} else {
-	    switch( emf -> ext_fld.type ) {
+	    switch( emf -> ext_fld.E_type ) {
 	        case( EMF_EXT_FLD_UNIFORM ):
-	        	emf -> ext_fld.E0 = ext_fld->E0;
-	        	emf -> ext_fld.B0 = ext_fld->B0;
+	        	emf -> ext_fld.E_0 = ext_fld->E_0;
+	        	break;
+
+	        case( EMF_EXT_FLD_CUSTOM ):
+	        	emf -> ext_fld.E_custom = ext_fld->E_custom;
+	        	emf -> ext_fld.E_custom_data = ext_fld->E_custom_data;
 	        	break;
 
 	    	default:
@@ -649,16 +665,44 @@ void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
             (emf->gc[1][0] + emf->nx[1] + emf->gc[1][1]) * 
             sizeof( t_vfld );
 	
-		emf -> ext_fld.E_part_buf = malloc( size );
-		emf -> ext_fld.B_part_buf = malloc( size );
-
+		emf->ext_fld.E_part_buf = malloc( size );
         emf->E_part = emf->ext_fld.E_part_buf + emf->gc[0][0] + emf->gc[1][0] * emf->nrow;
-        emf->E_part = emf->ext_fld.B_part_buf + emf->gc[0][0] + emf->gc[1][0] * emf->nrow;
-
-	    // Initialize values on E/B_part grids
-	    emf_update_part_fld( emf );
-
 	}
+
+	emf -> ext_fld.B_type = ext_fld -> B_type;
+
+	if ( emf -> ext_fld.B_type == EMF_EXT_FLD_NONE ) {
+		// Particle fields just point to the self-consistent fields
+		emf -> B_part = emf -> B;
+		emf -> ext_fld.B_part_buf = NULL;
+	} else {
+	    switch( emf -> ext_fld.B_type ) {
+	        case( EMF_EXT_FLD_UNIFORM ):
+	        	emf -> ext_fld.B_0 = ext_fld->B_0;
+	        	break;
+
+	        case( EMF_EXT_FLD_CUSTOM ):
+	        	emf -> ext_fld.B_custom = ext_fld->B_custom;
+	        	emf -> ext_fld.B_custom_data = ext_fld->B_custom_data;
+	        	break;
+
+	    	default:
+	    		fprintf(stderr, "Invalid external field type, aborting.\n" );
+				exit(-1);
+	    }
+
+		// Allocate space for additional field grids
+        size_t size = (emf->gc[0][0] + emf->nx[0] + emf->gc[0][1]) * 
+            (emf->gc[1][0] + emf->nx[1] + emf->gc[1][1]) * 
+            sizeof( t_vfld );
+	
+		emf->ext_fld.B_part_buf = malloc( size );
+        emf->B_part = emf->ext_fld.B_part_buf + emf->gc[0][0] + emf->gc[1][0] * emf->nrow;
+	}
+
+    // Initialize values on E/B_part grids
+    emf_update_part_fld( emf );
+
 }
 
 /**
@@ -667,29 +711,82 @@ void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
  */
 void emf_update_part_fld( t_emf* const emf ) {
 
-    // Restrict pointers to E_part and B_part
-    t_vfld* const restrict E_part = emf->ext_fld.E_part_buf;
-    t_vfld* const restrict B_part = emf->ext_fld.B_part_buf;
+    // Restrict pointers to E_part
+    t_vfld* const restrict E_part = emf->E_part;
 
-    // Currently only EMF_EXT_FLD_UNIFORM is supported
+    switch (emf->ext_fld.E_type)
+    {
+    case EMF_EXT_FLD_UNIFORM: {
+	    const int nrow_e = emf->nrow;
+        for (int j=-emf->gc[1][0]; j<=emf->nx[1]+emf->gc[1][1]; j++) {
+            for (int i=-emf->gc[0][0]; i<=emf->nx[0]+emf->gc[0][1]; i++) {
+                t_vfld e = emf -> E[i+j*nrow_e];
+                e.x += emf->ext_fld.E_0.x;
+                e.y += emf->ext_fld.E_0.y;
+                e.z += emf->ext_fld.E_0.z;
+                E_part[i+j*nrow_e] = e;
+            }
+        }
+        break; }
+    case EMF_EXT_FLD_CUSTOM: {
+	    const int nrow_e = emf->nrow;
+        int pos[2];
+	
+        for (int j=-emf->gc[1][0]; j<=emf->nx[1]+emf->gc[1][1]; j++) {
+            pos[1] = j;
+            for (int i=-emf->gc[0][0]; i<=emf->nx[0]+emf->gc[0][1]; i++) {
+                pos[0] = i; 
+                t_vfld ext_E = (*emf->ext_fld.E_custom)(pos,emf->dx,emf->ext_fld.E_custom_data);
 
-	// Add external field values to self consistent fields
-    size_t size = (emf->gc[0][0] + emf->nx[0] + emf->gc[0][1]) * 
-            (emf->gc[1][0] + emf->nx[1] + emf->gc[1][1]);
+                t_vfld e = emf -> E[i+j*nrow_e];
+                e.x += ext_E.x;
+                e.y += ext_E.y;
+                e.z += ext_E.z;
+                E_part[i+j*nrow_e] = e;
+            }
+        }
+        break; }
+    case EMF_EXT_FLD_NONE:
+        break;
+    }
 
-	for( int i = 0; i < size; i++ ){
-		t_vfld e = emf -> E_buf[i];
-		t_vfld b = emf -> B_buf[i];
+    // Restrict pointers to B_part
+    t_vfld* const restrict B_part = emf->B_part;
 
-		e.x += emf -> ext_fld.E0.x;
-		e.y += emf -> ext_fld.E0.y;
-		e.z += emf -> ext_fld.E0.z;
+    switch (emf->ext_fld.B_type)
+    {
+    case EMF_EXT_FLD_UNIFORM: {
+	    const int nrow_b = emf->nrow;
+        for (int j=-emf->gc[1][0]; j<=emf->nx[1]+emf->gc[1][1]; j++) {
+            for (int i=-emf->gc[0][0]; i<=emf->nx[0]+emf->gc[0][1]; i++) {
+                t_vfld b = emf -> B[i+j*nrow_b];
+                b.x += emf->ext_fld.B_0.x;
+                b.y += emf->ext_fld.B_0.y;
+                b.z += emf->ext_fld.B_0.z;
+                B_part[i+j*nrow_b] = b;
+            }
+        }
+        break; }
+    case EMF_EXT_FLD_CUSTOM: {
+	    const int nrow_b = emf->nrow;
+        int pos[2];
+	
+        for (int j=-emf->gc[1][0]; j<=emf->nx[1]+emf->gc[1][1]; j++) {
+            pos[1] = j;
+            for (int i=-emf->gc[0][0]; i<=emf->nx[0]+emf->gc[0][1]; i++) {
+                pos[0] = i; 
+                t_vfld ext_B = (*emf->ext_fld.B_custom)(pos,emf->dx,emf->ext_fld.B_custom_data);
 
-		b.x += emf -> ext_fld.B0.x;
-		b.y += emf -> ext_fld.B0.y;
-		b.z += emf -> ext_fld.B0.z;
+                t_vfld b = emf -> B[i+j*nrow_b];
+                b.x += ext_B.x;
+                b.y += ext_B.y;
+                b.z += ext_B.z;
+                B_part[i+j*nrow_b] = b;
+            }
+        }
+        break; }
+    case EMF_EXT_FLD_NONE:
+        break;
+    }
 
-		E_part[i] = e;
-		B_part[i] = b;
-	}
 }

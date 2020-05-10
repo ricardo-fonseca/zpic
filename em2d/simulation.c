@@ -99,6 +99,10 @@ void sim_set_moving_window( t_simulation* sim ){
 
 }
 
+void sim_set_ext_fld( t_simulation* sim, t_emf_ext_fld* ext_fld ){
+	emf_set_ext_fld( &sim->emf, ext_fld );
+}
+
 
 void sim_report_energy( t_simulation* sim )
 {
