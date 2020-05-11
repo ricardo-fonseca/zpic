@@ -91,18 +91,24 @@ cdef extern from "../em1d/particles.h":
 # EMF
 #
 cdef extern from "../em1d/emf.h":
+
 	cdef enum emf_ext_fld:
-		EMF_EXT_FLD_NONE, EMF_EXT_FLD_UNIFORM
+		EMF_EXT_FLD_NONE, EMF_EXT_FLD_UNIFORM, EMF_EXT_FLD_CUSTOM
 
 	ctypedef struct t_emf_ext_fld:
-		t_vfld E0
-		t_vfld B0
-		int type
+		emf_ext_fld E_type
+		emf_ext_fld B_type
+		t_vfld E_0
+		t_vfld B_0
+		t_vfld (*E_custom)(int, float, void*)
+		t_vfld (*B_custom)(int, float, void*)
+		void *E_custom_data
+		void *B_custom_data
 		t_vfld *E_part_buf
 		t_vfld *B_part_buf
 
 	cdef enum emf_diag:
-		EFLD, BFLD
+		EFLD, BFLD, EPART, BPART
 
 	cdef enum emf_boundary:
 		EMF_BC_NONE, EMF_BC_PERIODIC, EMF_BC_OPEN
@@ -112,6 +118,8 @@ cdef extern from "../em1d/emf.h":
 		t_vfld *B
 		t_vfld *E_buf
 		t_vfld *B_buf
+		t_vfld *E_part
+		t_vfld *B_part
 		int nx
 		int gc[2]
 		float box

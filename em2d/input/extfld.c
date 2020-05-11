@@ -14,7 +14,7 @@
  */
 
 
-t_vfld ext_B( int ix[], float dx[], void *data ) {
+t_vfld ext_B( int ix, float dx, int iy, float dy, void *data ) {
     // Wire position
     const float x0 = 6.4;
     const float y0 = 6.4;
@@ -26,22 +26,22 @@ t_vfld ext_B( int ix[], float dx[], void *data ) {
     // inside the cells
 
     // Bx
-    x = ix[0]*dx[0]       - x0;
-    y = (ix[1]+0.5)*dx[1] - y0;
+    x = ix*dx       - x0;
+    y = (iy+0.5)*dy - y0;
 
     r2 = x*x+y*y;
     b.x = -y/r2;
 
     // By
-    x = (ix[0]+0.5)*dx[0] - x0;
-    y = ix[1]*dx[1]       - y0;
+    x = (ix+0.5)*dx - x0;
+    y = iy*dy       - y0;
 
     r2 = x*x+y*y;
     b.y = x/r2;
 
     // Bz
-    // x = (ix[0]+0.5)*dx[0] - x0;
-    // y = (ix[1]+0.5)*dx[1] - y0;
+    // x = (ix+0.5)*dx - x0;
+    // y = (ix+0.5)*dy - y0;
     b.z = 0;
 
     return b;

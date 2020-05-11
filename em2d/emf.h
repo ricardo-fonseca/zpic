@@ -27,8 +27,8 @@ typedef struct {
 	t_vfld B_0;
 
     // Pointer to custom external E-field function
-    t_vfld (*E_custom)(int[], float[], void*); 
-    t_vfld (*B_custom)(int[], float[], void*); 
+    t_vfld (*E_custom)(int, float, int, float, void*); 
+    t_vfld (*B_custom)(int, float, int, float, void*); 
 
     // Pointer to additional data to be passed to the 
     // E_custom and B_custom functions

@@ -575,8 +575,6 @@ void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
         emf->B_part = emf->ext_fld.B_part_buf + emf->gc[0];
 	}
 
-    // Allocate space for additional field grids
-
     // Initialize values on E/B_part grids
     emf_update_part_fld( emf );
 
@@ -594,7 +592,7 @@ void emf_update_part_fld( t_emf* const emf ) {
     switch (emf->ext_fld.E_type)
     {
     case EMF_EXT_FLD_UNIFORM: {
-        for (int i=-emf->gc[0]; i<=emf->nx+emf->gc[1]; i++) {
+        for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
             t_vfld e = emf -> E[i];
             e.x += emf->ext_fld.E_0.x;
             e.y += emf->ext_fld.E_0.y;
@@ -603,7 +601,7 @@ void emf_update_part_fld( t_emf* const emf ) {
         }
         break; }
     case EMF_EXT_FLD_CUSTOM: {
-        for (int i=-emf->gc[0]; i<=emf->nx+emf->gc[1]; i++) {
+        for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
             t_vfld ext_E = (*emf->ext_fld.E_custom)(i,emf->dx,emf->ext_fld.E_custom_data);
 
             t_vfld e = emf -> E[i];
@@ -623,16 +621,18 @@ void emf_update_part_fld( t_emf* const emf ) {
     switch (emf->ext_fld.B_type)
     {
     case EMF_EXT_FLD_UNIFORM: {
-        for (int i=-emf->gc[0]; i<=emf->nx+emf->gc[1]; i++) {
+        for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
             t_vfld b = emf -> B[i];
             b.x += emf->ext_fld.B_0.x;
             b.y += emf->ext_fld.B_0.y;
             b.z += emf->ext_fld.B_0.z;
             B_part[i] = b;
         }
-        break; }
+
+    }
+        break; 
     case EMF_EXT_FLD_CUSTOM: {
-        for (int i=-emf->gc[0]; i<=emf->nx+emf->gc[1]; i++) {
+        for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
             t_vfld ext_B = (*emf->ext_fld.B_custom)(i,emf->dx,emf->ext_fld.B_custom_data);
 
             t_vfld b = emf -> B[i];
@@ -641,9 +641,11 @@ void emf_update_part_fld( t_emf* const emf ) {
             b.z += ext_B.z;
             B_part[i] = b;
         }
-        break; }
+    }
+        break; 
     case EMF_EXT_FLD_NONE:
         break;
     }
 
+    printf("&B_part_buf = %p\n", emf->ext_fld.B_part_buf);
 }

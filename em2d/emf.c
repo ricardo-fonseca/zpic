@@ -718,8 +718,8 @@ void emf_update_part_fld( t_emf* const emf ) {
     {
     case EMF_EXT_FLD_UNIFORM: {
 	    const int nrow_e = emf->nrow;
-        for (int j=-emf->gc[1][0]; j<=emf->nx[1]+emf->gc[1][1]; j++) {
-            for (int i=-emf->gc[0][0]; i<=emf->nx[0]+emf->gc[0][1]; i++) {
+        for (int j=-emf->gc[1][0]; j<emf->nx[1]+emf->gc[1][1]; j++) {
+            for (int i=-emf->gc[0][0]; i<emf->nx[0]+emf->gc[0][1]; i++) {
                 t_vfld e = emf -> E[i+j*nrow_e];
                 e.x += emf->ext_fld.E_0.x;
                 e.y += emf->ext_fld.E_0.y;
@@ -730,13 +730,11 @@ void emf_update_part_fld( t_emf* const emf ) {
         break; }
     case EMF_EXT_FLD_CUSTOM: {
 	    const int nrow_e = emf->nrow;
-        int pos[2];
 	
-        for (int j=-emf->gc[1][0]; j<=emf->nx[1]+emf->gc[1][1]; j++) {
-            pos[1] = j;
-            for (int i=-emf->gc[0][0]; i<=emf->nx[0]+emf->gc[0][1]; i++) {
-                pos[0] = i; 
-                t_vfld ext_E = (*emf->ext_fld.E_custom)(pos,emf->dx,emf->ext_fld.E_custom_data);
+        for (int j=-emf->gc[1][0]; j<emf->nx[1]+emf->gc[1][1]; j++) {
+            for (int i=-emf->gc[0][0]; i<emf->nx[0]+emf->gc[0][1]; i++) {
+                t_vfld ext_E = (*emf->ext_fld.E_custom)
+                    (i,emf->dx[0],j,emf->dx[1],emf->ext_fld.E_custom_data);
 
                 t_vfld e = emf -> E[i+j*nrow_e];
                 e.x += ext_E.x;
@@ -757,8 +755,8 @@ void emf_update_part_fld( t_emf* const emf ) {
     {
     case EMF_EXT_FLD_UNIFORM: {
 	    const int nrow_b = emf->nrow;
-        for (int j=-emf->gc[1][0]; j<=emf->nx[1]+emf->gc[1][1]; j++) {
-            for (int i=-emf->gc[0][0]; i<=emf->nx[0]+emf->gc[0][1]; i++) {
+        for (int j=-emf->gc[1][0]; j<emf->nx[1]+emf->gc[1][1]; j++) {
+            for (int i=-emf->gc[0][0]; i<emf->nx[0]+emf->gc[0][1]; i++) {
                 t_vfld b = emf -> B[i+j*nrow_b];
                 b.x += emf->ext_fld.B_0.x;
                 b.y += emf->ext_fld.B_0.y;
@@ -769,13 +767,11 @@ void emf_update_part_fld( t_emf* const emf ) {
         break; }
     case EMF_EXT_FLD_CUSTOM: {
 	    const int nrow_b = emf->nrow;
-        int pos[2];
 	
-        for (int j=-emf->gc[1][0]; j<=emf->nx[1]+emf->gc[1][1]; j++) {
-            pos[1] = j;
-            for (int i=-emf->gc[0][0]; i<=emf->nx[0]+emf->gc[0][1]; i++) {
-                pos[0] = i; 
-                t_vfld ext_B = (*emf->ext_fld.B_custom)(pos,emf->dx,emf->ext_fld.B_custom_data);
+        for (int j=-emf->gc[1][0]; j<emf->nx[1]+emf->gc[1][1]; j++) {
+            for (int i=-emf->gc[0][0]; i<emf->nx[0]+emf->gc[0][1]; i++) {
+                t_vfld ext_B = (*emf->ext_fld.B_custom)
+                    (i,emf->dx[0],j,emf->dx[1],emf->ext_fld.B_custom_data);
 
                 t_vfld b = emf -> B[i+j*nrow_b];
                 b.x += ext_B.x;
