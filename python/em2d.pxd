@@ -91,14 +91,31 @@ cdef extern from "../em2d/particles.h":
 #
 cdef extern from "../em2d/emf.h":
 
+	cdef enum emf_ext_fld:
+		EMF_EXT_FLD_NONE, EMF_EXT_FLD_UNIFORM, EMF_EXT_FLD_CUSTOM
+
+	ctypedef struct t_emf_ext_fld:
+		emf_ext_fld E_type
+		emf_ext_fld B_type
+		t_vfld E_0
+		t_vfld B_0
+		t_vfld (*E_custom)(int, float, int, float, void*)
+		t_vfld (*B_custom)(int, float, int, float, void*)
+		void *E_custom_data
+		void *B_custom_data
+		t_vfld *E_part_buf
+		t_vfld *B_part_buf
+	
 	cdef enum emf_diag:
-		EFLD, BFLD
+		EFLD, BFLD, EPART, BPART
 
 	ctypedef struct t_emf:
 		t_vfld *E
 		t_vfld *B
 		t_vfld *E_buf
 		t_vfld *B_buf
+		t_vfld *E_part
+		t_vfld *B_part
 		int nx[2]
 		int nrow
 		int gc[2][2]
@@ -108,6 +125,7 @@ cdef extern from "../em2d/emf.h":
 		int iter
 		int moving_window
 		int n_move
+		t_emf_ext_fld ext_fld
 
 	cdef enum emf_laser_type:
 		PLANE, GAUSSIAN
@@ -128,6 +146,7 @@ cdef extern from "../em2d/emf.h":
 
 	void emf_report( const t_emf *emf, const char field, const char fc )
 	void emf_get_energy( const t_emf *emf, double energy[] )
+	void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld )
 
 #########################################################################################
 # Current

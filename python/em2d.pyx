@@ -28,7 +28,7 @@ cdef class Density:
 						'custom':CUSTOM}
 
 	def __cinit__( self, *, str type = 'uniform', float start = 0.0, float end = 0.0,
-		           float n = 1.0, custom_x = None, custom_y = None ):
+				   float n = 1.0, custom_x = None, custom_y = None ):
 
 		# Allocates the structure and initializes all elements to 0
 		self._thisptr = <t_density *> calloc(1, sizeof(t_density))
@@ -142,7 +142,7 @@ cdef class Species:
 			_nx = np.array( pha_nx, dtype = np.int32)
 			_range = np.array( pha_range, dtype = np.float32)
 			rep_type = PHASESPACE( self._pha_quants[quants[0]],
-				                   self._pha_quants[quants[1]])
+								   self._pha_quants[quants[1]])
 			spec_report( self._thisptr, rep_type, _nx, _range )
 		else:
 			# Other diagnostic
@@ -159,7 +159,7 @@ cdef class Species:
 
 	def charge(self):
 		charge = np.zeros( shape = (self._thisptr.nx[1]+1,self._thisptr.nx[0]+1),
-		                   dtype = np.float32 )
+						   dtype = np.float32 )
 		cdef float [:,:] buf = charge
 		spec_deposit_charge( self._thisptr, &buf[0,0] )
 
@@ -171,7 +171,7 @@ cdef class Species:
 		cdef int _nx[2]
 		cdef float _range[2][2]
 		cdef int rep_type = PHASESPACE( self._pha_quants[quants[0]],
-				                        self._pha_quants[quants[1]])
+										self._pha_quants[quants[1]])
 
 		_nx = np.array( pha_nx, dtype = np.int32)
 		_range = np.array( pha_range, dtype = np.float32)
@@ -188,13 +188,141 @@ def phasespace( int a, int b ):
 	"""Returns the type of the requested phasespace"""
 	return PHASESPACE(a,b)
 
+cdef t_vfld custom_ext_E( int ix, float dx, int iy, float dy, void *f ):
+	cdef ExternalField ext = <object> f
+	val = ext.custom_func_E(ix,dx,iy,dy)
+	cdef t_vfld e
+	e.x = val[0]
+	e.y = val[1]
+	e.z = val[2]
+	return e
+
+cdef t_vfld custom_ext_B( int ix, float dx, int iy, float dy, void *f ):
+	cdef ExternalField ext = <object> f
+	val = ext.custom_func_B(ix,dx,iy,dy)
+	cdef t_vfld b
+	b.x = val[0]
+	b.y = val[1]
+	b.z = val[2]
+	return b
+
+cdef class ExternalField:
+	"""Extension type to wrap t_emf_ext_fld objects"""
+	cdef t_emf_ext_fld *_thisptr
+
+	cdef object custom_func_E
+	cdef object custom_func_B
+
+	_ext_types = {'none':EMF_EXT_FLD_NONE, 'uniform':EMF_EXT_FLD_UNIFORM, 'custom':EMF_EXT_FLD_CUSTOM}
+
+	def __cinit__( self, *, str E_type = 'none', str B_type = 'none', 
+				list E_0 = [0.,0.,0.], list B_0 = [0.,0.,0.],
+				E_custom = None, B_custom = None ):
+
+		# Allocates the structure and initializes all elements to 0
+		self._thisptr = <t_emf_ext_fld *> calloc(1, sizeof(t_emf_ext_fld))
+
+		self._thisptr.E_type = <emf_ext_fld> self._ext_types[E_type]
+		self._thisptr.B_type = <emf_ext_fld> self._ext_types[B_type]
+
+		buf = np.array( E_0, dtype=np.float32)
+		self._thisptr.E_0.x = buf[0]
+		self._thisptr.E_0.y = buf[1]
+		self._thisptr.E_0.z = buf[2]
+
+		buf = np.array( B_0, dtype=np.float32)
+		self._thisptr.B_0.x = buf[0]
+		self._thisptr.B_0.y = buf[1]
+		self._thisptr.B_0.z = buf[2]
+
+		if ( E_custom ):
+			self.custom_func_E = E_custom
+			self._thisptr.E_custom = custom_ext_E
+			self._thisptr.E_custom_data = <void *> self
+		if ( B_custom ):
+			self.custom_func_B = B_custom
+			self._thisptr.B_custom = custom_ext_B
+			self._thisptr.B_custom_data = <void *> self
+
+
+	def __dealloc__(self):
+		free( self._thisptr )
+
+	def copy(self):
+		new = ExternalField()
+		new.E_type  = self.E_type
+		new.B_type  = self.B_type
+		new.E_0	    = self.E_0
+		new.B_0	    = self.B_0
+		new.custom_func_E = self.custom_func_E
+		new.custom_func_B = self.custom_func_B
+		new._thisptr.E_custom = self._thisptr.E_custom
+		new._thisptr.B_custom = self._thisptr.B_custom
+		new._thisptr.E_custom_data = self._thisptr.E_custom_data
+		new._thisptr.B_custom_data = self._thisptr.B_custom_data
+
+		return new
+
+	@property
+	def E_type(self):
+		return self._thisptr.E_type
+
+	@E_type.setter
+	def E_type(self,value):
+		self._thisptr.E_type = value
+
+	@property
+	def B_type(self):
+		return self._thisptr.B_type
+
+	@B_type.setter
+	def B_type(self,value):
+		self._thisptr.B_type = value
+
+	@property
+	def E_0(self):
+		return self._thisptr.E_0
+
+	@E_0.setter
+	def E_0(self,value):
+		self._thisptr.E_0 = value
+
+	@property
+	def B_0(self):
+		return self._thisptr.E_0
+
+	@B_0.setter
+	def B_0(self,value):
+		self._thisptr.E_0 = value
+
+	@property
+	def E_custom(self):
+		return self.custom_func_E
+
+	@E_custom.setter
+	def E_custom(self,value):
+		self.custom_func_E = value
+		self._thisptr.E_custom = custom_ext_E
+		self._thisptr.E_custom_data = <void *> self
+
+	@property
+	def B_custom(self):
+		return self.custom_func_B
+
+	@B_custom.setter
+	def B_custom(self,value):
+		self.custom_func_B = value
+		self._thisptr.B_custom = custom_ext_B
+		self._thisptr.B_custom_data = <void *> self
+
+
 cdef class EMF:
 	"""Extension type to wrap t_emf objects"""
 
 	cdef t_emf* _thisptr
 
 	# Diagnostic types
-	_diag_types = { 'E' : EFLD,	'B' : BFLD }
+	_diag_types = { 'E' : EFLD,	'B' : BFLD, 'Ep' : EPART, 'Bp': BPART }
 
 	cdef associate( self, t_emf* ptr ):
 		self._thisptr = ptr
@@ -207,6 +335,9 @@ cdef class EMF:
 		cdef double energy[6]
 		emf_get_energy( self._thisptr, energy )
 		return np.array( energy, dtype = np.float64 )
+	
+	def set_ext_fld(self, ExternalField ext):
+		emf_set_ext_fld( self._thisptr, ext._thisptr )
 
 	@property
 	def nx(self):
@@ -227,7 +358,7 @@ cdef class EMF:
 		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
 		tmp = np.asarray( <float [:ny,:nx,:3]> buf )
 		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
-		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 0]
+					self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 0]
 
 	@property
 	def Ey( self ):
@@ -236,7 +367,7 @@ cdef class EMF:
 		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
 		tmp = np.asarray( <float [:ny,:nx,:3]> buf )
 		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
-		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 1]
+					self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 1]
 
 	@property
 	def Ez( self ):
@@ -245,7 +376,7 @@ cdef class EMF:
 		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
 		tmp = np.asarray( <float [:ny,:nx,:3]> buf )
 		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
-		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 2]
+					self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 2]
 
 	@property
 	def Bx( self ):
@@ -254,7 +385,7 @@ cdef class EMF:
 		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
 		tmp = np.asarray( <float [:ny,:nx,:3]> buf )
 		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
-		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 0]
+					self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 0]
 
 	@property
 	def By( self ):
@@ -263,7 +394,7 @@ cdef class EMF:
 		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
 		tmp = np.asarray( <float [:ny,:nx,:3]> buf )
 		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
-		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 1]
+					self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 1]
 
 	@property
 	def Bz( self ):
@@ -272,7 +403,86 @@ cdef class EMF:
 		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
 		tmp = np.asarray( <float [:ny,:nx,:3]> buf )
 		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
-		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 2]
+					self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 2]
+
+	@property
+	def Ex_part( self ):
+		cdef float *buf
+		if (self._thisptr.ext_fld.E_part_buf == NULL):
+			buf = <float *> self._thisptr.E_buf
+		else:
+			buf = <float *> self._thisptr.ext_fld.E_part_buf
+		cdef int nx = self._thisptr.gc[0][0] + self._thisptr.nx[0] + self._thisptr.gc[0][1]
+		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
+		tmp = np.asarray( <float [:ny,:nx,:3]> buf )
+		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
+					self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 0]
+
+	@property
+	def Ey_part( self ):
+		cdef float *buf
+		if (self._thisptr.ext_fld.E_part_buf == NULL):
+			buf = <float *> self._thisptr.E_buf
+		else:
+			buf = <float *> self._thisptr.ext_fld.E_part_buf
+		cdef int nx = self._thisptr.gc[0][0] + self._thisptr.nx[0] + self._thisptr.gc[0][1]
+		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
+		tmp = np.asarray( <float [:ny,:nx,:3]> buf )
+		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
+					self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 1]
+
+	@property
+	def Ez_part( self ):
+		cdef float *buf
+		if (self._thisptr.ext_fld.E_part_buf == NULL):
+			buf = <float *> self._thisptr.E_buf
+		else:
+			buf = <float *> self._thisptr.ext_fld.E_part_buf
+		cdef int nx = self._thisptr.gc[0][0] + self._thisptr.nx[0] + self._thisptr.gc[0][1]
+		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
+		tmp = np.asarray( <float [:ny,:nx,:3]> buf )
+		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
+					self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 2]
+
+	@property
+	def Bx_part( self ):
+		cdef float *buf
+		if (self._thisptr.ext_fld.B_part_buf == NULL):
+			buf = <float *> self._thisptr.B_buf
+		else:
+			buf = <float *> self._thisptr.ext_fld.B_part_buf
+		cdef int nx = self._thisptr.gc[0][0] + self._thisptr.nx[0] + self._thisptr.gc[0][1]
+		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
+		tmp = np.asarray( <float [:ny,:nx,:3]> buf )
+		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
+					self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 0]
+
+	@property
+	def By_part( self ):
+		cdef float *buf
+		if (self._thisptr.ext_fld.B_part_buf == NULL):
+			buf = <float *> self._thisptr.B_buf
+		else:
+			buf = <float *> self._thisptr.ext_fld.B_part_buf
+		cdef int nx = self._thisptr.gc[0][0] + self._thisptr.nx[0] + self._thisptr.gc[0][1]
+		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
+		tmp = np.asarray( <float [:ny,:nx,:3]> buf )
+		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
+					self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 1]
+
+	@property
+	def Bz_part( self ):
+		cdef float *buf
+		if (self._thisptr.ext_fld.B_part_buf == NULL):
+			buf = <float *> self._thisptr.B_buf
+		else:
+			buf = <float *> self._thisptr.ext_fld.B_part_buf
+		cdef int nx = self._thisptr.gc[0][0] + self._thisptr.nx[0] + self._thisptr.gc[0][1]
+		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
+		tmp = np.asarray( <float [:ny,:nx,:3]> buf )
+		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
+					self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 2]
+
 
 cdef class Laser:
 	"""Extension type to wrap t_emf_laser objects"""
@@ -283,9 +493,9 @@ cdef class Laser:
 	_laser_types = {'plane':PLANE,'gaussian':GAUSSIAN }
 
 	def __cinit__( self, *, type = 'plane', float start = 0.0, float fwhm = 0.0,
-		           float rise = 0.0, float flat = 0.0, float fall = 0.0,
-	               float a0 = 0.0, float omega0 = 0.0, float polarization = 0.0,
-	               float W0 = 0.0, float focus = 0.0, float axis = 0.0 ):
+				   float rise = 0.0, float flat = 0.0, float fall = 0.0,
+				   float a0 = 0.0, float omega0 = 0.0, float polarization = 0.0,
+				   float W0 = 0.0, float focus = 0.0, float axis = 0.0 ):
 		self._thisptr = <t_emf_laser *> calloc(1, sizeof(t_emf_laser))
 
 		self._thisptr.type = self._laser_types[type]
@@ -413,7 +623,7 @@ cdef class Current:
 		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
 		tmp = np.asarray( <float [:ny,:nx,:3]> buf )
 		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
-		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 0]
+					self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 0]
 
 	@property
 	def Jy( self ):
@@ -422,7 +632,7 @@ cdef class Current:
 		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
 		tmp = np.asarray( <float [:ny,:nx,:3]> buf )
 		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
-		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 1]
+					self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 1]
 
 	@property
 	def Jz( self ):
@@ -431,7 +641,7 @@ cdef class Current:
 		cdef int ny = self._thisptr.gc[1][0] + self._thisptr.nx[1] + self._thisptr.gc[1][1]
 		tmp = np.asarray( <float [:ny,:nx,:3]> buf )
 		return tmp[ self._thisptr.gc[1][0] : self._thisptr.gc[1][0] + self._thisptr.nx[1], \
-		            self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 2]
+					self._thisptr.gc[0][0] : self._thisptr.gc[1][0] + self._thisptr.nx[0], 2]
 
 
 cdef class Smooth:
@@ -439,13 +649,13 @@ cdef class Smooth:
 
 	cdef t_smooth* _thisptr
 
-    # Filter types
+	# Filter types
 	_filter_types = {'none'        : NONE,
-                     'binomial'    : BINOMIAL,
-                     'compensated' : COMPENSATED}
+					 'binomial'    : BINOMIAL,
+					 'compensated' : COMPENSATED}
 
 	def __cinit__( self, *, str xtype = 'none', str ytype = 'none',
-		           int xlevel = 0, int ylevel = 0 ):
+				   int xlevel = 0, int ylevel = 0 ):
 
 		self._thisptr = <t_smooth *> calloc(1, sizeof(t_smooth))
 
@@ -489,7 +699,7 @@ cdef class Simulation:
 	cdef object report
 
 	def __cinit__( self, list nx, list box, float dt, *, species = None,
-	               report = None ):
+				   report = None ):
 
 		# Allocate the simulation object
 		self._thisptr = <t_simulation *> calloc(1, sizeof(t_simulation))

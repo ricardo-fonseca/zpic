@@ -15,7 +15,32 @@
 
 #include "current.h"
 
-enum emf_diag { EFLD, BFLD };
+enum emf_ext_fld { EMF_EXT_FLD_NONE, EMF_EXT_FLD_UNIFORM, EMF_EXT_FLD_CUSTOM };
+
+typedef struct {
+	// Type of external field
+    enum emf_ext_fld E_type;
+    enum emf_ext_fld B_type;
+	
+    // Uniform external fields
+    t_vfld E_0;
+	t_vfld B_0;
+
+    // Pointer to custom external E-field function
+    t_vfld (*E_custom)(int, float, int, float, void*); 
+    t_vfld (*B_custom)(int, float, int, float, void*); 
+
+    // Pointer to additional data to be passed to the 
+    // E_custom and B_custom functions
+	void *E_custom_data;
+	void *B_custom_data;
+
+	// Fields seen by particules
+    t_vfld *E_part_buf;
+	t_vfld *B_part_buf;
+} t_emf_ext_fld;
+
+enum emf_diag { EFLD, BFLD, EPART, BPART };
 
 typedef struct {
 	
@@ -24,7 +49,14 @@ typedef struct {
 	
 	t_vfld *E_buf;
 	t_vfld *B_buf;
-	
+
+	// Fields seen by particles
+	// When using external fields these will be a combination of the simulation
+	// fields and the externally imposed ones. When external fields are off
+	// these just point to E and B.
+	t_vfld *E_part;
+	t_vfld *B_part;
+
 	// Simulation box info
 	int nx[2];
 	int nrow;
@@ -41,7 +73,10 @@ typedef struct {
 	// Moving window
 	int moving_window;
 	int n_move;
-	
+
+	// External fields
+	t_emf_ext_fld ext_fld;
+
 } t_emf;
 
 enum emf_laser_type{ PLANE, GAUSSIAN };
@@ -72,10 +107,12 @@ void emf_delete( t_emf *emf );
 void emf_report( const t_emf *emf, const char field, const char fc );
 
 void emf_add_laser( t_emf* const emf, t_emf_laser* laser );
+void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld );
 
 void emf_advance( t_emf *emf, const t_current *current );
 
 void emf_move_window( t_emf *emf );
+void emf_update_part_fld( t_emf *emf );
 
 void emf_update_gc( t_emf *emf );
 

@@ -926,7 +926,7 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 		uz = spec -> part[i].uz;
 
 		// interpolate fields
-		interpolate_fld( emf -> E, emf -> B, emf -> nrow, &spec -> part[i], &Ep, &Bp );
+		interpolate_fld( emf -> E_part, emf -> B_part, emf -> nrow, &spec -> part[i], &Ep, &Bp );
 		
 		// advance u using Boris scheme
 		Ep.x *= tem;
