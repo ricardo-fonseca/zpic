@@ -761,6 +761,9 @@ cdef class Simulation:
 	def set_smooth(self, Smooth smooth):
 		sim_set_smooth( self._thisptr, smooth._thisptr )
 
+	def add_laser(self, Laser laser):
+		sim_add_laser( self._thisptr, laser._thisptr )
+
 	def iter( self ):
 		sim_iter( self._thisptr )
 		self.n = self.n+1
