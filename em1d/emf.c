@@ -647,5 +647,62 @@ void emf_update_part_fld( t_emf* const emf ) {
         break;
     }
 
-    printf("&B_part_buf = %p\n", emf->ext_fld.B_part_buf);
 }
+
+/**
+ * Initialize EMF field values
+ * @param emf       EM field object
+ * @param init_fld  Initial field parameters
+ */
+void emf_init_fld( t_emf* const emf, t_emf_init_fld* init_fld )
+{
+    if ( emf -> iter != 0 ) {
+        fprintf(stderr, "emf_init_fld should only be called at initialization, aborting...\n" );
+        exit(-1);
+    }
+
+    t_vfld* const restrict E = emf->E;
+    t_vfld* const restrict B = emf->B;
+
+    switch ( init_fld -> E_type )
+    {
+    case EMF_INIT_FLD_NONE:
+        break;
+
+    case EMF_INIT_FLD_UNIFORM:
+        for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
+            E[ i ] = init_fld -> E_0;
+        }
+        break;
+
+    case EMF_INIT_FLD_CUSTOM:
+        for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
+            t_vfld init_E = (init_fld->E_custom)
+                (i,emf->dx, init_fld->E_custom_data);
+            E[ i ] = init_E;
+        }
+        break;
+    }    
+
+    switch ( init_fld -> B_type )
+    {
+    case EMF_INIT_FLD_NONE:
+        break;
+
+    case EMF_INIT_FLD_UNIFORM:
+        for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
+            B[ i ] = init_fld -> B_0;
+        }
+        break;
+
+    case EMF_INIT_FLD_CUSTOM:
+        for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
+            t_vfld init_B = (init_fld->B_custom)
+                (i,emf->dx, init_fld->B_custom_data);
+            B[ i ] = init_B;
+        }
+        break;
+    }    
+
+}
+

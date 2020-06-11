@@ -183,7 +183,11 @@ void div_corr_x( t_emf *emf )
 	}
 }
 
-
+/**
+ * Adds a laser field to the existing EM fields
+ * @param emf   EM fields object
+ * @param laser Laser object
+ */
 void emf_add_laser( t_emf* const emf,  t_emf_laser*  laser )
 {
 
@@ -784,5 +788,71 @@ void emf_update_part_fld( t_emf* const emf ) {
     case EMF_EXT_FLD_NONE:
         break;
     }
+
+}
+
+/**
+ * Initialize EMF field values
+ * @param emf       EM field object
+ * @param init_fld  Initial field parameters
+ */
+void emf_init_fld( t_emf* const emf, t_emf_init_fld* init_fld )
+{
+    if ( emf -> iter != 0 ) {
+        fprintf(stderr, "emf_init_fld should only be called at initialization, aborting...\n" );
+        exit(-1);
+    }
+
+    t_vfld* const restrict E = emf->E;
+    t_vfld* const restrict B = emf->B;
+    const int stride = emf->nrow;
+
+    switch ( init_fld -> E_type )
+    {
+    case EMF_INIT_FLD_NONE:
+        break;
+
+    case EMF_INIT_FLD_UNIFORM:
+        for (int j=-emf->gc[1][0]; j<emf->nx[1]+emf->gc[1][1]; j++) {
+            for (int i=-emf->gc[0][0]; i<emf->nx[0]+emf->gc[0][1]; i++) {
+                E[ j*stride +  i ] = init_fld -> E_0;
+            }
+        }
+        break;
+
+    case EMF_INIT_FLD_CUSTOM:
+        for (int j=-emf->gc[1][0]; j<emf->nx[1]+emf->gc[1][1]; j++) {
+            for (int i=-emf->gc[0][0]; i<emf->nx[0]+emf->gc[0][1]; i++) {
+                t_vfld init_E = (init_fld->E_custom)
+                    (i,emf->dx[0],j,emf->dx[1], init_fld->E_custom_data);
+                E[ j*stride +  i ] = init_E;
+            }
+        }
+        break;
+    }    
+
+    switch ( init_fld -> B_type )
+    {
+    case EMF_INIT_FLD_NONE:
+        break;
+
+    case EMF_INIT_FLD_UNIFORM:
+        for (int j=-emf->gc[1][0]; j<emf->nx[1]+emf->gc[1][1]; j++) {
+            for (int i=-emf->gc[0][0]; i<emf->nx[0]+emf->gc[0][1]; i++) {
+                B[ j*stride +  i ] = init_fld -> B_0;
+            }
+        }
+        break;
+
+    case EMF_INIT_FLD_CUSTOM:
+        for (int j=-emf->gc[1][0]; j<emf->nx[1]+emf->gc[1][1]; j++) {
+            for (int i=-emf->gc[0][0]; i<emf->nx[0]+emf->gc[0][1]; i++) {
+                t_vfld init_B = (init_fld->B_custom)
+                    (i,emf->dx[0],j,emf->dx[1], init_fld->B_custom_data);
+                B[ j*stride +  i ] = init_B;
+            }
+        }
+        break;
+    }    
 
 }
