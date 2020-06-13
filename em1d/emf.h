@@ -16,12 +16,12 @@
 #include "current.h"
 
 
-enum emf_ext_fld { EMF_EXT_FLD_NONE, EMF_EXT_FLD_UNIFORM, EMF_EXT_FLD_CUSTOM };
+enum emf_fld_type { EMF_FLD_TYPE_NONE, EMF_FLD_TYPE_UNIFORM, EMF_FLD_TYPE_CUSTOM };
 
 typedef struct {
 	// Type of external field
-    enum emf_ext_fld E_type;
-    enum emf_ext_fld B_type;
+    enum emf_fld_type E_type;
+    enum emf_fld_type B_type;
 	
     // Uniform external fields
     t_vfld E_0;
@@ -45,8 +45,8 @@ enum emf_init_fld { EMF_INIT_FLD_NONE, EMF_INIT_FLD_UNIFORM, EMF_INIT_FLD_CUSTOM
 
 typedef struct {
 	// Type of external field
-    enum emf_init_fld E_type;
-    enum emf_init_fld B_type;
+    enum emf_fld_type E_type;
+    enum emf_fld_type B_type;
 	
     // Uniform external fields
     t_vfld E_0;

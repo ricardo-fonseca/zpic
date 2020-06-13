@@ -228,7 +228,7 @@ cdef class ExternalField:
 	cdef object custom_func_E
 	cdef object custom_func_B
 
-	_ext_types = {'none':EMF_EXT_FLD_NONE, 'uniform':EMF_EXT_FLD_UNIFORM, 'custom':EMF_EXT_FLD_CUSTOM}
+	_ext_types = {'none':EMF_FLD_TYPE_NONE, 'uniform':EMF_FLD_TYPE_UNIFORM, 'custom':EMF_FLD_TYPE_CUSTOM}
 
 	def __cinit__( self, *, str E_type = 'none', str B_type = 'none', 
 				list E_0 = [0.,0.,0.], list B_0 = [0.,0.,0.],
@@ -237,8 +237,8 @@ cdef class ExternalField:
 		# Allocates the structure and initializes all elements to 0
 		self._thisptr = <t_emf_ext_fld *> calloc(1, sizeof(t_emf_ext_fld))
 
-		self._thisptr.E_type = <emf_ext_fld> self._ext_types[E_type]
-		self._thisptr.B_type = <emf_ext_fld> self._ext_types[B_type]
+		self._thisptr.E_type = <emf_fld_type> self._ext_types[E_type]
+		self._thisptr.B_type = <emf_fld_type> self._ext_types[B_type]
 
 		buf = np.array( E_0, dtype=np.float32)
 		self._thisptr.E_0.x = buf[0]
@@ -331,6 +331,134 @@ cdef class ExternalField:
 		self._thisptr.B_custom_data = <void *> self
 
 
+cdef t_vfld custom_init_E( int ix, float dx, void *f ):
+	cdef InitialField init = <object> f
+	val = init.custom_func_E(ix,dx)
+	cdef t_vfld e
+	e.x = val[0]
+	e.y = val[1]
+	e.z = val[2]
+	return e
+
+cdef t_vfld custom_init_B( int ix, float dx, void *f ):
+	cdef InitialField init = <object> f
+	val = init.custom_func_B(ix,dx)
+	cdef t_vfld b
+	b.x = val[0]
+	b.y = val[1]
+	b.z = val[2]
+	return b
+
+
+cdef class InitialField:
+	"""Extension type to wrap t_emf_init_fld objects"""
+	cdef t_emf_init_fld *_thisptr
+
+	cdef object custom_func_E
+	cdef object custom_func_B
+
+	_init_types = {'none':EMF_FLD_TYPE_NONE, 'uniform':EMF_FLD_TYPE_UNIFORM, 'custom':EMF_FLD_TYPE_CUSTOM}
+
+	def __cinit__( self, *, str E_type = 'none', str B_type = 'none', 
+				list E_0 = [0.,0.,0.], list B_0 = [0.,0.,0.],
+				E_custom = None, B_custom = None ):
+
+		# Allocates the structure and initializes all elements to 0
+		self._thisptr = <t_emf_init_fld *> calloc(1, sizeof(t_emf_init_fld))
+
+		self._thisptr.E_type = <emf_fld_type> self._init_types[E_type]
+		self._thisptr.B_type = <emf_fld_type> self._init_types[B_type]
+
+		buf = np.array( E_0, dtype=np.float32)
+		self._thisptr.E_0.x = buf[0]
+		self._thisptr.E_0.y = buf[1]
+		self._thisptr.E_0.z = buf[2]
+
+		buf = np.array( B_0, dtype=np.float32)
+		self._thisptr.B_0.x = buf[0]
+		self._thisptr.B_0.y = buf[1]
+		self._thisptr.B_0.z = buf[2]
+
+		if ( E_custom ):
+			self.custom_func_E = E_custom
+			self._thisptr.E_custom = custom_init_E
+			self._thisptr.E_custom_data = <void *> self
+		if ( B_custom ):
+			self.custom_func_B = B_custom
+			self._thisptr.B_custom = custom_init_B
+			self._thisptr.B_custom_data = <void *> self
+
+
+	def __dealloc__(self):
+		free( self._thisptr )
+
+	def copy(self):
+		new = InitialField()
+		new.E_type  = self.E_type
+		new.B_type  = self.B_type
+		new.E_0	    = self.E_0
+		new.B_0	    = self.B_0
+		new.custom_func_E = self.custom_func_E
+		new.custom_func_B = self.custom_func_B
+		new._thisptr.E_custom = self._thisptr.E_custom
+		new._thisptr.B_custom = self._thisptr.B_custom
+		new._thisptr.E_custom_data = self._thisptr.E_custom_data
+		new._thisptr.B_custom_data = self._thisptr.B_custom_data
+
+		return new
+
+	@property
+	def E_type(self):
+		return self._thisptr.E_type
+
+	@E_type.setter
+	def E_type(self,value):
+		self._thisptr.E_type = value
+
+	@property
+	def B_type(self):
+		return self._thisptr.B_type
+
+	@B_type.setter
+	def B_type(self,value):
+		self._thisptr.B_type = value
+
+	@property
+	def E_0(self):
+		return self._thisptr.E_0
+
+	@E_0.setter
+	def E_0(self,value):
+		self._thisptr.E_0 = value
+
+	@property
+	def B_0(self):
+		return self._thisptr.E_0
+
+	@B_0.setter
+	def B_0(self,value):
+		self._thisptr.E_0 = value
+
+	@property
+	def E_custom(self):
+		return self.custom_func_E
+
+	@E_custom.setter
+	def E_custom(self,value):
+		self.custom_func_E = value
+		self._thisptr.E_custom = custom_init_E
+		self._thisptr.E_custom_data = <void *> self
+
+	@property
+	def B_custom(self):
+		return self.custom_func_B
+
+	@B_custom.setter
+	def B_custom(self,value):
+		self.custom_func_B = value
+		self._thisptr.B_custom = custom_init_B
+		self._thisptr.B_custom_data = <void *> self
+
 cdef class EMF:
 	"""Extension type to wrap t_emf objects"""
 
@@ -357,7 +485,16 @@ cdef class EMF:
 		return np.array( energy, dtype = np.float64 )
 
 	def set_ext_fld(self, ExternalField ext):
-		emf_set_ext_fld( self._thisptr, ext._thisptr )
+		if (self._thisptr.iter == 0):
+			emf_set_ext_fld( self._thisptr, ext._thisptr )
+		else:
+			print("set_ext_fld can only be called before the simulation starts")
+
+	def init_fld(self, InitialField init):
+		if (self._thisptr.iter == 0):
+			emf_init_fld( self._thisptr, init._thisptr )
+		else:
+			print("init_fld can only be called before the simulation starts")
 
 	@property
 	def bc_type( self ):

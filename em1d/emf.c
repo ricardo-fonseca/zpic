@@ -84,8 +84,8 @@ void emf_new( t_emf *emf, int nx, t_fld box, const float dt )
 	emf -> mur_tmp[1].x = emf -> mur_tmp[1].y = emf -> mur_tmp[1].z = 0;
 
 	// Disable external fields by default
-	emf -> ext_fld.E_type = EMF_EXT_FLD_NONE;
-	emf -> ext_fld.B_type = EMF_EXT_FLD_NONE;
+	emf -> ext_fld.E_type = EMF_FLD_TYPE_NONE;
+	emf -> ext_fld.B_type = EMF_FLD_TYPE_NONE;
 	emf -> E_part = emf->E;
 	emf -> B_part = emf->B;
 }
@@ -98,11 +98,11 @@ void emf_delete( t_emf *emf )
 	emf->E_buf = NULL;
 	emf->B_buf = NULL;
 
-	if ( emf -> ext_fld.E_type > EMF_EXT_FLD_NONE ) {
+	if ( emf -> ext_fld.E_type > EMF_FLD_TYPE_NONE ) {
 		free( emf -> ext_fld.E_part_buf );
 	}
 
-	if ( emf -> ext_fld.B_type > EMF_EXT_FLD_NONE ) {
+	if ( emf -> ext_fld.B_type > EMF_FLD_TYPE_NONE ) {
 		free( emf -> ext_fld.B_part_buf );
 	}
 
@@ -519,17 +519,17 @@ void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
 
 	emf -> ext_fld.E_type = ext_fld -> E_type;
 
-	if ( emf -> ext_fld.E_type == EMF_EXT_FLD_NONE ) {
+	if ( emf -> ext_fld.E_type == EMF_FLD_TYPE_NONE ) {
 		// Particle fields just point to the self-consistent fields
 		emf -> E_part = emf -> E;
 		emf -> ext_fld.E_part_buf = NULL;
 	} else {
 	    switch( emf -> ext_fld.E_type ) {
-	        case( EMF_EXT_FLD_UNIFORM ):
+	        case( EMF_FLD_TYPE_UNIFORM ):
 	        	emf -> ext_fld.E_0 = ext_fld->E_0;
 	        	break;
 
-	        case( EMF_EXT_FLD_CUSTOM ):
+	        case( EMF_FLD_TYPE_CUSTOM ):
 	        	emf -> ext_fld.E_custom = ext_fld->E_custom;
 	        	emf -> ext_fld.E_custom_data = ext_fld->E_custom_data;
 	        	break;
@@ -548,17 +548,17 @@ void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
 
 	emf -> ext_fld.B_type = ext_fld -> B_type;
 
-	if ( emf -> ext_fld.B_type == EMF_EXT_FLD_NONE ) {
+	if ( emf -> ext_fld.B_type == EMF_FLD_TYPE_NONE ) {
 		// Particle fields just point to the self-consistent fields
 		emf -> B_part = emf -> B;
 		emf -> ext_fld.B_part_buf = NULL;
 	} else {
 	    switch( emf -> ext_fld.B_type ) {
-	        case( EMF_EXT_FLD_UNIFORM ):
+	        case( EMF_FLD_TYPE_UNIFORM ):
 	        	emf -> ext_fld.B_0 = ext_fld->B_0;
 	        	break;
 
-	        case( EMF_EXT_FLD_CUSTOM ):
+	        case( EMF_FLD_TYPE_CUSTOM ):
 	        	emf -> ext_fld.B_custom = ext_fld->B_custom;
 	        	emf -> ext_fld.B_custom_data = ext_fld->B_custom_data;
 	        	break;
@@ -591,7 +591,7 @@ void emf_update_part_fld( t_emf* const emf ) {
 
     switch (emf->ext_fld.E_type)
     {
-    case EMF_EXT_FLD_UNIFORM: {
+    case EMF_FLD_TYPE_UNIFORM: {
         for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
             t_vfld e = emf -> E[i];
             e.x += emf->ext_fld.E_0.x;
@@ -600,7 +600,7 @@ void emf_update_part_fld( t_emf* const emf ) {
             E_part[i] = e;
         }
         break; }
-    case EMF_EXT_FLD_CUSTOM: {
+    case EMF_FLD_TYPE_CUSTOM: {
         for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
             t_vfld ext_E = (*emf->ext_fld.E_custom)(i,emf->dx,emf->ext_fld.E_custom_data);
 
@@ -611,7 +611,7 @@ void emf_update_part_fld( t_emf* const emf ) {
             E_part[i] = e;
         }
         break; }
-    case EMF_EXT_FLD_NONE:
+    case EMF_FLD_TYPE_NONE:
         break;
     }
 
@@ -620,7 +620,7 @@ void emf_update_part_fld( t_emf* const emf ) {
 
     switch (emf->ext_fld.B_type)
     {
-    case EMF_EXT_FLD_UNIFORM: {
+    case EMF_FLD_TYPE_UNIFORM: {
         for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
             t_vfld b = emf -> B[i];
             b.x += emf->ext_fld.B_0.x;
@@ -631,7 +631,7 @@ void emf_update_part_fld( t_emf* const emf ) {
 
     }
         break; 
-    case EMF_EXT_FLD_CUSTOM: {
+    case EMF_FLD_TYPE_CUSTOM: {
         for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
             t_vfld ext_B = (*emf->ext_fld.B_custom)(i,emf->dx,emf->ext_fld.B_custom_data);
 
@@ -643,7 +643,7 @@ void emf_update_part_fld( t_emf* const emf ) {
         }
     }
         break; 
-    case EMF_EXT_FLD_NONE:
+    case EMF_FLD_TYPE_NONE:
         break;
     }
 
@@ -666,16 +666,16 @@ void emf_init_fld( t_emf* const emf, t_emf_init_fld* init_fld )
 
     switch ( init_fld -> E_type )
     {
-    case EMF_INIT_FLD_NONE:
+    case EMF_FLD_TYPE_NONE:
         break;
 
-    case EMF_INIT_FLD_UNIFORM:
+    case EMF_FLD_TYPE_UNIFORM:
         for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
             E[ i ] = init_fld -> E_0;
         }
         break;
 
-    case EMF_INIT_FLD_CUSTOM:
+    case EMF_FLD_TYPE_CUSTOM:
         for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
             t_vfld init_E = (init_fld->E_custom)
                 (i,emf->dx, init_fld->E_custom_data);
@@ -686,16 +686,16 @@ void emf_init_fld( t_emf* const emf, t_emf_init_fld* init_fld )
 
     switch ( init_fld -> B_type )
     {
-    case EMF_INIT_FLD_NONE:
+    case EMF_FLD_TYPE_NONE:
         break;
 
-    case EMF_INIT_FLD_UNIFORM:
+    case EMF_FLD_TYPE_UNIFORM:
         for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
             B[ i ] = init_fld -> B_0;
         }
         break;
 
-    case EMF_INIT_FLD_CUSTOM:
+    case EMF_FLD_TYPE_CUSTOM:
         for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
             t_vfld init_B = (init_fld->B_custom)
                 (i,emf->dx, init_fld->B_custom_data);

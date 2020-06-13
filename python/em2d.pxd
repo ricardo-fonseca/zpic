@@ -91,12 +91,13 @@ cdef extern from "../em2d/particles.h":
 #
 cdef extern from "../em2d/emf.h":
 
-	cdef enum emf_ext_fld:
-		EMF_EXT_FLD_NONE, EMF_EXT_FLD_UNIFORM, EMF_EXT_FLD_CUSTOM
+	cdef enum emf_fld_type:
+		EMF_FLD_TYPE_NONE, EMF_FLD_TYPE_UNIFORM, EMF_FLD_TYPE_CUSTOM
+
 
 	ctypedef struct t_emf_ext_fld:
-		emf_ext_fld E_type
-		emf_ext_fld B_type
+		emf_fld_type E_type
+		emf_fld_type B_type
 		t_vfld E_0
 		t_vfld B_0
 		t_vfld (*E_custom)(int, float, int, float, void*)
@@ -105,7 +106,17 @@ cdef extern from "../em2d/emf.h":
 		void *B_custom_data
 		t_vfld *E_part_buf
 		t_vfld *B_part_buf
-	
+
+	ctypedef struct t_emf_init_fld:
+		emf_fld_type E_type
+		emf_fld_type B_type
+		t_vfld E_0
+		t_vfld B_0
+		t_vfld (*E_custom)(int, float, int, float, void*)
+		t_vfld (*B_custom)(int, float, int, float, void*)
+		void *E_custom_data
+		void *B_custom_data
+
 	cdef enum emf_diag:
 		EFLD, BFLD, EPART, BPART
 
@@ -146,6 +157,7 @@ cdef extern from "../em2d/emf.h":
 
 	void emf_report( const t_emf *emf, const char field, const char fc )
 	void emf_get_energy( const t_emf *emf, double energy[] )
+	void emf_init_fld( t_emf* const emf, t_emf_init_fld* init_fld )
 	void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld )
 
 #########################################################################################
