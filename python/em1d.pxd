@@ -66,7 +66,7 @@ cdef extern from "../em1d/particles.h":
 
 	void spec_new( t_species* spec, char name[], const float m_q, const int ppc,
 				  const float ufl[], const float uth[],
-				  const int nx, float box, const float dt, t_density* density )
+				  const int nx, float box, const float dt, t_density* density, const int n_sort)
 
 	cdef int CHARGE
 	cdef int PHA
@@ -202,5 +202,3 @@ cdef extern from "../em1d/simulation.h":
 	void sim_report_energy( t_simulation* sim )
 
 	void sim_delete( t_simulation* sim )
-
-

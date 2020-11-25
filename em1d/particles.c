@@ -444,7 +444,7 @@ void spec_inject_particles( t_species* spec, const int range[] )
 void spec_new( t_species* spec, char name[], const float m_q, const int ppc,
 
 			  const float *ufl, const float * uth,
-			  const int nx, float box, const float dt, t_density* density )
+			  const int nx, float box, const float dt, t_density* density,const int n_sort  )
 {
 
 	int i, npc;
@@ -510,7 +510,7 @@ void spec_new( t_species* spec, char name[], const float m_q, const int ppc,
     spec_inject_particles( spec, range );
 
     // Set default sorting frequency
-    spec -> n_sort = 16;
+    spec -> n_sort = n_sort;
 
 }
 

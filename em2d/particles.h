@@ -93,12 +93,12 @@ typedef struct {
 	int n_move;
 
 	//sorting period
-	int sort_t;
+	int n_sort;
 } t_species;
 
 void spec_new( t_species* spec, char name[], const t_part_data m_q, const int ppc[],
 			  const t_part_data ufl[], const t_part_data uth[],
-			  const int nx[], t_part_data box[], const float dt, t_density* density,const int tsort );
+			  const int nx[], t_part_data box[], const float dt, t_density* density,const int n_sort );
 
 void spec_move_window( t_species *spec );
 

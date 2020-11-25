@@ -97,7 +97,7 @@ typedef struct {
 void spec_new( t_species* spec, char name[], const float m_q, const int ppc,
 
 			  const float ufl[], const float uth[],
-			  const int nx, float box, const float dt, t_density* density );
+			  const int nx, float box, const float dt, t_density* density,const int n_sort );
 
 void spec_move_window( t_species *spec );
 

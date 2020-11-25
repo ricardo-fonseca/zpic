@@ -413,7 +413,7 @@ void spec_init_density( t_species* spec )
 
 void spec_new( t_species* spec, char name[], const t_part_data m_q, const int ppc[],
 			  const t_part_data *ufl, const t_part_data * uth,
-			  const int nx[], t_part_data box[], const float dt, t_density* density,const int tsort )
+			  const int nx[], t_part_data box[], const float dt, t_density* density,const int n_sort )
 {
 
 	int i, npc;
@@ -481,7 +481,7 @@ void spec_new( t_species* spec, char name[], const t_part_data m_q, const int pp
                             {0, nx[1]-1}};
 
     spec_inject_particles( spec, range );
-		spec->sort_t=tsort;
+		spec->n_sort=n_sort;
 }
 
 void spec_move_window( t_species *spec ){
@@ -1046,7 +1046,10 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 	}
 
 	// Sort species at every spec->sort_t time steps
-	if ( spec->sort_t != 0) if ((! (spec -> iter % spec->sort_t)) ) spec_sort( spec );
+	if ( spec -> n_sort > 0 ) {
+		if ( ! (spec -> iter % spec -> n_sort) ) spec_sort( spec );
+	}
+
 
 
     // Move simulation window if needed
