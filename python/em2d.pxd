@@ -61,10 +61,11 @@ cdef extern from "../em2d/particles.h":
 		int iter
 		int moving_window
 		int n_move
+		int sort_t
 
 	void spec_new( t_species* spec, char name[], const float m_q, const int ppc[],
 				  const float ufl[], const float uth[],
-				  const int nx[], float box[], const float dt, t_density* density )
+				  const int nx[], float box[], const float dt, t_density* density ,const int tsort)
 
 	cdef int CHARGE
 	cdef int PHA
@@ -105,7 +106,7 @@ cdef extern from "../em2d/emf.h":
 		void *B_custom_data
 		t_vfld *E_part_buf
 		t_vfld *B_part_buf
-	
+
 	cdef enum emf_diag:
 		EFLD, BFLD, EPART, BPART
 
@@ -203,5 +204,3 @@ cdef extern from "../em2d/simulation.h":
 	void sim_report_energy( t_simulation* sim )
 
 	void sim_delete( t_simulation* sim )
-
-

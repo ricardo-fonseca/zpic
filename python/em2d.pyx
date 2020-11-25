@@ -110,7 +110,7 @@ cdef class Species:
 	_pha_quants = { 'x1':X1, 'x2':X2, 'u1':U1, 'u2':U2, 'u3':U3 }
 
 	def __cinit__( self, str name, const float m_q, list ppc = [1,1], *,
-				  list ufl = [0.,0.,0.], list uth = [0.,0.,0.], Density density = None):
+				  list ufl = [0.,0.,0.], list uth = [0.,0.,0.], Density density = None,int tsort=16 ):
 
 		self._thisptr = &self._this
 		self._name = name
@@ -118,6 +118,7 @@ cdef class Species:
 		self._this.ppc = np.array(ppc, dtype=np.int32)
 		self._this.ufl = np.array(ufl, dtype=np.float32)
 		self._this.uth = np.array(uth, dtype=np.float32)
+		self._this.sort_t=tsort
 
 		if ( density ):
 			self._density = density.copy()
@@ -129,7 +130,7 @@ cdef class Species:
 		self._thisptr = ptr
 		spec_new( self._thisptr, self._name.encode(), self._this.m_q, self._this.ppc,
 			self._this.ufl, self._this.uth,
-			nx, box, dt, self._density._thisptr )
+			nx, box, dt, self._density._thisptr,self._this.sort_t )
 
 	def report( self, str type, *, list quants = [], list pha_nx = [], list pha_range = [] ):
 		cdef int _nx[2]
@@ -215,7 +216,7 @@ cdef class ExternalField:
 
 	_ext_types = {'none':EMF_EXT_FLD_NONE, 'uniform':EMF_EXT_FLD_UNIFORM, 'custom':EMF_EXT_FLD_CUSTOM}
 
-	def __cinit__( self, *, str E_type = 'none', str B_type = 'none', 
+	def __cinit__( self, *, str E_type = 'none', str B_type = 'none',
 				list E_0 = [0.,0.,0.], list B_0 = [0.,0.,0.],
 				E_custom = None, B_custom = None ):
 
@@ -335,7 +336,7 @@ cdef class EMF:
 		cdef double energy[6]
 		emf_get_energy( self._thisptr, energy )
 		return np.array( energy, dtype = np.float64 )
-	
+
 	def set_ext_fld(self, ExternalField ext):
 		emf_set_ext_fld( self._thisptr, ext._thisptr )
 
@@ -832,8 +833,3 @@ cdef class Simulation:
 	@report.setter
 	def report( self, f ):
 		self.report = f
-
-
-
-
-

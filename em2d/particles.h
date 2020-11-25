@@ -32,7 +32,7 @@ typedef struct {
 	float start, end;		// Position of the plasma start/end, in simulation units
 
     // Custom density profile parameters
-	
+
     // Pointer to custom density function along x
     float (*custom_x)(float, void*);
     // Pointer to additional data to be passed to the custom_x function
@@ -43,7 +43,7 @@ typedef struct {
 	void *custom_data_y;
     // Total number of particles already injected along x
 	unsigned long custom_x_total_part;
-    // Total charge injected (density integral) along x	
+    // Total charge injected (density integral) along x
 	double custom_x_total_q;
 
 } t_density;
@@ -92,11 +92,13 @@ typedef struct {
 	int moving_window;
 	int n_move;
 
+	//sorting period
+	int sort_t;
 } t_species;
 
 void spec_new( t_species* spec, char name[], const t_part_data m_q, const int ppc[],
 			  const t_part_data ufl[], const t_part_data uth[],
-			  const int nx[], t_part_data box[], const float dt, t_density* density );
+			  const int nx[], t_part_data box[], const float dt, t_density* density,const int tsort );
 
 void spec_move_window( t_species *spec );
 
