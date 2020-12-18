@@ -348,15 +348,15 @@ cdef class Simulation:
 
 	@property
 	def dx(self):
-		return self.emf.dx
+		return self.field.dx
 
 	@property
 	def nx(self):
-		return self.emf.nx
+		return self.field.nx
 
 	@property
 	def box(self):
-		return self.emf.box
+		return self.field.box
 
 	@property
 	def report(self):
