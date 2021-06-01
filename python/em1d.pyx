@@ -130,9 +130,11 @@ cdef class Species:
 
 	cdef new( self, t_species* ptr, int nx, float box, float dt ):
 		self._thisptr = ptr
+		cdef int bc_type = self._thisptr.bc_type
 		spec_new( self._thisptr, self._name.encode(), self._this.m_q, self._this.ppc,
 			self._this.ufl, self._this.uth,
 			nx, box, dt, self._density._thisptr )
+		self._thisptr.bc_type = bc_type
 
 	def report( self, str type, *, list quants = [], list pha_nx = [], list pha_range = [] ):
 		cdef int _nx[2]
@@ -196,6 +198,14 @@ cdef class Species:
 			print("(*error*) Invalid value for n_sort, must be >= 0.", file = sys.stderr)
 			return
 		self._thisptr.n_sort = value
+
+	@property
+	def bc_type( self ):
+		return self._thisptr.bc_type
+
+	@bc_type.setter
+	def bc_type( self, value ):
+		self._thisptr.bc_type = self._bc_types[value]
 
 
 
@@ -745,14 +755,14 @@ cdef class Current:
 		cdef float *buf = <float *> self._thisptr.J_buf
 		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
 		tmp = np.asarray( <float [:size, :3]> buf )
-		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
+		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 1 ]
 
 	@property
 	def Jz( self ):
 		cdef float *buf = <float *> self._thisptr.J_buf
 		cdef int size = self._thisptr.gc[0] + self._thisptr.nx + self._thisptr.gc[1]
 		tmp = np.asarray( <float [:size, :3]> buf )
-		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 0 ]
+		return tmp[ self._thisptr.gc[0] : self._thisptr.gc[0] + self._thisptr.nx, 2 ]
 
 
 cdef class Smooth:

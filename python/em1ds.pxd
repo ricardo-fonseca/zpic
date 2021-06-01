@@ -196,15 +196,31 @@ cdef extern from "../em1ds/current.h":
 # EMF
 #
 cdef extern from "../em1ds/emf.h":
-	cdef enum emf_ext_fld:
-		EMF_EXT_FLD_NONE, EMF_EXT_FLD_UNIFORM
+
+	cdef enum emf_fld_type:
+		EMF_FLD_TYPE_NONE, EMF_FLD_TYPE_UNIFORM, EMF_FLD_TYPE_CUSTOM
 
 	ctypedef struct t_emf_ext_fld:
-		t_vfld E0
-		t_vfld B0
-		int type
+		emf_fld_type E_type
+		emf_fld_type B_type
+		t_vfld E_0
+		t_vfld B_0
+		t_vfld (*E_custom)(int, float, void*)
+		t_vfld (*B_custom)(int, float, void*)
+		void *E_custom_data
+		void *B_custom_data
 		t_vfld_grid E_part_buf
 		t_vfld_grid B_part_buf
+
+	ctypedef struct t_emf_init_fld:
+		emf_fld_type E_type
+		emf_fld_type B_type
+		t_vfld E_0
+		t_vfld B_0
+		t_vfld (*E_custom)(int, float, void*)
+		t_vfld (*B_custom)(int, float, void*)
+		void *E_custom_data
+		void *B_custom_data
 
 	cdef enum emf_diag:
 		EFLD, BFLD
@@ -242,7 +258,8 @@ cdef extern from "../em1ds/emf.h":
 
 	void emf_report( const t_emf *emf, const char field, const char fc )
 	void emf_get_energy( const t_emf *emf, double energy[] )
-	int emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld )
+	void emf_init_fld( t_emf* const emf, t_emf_init_fld* init_fld )
+	void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld )
 
 #########################################################################################
 # Simulation
