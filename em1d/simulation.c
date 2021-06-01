@@ -63,7 +63,6 @@ void sim_new( t_simulation* sim, int nx, float box, float dt, float tmax, int nd
 }
 
 void sim_add_laser( t_simulation* sim,  t_emf_laser* laser ){
-
 	emf_add_laser( &sim->emf, laser );
 }
 

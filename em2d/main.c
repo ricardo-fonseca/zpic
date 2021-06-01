@@ -30,9 +30,10 @@ along with the ZPIC Educational code suite. If not, see <http://www.gnu.org/lice
 #include "timer.h"
 
 // Include Simulation parameters here
-//#include "input/weibel.c"
+#include "input/weibel.c"
 //#include "input/lwfa.c"
-#include "input/density.c"
+//#include "input/density.c"
+//#include "input/extfld.c"
 
 int main (int argc, const char * argv[]) {
 

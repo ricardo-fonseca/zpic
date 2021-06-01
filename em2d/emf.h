@@ -15,12 +15,12 @@
 
 #include "current.h"
 
-enum emf_ext_fld { EMF_EXT_FLD_NONE, EMF_EXT_FLD_UNIFORM, EMF_EXT_FLD_CUSTOM };
+enum emf_fld_type { EMF_FLD_TYPE_NONE, EMF_FLD_TYPE_UNIFORM, EMF_FLD_TYPE_CUSTOM };
 
 typedef struct {
 	// Type of external field
-    enum emf_ext_fld E_type;
-    enum emf_ext_fld B_type;
+    enum emf_fld_type E_type;
+    enum emf_fld_type B_type;
 	
     // Uniform external fields
     t_vfld E_0;
@@ -39,6 +39,27 @@ typedef struct {
     t_vfld *E_part_buf;
 	t_vfld *B_part_buf;
 } t_emf_ext_fld;
+
+typedef struct {
+	// Type of external field
+    enum emf_fld_type E_type;
+    enum emf_fld_type B_type;
+	
+    // Uniform external fields
+    t_vfld E_0;
+	t_vfld B_0;
+
+    // Pointer to custom external E-field function
+    t_vfld (*E_custom)(int, float, int, float, void*); 
+    t_vfld (*B_custom)(int, float, int, float, void*); 
+
+    // Pointer to additional data to be passed to the 
+    // E_custom and B_custom functions
+	void *E_custom_data;
+	void *B_custom_data;
+
+} t_emf_init_fld;
+
 
 enum emf_diag { EFLD, BFLD, EPART, BPART };
 
@@ -107,6 +128,7 @@ void emf_delete( t_emf *emf );
 void emf_report( const t_emf *emf, const char field, const char fc );
 
 void emf_add_laser( t_emf* const emf, t_emf_laser* laser );
+void emf_init_fld( t_emf* const emf, t_emf_init_fld* init_fld );
 void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld );
 
 void emf_advance( t_emf *emf, const t_current *current );

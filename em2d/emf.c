@@ -85,8 +85,8 @@ void emf_new( t_emf *emf, int nx[], t_fld box[], const float dt )
 	emf -> n_move = 0;
 
     // Disable external fields by default
-	emf -> ext_fld.E_type = EMF_EXT_FLD_NONE;
-	emf -> ext_fld.B_type = EMF_EXT_FLD_NONE;
+	emf -> ext_fld.E_type = EMF_FLD_TYPE_NONE;
+	emf -> ext_fld.B_type = EMF_FLD_TYPE_NONE;
 	emf -> E_part = emf->E;
 	emf -> B_part = emf->B;
 
@@ -100,11 +100,11 @@ void emf_delete( t_emf *emf )
 	emf->E_buf = NULL;
 	emf->B_buf = NULL;
 
-	if ( emf -> ext_fld.E_type > EMF_EXT_FLD_NONE ) {
+	if ( emf -> ext_fld.E_type > EMF_FLD_TYPE_NONE ) {
 		free( emf -> ext_fld.E_part_buf );
 	}
 
-	if ( emf -> ext_fld.B_type > EMF_EXT_FLD_NONE ) {
+	if ( emf -> ext_fld.B_type > EMF_FLD_TYPE_NONE ) {
 		free( emf -> ext_fld.B_part_buf );
 	}
 
@@ -183,7 +183,11 @@ void div_corr_x( t_emf *emf )
 	}
 }
 
-
+/**
+ * Adds a laser field to the existing EM fields
+ * @param emf   EM fields object
+ * @param laser Laser object
+ */
 void emf_add_laser( t_emf* const emf,  t_emf_laser*  laser )
 {
 
@@ -640,17 +644,17 @@ void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
 
 	emf -> ext_fld.E_type = ext_fld -> E_type;
 
-	if ( emf -> ext_fld.E_type == EMF_EXT_FLD_NONE ) {
+	if ( emf -> ext_fld.E_type == EMF_FLD_TYPE_NONE ) {
 		// Particle fields just point to the self-consistent fields
 		emf -> E_part = emf -> E;
 		emf -> ext_fld.E_part_buf = NULL;
 	} else {
 	    switch( emf -> ext_fld.E_type ) {
-	        case( EMF_EXT_FLD_UNIFORM ):
+	        case( EMF_FLD_TYPE_UNIFORM ):
 	        	emf -> ext_fld.E_0 = ext_fld->E_0;
 	        	break;
 
-	        case( EMF_EXT_FLD_CUSTOM ):
+	        case( EMF_FLD_TYPE_CUSTOM ):
 	        	emf -> ext_fld.E_custom = ext_fld->E_custom;
 	        	emf -> ext_fld.E_custom_data = ext_fld->E_custom_data;
 	        	break;
@@ -671,17 +675,17 @@ void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
 
 	emf -> ext_fld.B_type = ext_fld -> B_type;
 
-	if ( emf -> ext_fld.B_type == EMF_EXT_FLD_NONE ) {
+	if ( emf -> ext_fld.B_type == EMF_FLD_TYPE_NONE ) {
 		// Particle fields just point to the self-consistent fields
 		emf -> B_part = emf -> B;
 		emf -> ext_fld.B_part_buf = NULL;
 	} else {
 	    switch( emf -> ext_fld.B_type ) {
-	        case( EMF_EXT_FLD_UNIFORM ):
+	        case( EMF_FLD_TYPE_UNIFORM ):
 	        	emf -> ext_fld.B_0 = ext_fld->B_0;
 	        	break;
 
-	        case( EMF_EXT_FLD_CUSTOM ):
+	        case( EMF_FLD_TYPE_CUSTOM ):
 	        	emf -> ext_fld.B_custom = ext_fld->B_custom;
 	        	emf -> ext_fld.B_custom_data = ext_fld->B_custom_data;
 	        	break;
@@ -716,7 +720,7 @@ void emf_update_part_fld( t_emf* const emf ) {
 
     switch (emf->ext_fld.E_type)
     {
-    case EMF_EXT_FLD_UNIFORM: {
+    case EMF_FLD_TYPE_UNIFORM: {
 	    const int nrow_e = emf->nrow;
         for (int j=-emf->gc[1][0]; j<emf->nx[1]+emf->gc[1][1]; j++) {
             for (int i=-emf->gc[0][0]; i<emf->nx[0]+emf->gc[0][1]; i++) {
@@ -728,7 +732,7 @@ void emf_update_part_fld( t_emf* const emf ) {
             }
         }
         break; }
-    case EMF_EXT_FLD_CUSTOM: {
+    case EMF_FLD_TYPE_CUSTOM: {
 	    const int nrow_e = emf->nrow;
 	
         for (int j=-emf->gc[1][0]; j<emf->nx[1]+emf->gc[1][1]; j++) {
@@ -744,7 +748,7 @@ void emf_update_part_fld( t_emf* const emf ) {
             }
         }
         break; }
-    case EMF_EXT_FLD_NONE:
+    case EMF_FLD_TYPE_NONE:
         break;
     }
 
@@ -753,7 +757,7 @@ void emf_update_part_fld( t_emf* const emf ) {
 
     switch (emf->ext_fld.B_type)
     {
-    case EMF_EXT_FLD_UNIFORM: {
+    case EMF_FLD_TYPE_UNIFORM: {
 	    const int nrow_b = emf->nrow;
         for (int j=-emf->gc[1][0]; j<emf->nx[1]+emf->gc[1][1]; j++) {
             for (int i=-emf->gc[0][0]; i<emf->nx[0]+emf->gc[0][1]; i++) {
@@ -765,7 +769,7 @@ void emf_update_part_fld( t_emf* const emf ) {
             }
         }
         break; }
-    case EMF_EXT_FLD_CUSTOM: {
+    case EMF_FLD_TYPE_CUSTOM: {
 	    const int nrow_b = emf->nrow;
 	
         for (int j=-emf->gc[1][0]; j<emf->nx[1]+emf->gc[1][1]; j++) {
@@ -781,8 +785,74 @@ void emf_update_part_fld( t_emf* const emf ) {
             }
         }
         break; }
-    case EMF_EXT_FLD_NONE:
+    case EMF_FLD_TYPE_NONE:
         break;
     }
+
+}
+
+/**
+ * Initialize EMF field values
+ * @param emf       EM field object
+ * @param init_fld  Initial field parameters
+ */
+void emf_init_fld( t_emf* const emf, t_emf_init_fld* init_fld )
+{
+    if ( emf -> iter != 0 ) {
+        fprintf(stderr, "emf_init_fld should only be called at initialization, aborting...\n" );
+        exit(-1);
+    }
+
+    t_vfld* const restrict E = emf->E;
+    t_vfld* const restrict B = emf->B;
+    const int stride = emf->nrow;
+
+    switch ( init_fld -> E_type )
+    {
+    case EMF_FLD_TYPE_NONE:
+        break;
+
+    case EMF_FLD_TYPE_UNIFORM:
+        for (int j=-emf->gc[1][0]; j<emf->nx[1]+emf->gc[1][1]; j++) {
+            for (int i=-emf->gc[0][0]; i<emf->nx[0]+emf->gc[0][1]; i++) {
+                E[ j*stride +  i ] = init_fld -> E_0;
+            }
+        }
+        break;
+
+    case EMF_FLD_TYPE_CUSTOM:
+        for (int j=-emf->gc[1][0]; j<emf->nx[1]+emf->gc[1][1]; j++) {
+            for (int i=-emf->gc[0][0]; i<emf->nx[0]+emf->gc[0][1]; i++) {
+                t_vfld init_E = (init_fld->E_custom)
+                    (i,emf->dx[0],j,emf->dx[1], init_fld->E_custom_data);
+                E[ j*stride +  i ] = init_E;
+            }
+        }
+        break;
+    }    
+
+    switch ( init_fld -> B_type )
+    {
+    case EMF_FLD_TYPE_NONE:
+        break;
+
+    case EMF_FLD_TYPE_UNIFORM:
+        for (int j=-emf->gc[1][0]; j<emf->nx[1]+emf->gc[1][1]; j++) {
+            for (int i=-emf->gc[0][0]; i<emf->nx[0]+emf->gc[0][1]; i++) {
+                B[ j*stride +  i ] = init_fld -> B_0;
+            }
+        }
+        break;
+
+    case EMF_FLD_TYPE_CUSTOM:
+        for (int j=-emf->gc[1][0]; j<emf->nx[1]+emf->gc[1][1]; j++) {
+            for (int i=-emf->gc[0][0]; i<emf->nx[0]+emf->gc[0][1]; i++) {
+                t_vfld init_B = (init_fld->B_custom)
+                    (i,emf->dx[0],j,emf->dx[1], init_fld->B_custom_data);
+                B[ j*stride +  i ] = init_B;
+            }
+        }
+        break;
+    }    
 
 }
