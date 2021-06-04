@@ -15,7 +15,7 @@ The directory structure is organized as follows:
 
 ## Docker container
 
-ZPIC is also available as a Docker image that allows you to use ZPIC notebooks straightforwardly. The image is available publicly on [Docker Hub] (https://hub.docker.com/repository/docker/zamb/zpic) under the name `zamb/zpic`.
+ZPIC is also available as a Docker image that allows you to use ZPIC notebooks straightforwardly. The image is available publicly on [Docker Hub](https://hub.docker.com/repository/docker/zamb/zpic) under the name `zamb/zpic`.
 
 ### Launching ZPIC Jupyter notebooks from Docker
 
