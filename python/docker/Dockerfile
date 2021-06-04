@@ -32,9 +32,9 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
 # Remove pyqt and qt pulled in for matplotlib since we're only ever going to
 # use notebook-friendly backends in these images
 RUN conda install --quiet --yes \
-    'ipywidgets=7.4*' \
-    'matplotlib=2.2*' \
-    'cython=0.28*' \
+    'ipywidgets=7.6*' \
+    'matplotlib=3.4*' \
+    'cython=0.29*' \
     'scipy' \
     && \
     conda remove --quiet --yes --force qt pyqt && \
