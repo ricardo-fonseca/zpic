@@ -140,6 +140,10 @@ int spec_np_inj( t_species* spec, const int range[] )
 		}
 		break;
 
+    case EMPTY: // Empty profile
+        np_inj = 0;
+        break;
+
 	default: // Uniform density
 		np_inj = ( range[1] - range[0] + 1 ) * spec -> ppc;
 	}
@@ -322,6 +326,8 @@ void spec_set_x( t_species* spec, const int range[] )
 		// printf("Injected %d particles with custom injection \n", ip - spec -> np );
 		break;
 
+    case EMPTY: // Empty profile
+        break;
 
 	default: // Uniform density
 		for (i = range[0]; i <= range[1]; i++) {

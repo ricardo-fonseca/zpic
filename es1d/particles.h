@@ -22,7 +22,7 @@ typedef struct {
 	float vx;
 } t_part;
 
-enum density_type {UNIFORM, STEP, SLAB, RAMP, CUSTOM};
+enum density_type {UNIFORM, EMPTY, STEP, SLAB, RAMP, CUSTOM};
 
 typedef struct {
 

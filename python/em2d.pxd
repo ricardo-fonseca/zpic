@@ -28,7 +28,7 @@ cdef extern from "../em2d/particles.h":
 		float uz
 
 	cdef enum density_type:
-		UNIFORM, STEP, SLAB, CUSTOM
+		UNIFORM, EMPTY, STEP, SLAB, CUSTOM
 
 	ctypedef struct t_density:
 		float n

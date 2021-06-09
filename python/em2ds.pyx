@@ -10,6 +10,7 @@ cdef class Density:
 	cdef t_density *_thisptr
 
 	_density_types = {'uniform':UNIFORM,
+					  'empty':EMPTY,
 	                  'step':STEP,
 	                  'slab':SLAB}
 

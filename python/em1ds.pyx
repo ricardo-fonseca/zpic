@@ -17,6 +17,7 @@ cdef class Density:
 	cdef object custom_func
 
 	_density_types = {'uniform':UNIFORM,
+					  'empty':EMPTY,
 	                  'step':STEP,
 	                  'slab':SLAB,
 	                  'ramp':RAMP,
