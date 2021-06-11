@@ -104,6 +104,19 @@ cdef class Species:
 			self._this.ufl, self._this.uth,
 			nx, box, dt, self._density._thisptr )
 
+	def add( self, int[:] ix, float[:] x, float[:] u):
+		# insure we have enough room for new particle
+		spec_grow_buffer( self._thisptr, self._thisptr.np + 1 )
+		
+		cdef t_part particle
+		particle.ix = ix[0]
+		particle.iy = ix[1]
+		particle.x = x[0]
+		particle.y = x[1]
+		particle.ux = u[0]
+		particle.uy = u[1]
+		particle.uz = u[2]
+
 	def report( self, str type, *, list quants = [], list pha_nx = [], list pha_range = [] ):
 		cdef int _nx[2]
 		cdef float _range[2][2]

@@ -98,6 +98,8 @@ cdef extern from "../es1d/particles.h":
 				  const float* vfl, const float* vth,
 				  const int nx, float box, const float dt, t_density* density )
 
+	void spec_grow_buffer( t_species* spec, const int size )
+
 	cdef int CHARGE
 	cdef int PHA
 	cdef int PARTICLES

@@ -126,6 +126,19 @@ cdef class Species:
 			# Use default uniform density
 			self._density = Density()
 
+	def add( self, int ix, float x, float vx):
+		# insure we have enough room for new particle
+		spec_grow_buffer( self._thisptr, self._thisptr.np + 1 )
+		
+		cdef t_part particle
+		particle.ix = ix
+		particle.x = x
+		particle.vx = vx
+
+		self._thisptr.part[ self._thisptr.np ] = particle
+		self._thisptr.np = self._thisptr.np + 1
+
+
 	cdef new( self, t_species* ptr, int nx, float box, float dt ):
 		self._thisptr = ptr
 		spec_new( self._thisptr, self._name.encode(), self._this.m_q, self._this.ppc,
