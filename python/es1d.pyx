@@ -9,25 +9,25 @@ cdef float custom_density( float x, void *f ):
 	cdef Density d = <object> f
 	return d.custom_func(x)
 
-cdef class DensityType:
-	uniform = UNIFORM
-	step = STEP
-	slab = SLAB
-	ramp = RAMP
-	custom = CUSTOM
-
 cdef class Density:
 	"""Extension type to wrap t_density objects"""
 	cdef t_density *_thisptr
 
 	cdef object custom_func
 
-	def __cinit__( self, *, int type = UNIFORM, float n = 1.0, float start = 0.0, float end = 0.0,
+	_density_types = {'uniform':UNIFORM,
+					  'empty':EMPTY,
+					  'step':STEP,
+					  'slab':SLAB,
+					  'ramp':RAMP,
+					  'custom':CUSTOM}
+
+	def __cinit__( self, *, str type = 'uniform', float n = 1.0, float start = 0.0, float end = 0.0,
 		           list ramp = [0.,0.], custom = None):
 		# Allocates the structure and initializes all elements to 0
 		self._thisptr = <t_density *> calloc(1, sizeof(t_density))
 
-		self._thisptr.type = <density_type> type
+		self._thisptr.type = <density_type> self._density_types[type]
 		self._thisptr.n = n
 		self._thisptr.start = start
 		self._thisptr.end = end
@@ -125,6 +125,19 @@ cdef class Species:
 		else:
 			# Use default uniform density
 			self._density = Density()
+
+	def add( self, int ix, float x, float vx):
+		# insure we have enough room for new particle
+		spec_grow_buffer( self._thisptr, self._thisptr.np + 1 )
+		
+		cdef t_part particle
+		particle.ix = ix
+		particle.x = x
+		particle.vx = vx
+
+		self._thisptr.part[ self._thisptr.np ] = particle
+		self._thisptr.np = self._thisptr.np + 1
+
 
 	cdef new( self, t_species* ptr, int nx, float box, float dt ):
 		self._thisptr = ptr

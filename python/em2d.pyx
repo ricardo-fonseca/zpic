@@ -23,6 +23,7 @@ cdef class Density:
 	cdef object custom_func_y
 
 	_density_types = {'uniform':UNIFORM,
+					  'empty':EMPTY,
 						'step':STEP,
 						'slab':SLAB,
 						'custom':CUSTOM}
@@ -130,6 +131,23 @@ cdef class Species:
 		spec_new( self._thisptr, self._name.encode(), self._this.m_q, self._this.ppc,
 			self._this.ufl, self._this.uth,
 			nx, box, dt, self._density._thisptr )
+
+	def add( self, int[:] ix, float[:] x, float[:] u):
+		# insure we have enough room for new particle
+		spec_grow_buffer( self._thisptr, self._thisptr.np + 1 )
+		
+		cdef t_part particle
+		particle.ix = ix[0]
+		particle.iy = ix[1]
+		particle.x = x[0]
+		particle.y = x[1]
+		particle.ux = u[0]
+		particle.uy = u[1]
+		particle.uz = u[2]
+
+		self._thisptr.part[ self._thisptr.np ] = particle
+		self._thisptr.np = self._thisptr.np + 1
+
 
 	def report( self, str type, *, list quants = [], list pha_nx = [], list pha_range = [] ):
 		cdef int _nx[2]

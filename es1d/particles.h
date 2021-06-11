@@ -22,7 +22,7 @@ typedef struct {
 	float vx;
 } t_part;
 
-enum density_type {UNIFORM, STEP, SLAB, RAMP, CUSTOM};
+enum density_type {UNIFORM, EMPTY, STEP, SLAB, RAMP, CUSTOM};
 
 typedef struct {
 
@@ -88,6 +88,8 @@ void spec_new( t_species* spec, char name[], const float m_q, const int ppc,
 			  const int nx, float box, const float dt, t_density* density );
 
 void spec_delete( t_species* spec );
+
+void spec_grow_buffer( t_species* spec, const int size );
 
 void spec_advance( t_species* spec, t_field* emf, t_charge* charge );
 

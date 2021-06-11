@@ -17,6 +17,7 @@ cdef class Density:
 	cdef object custom_func
 
 	_density_types = {'uniform':UNIFORM,
+					  'empty':EMPTY,
 					  'step':STEP,
 					  'slab':SLAB,
 					  'ramp':RAMP,
@@ -24,6 +25,10 @@ cdef class Density:
 
 	def __cinit__( self, *, str type = 'uniform', float n = 1.0, float start = 0.0, float end = 0.0,
 				   list ramp = [0.,0.], custom = None):
+
+		if ( not type in self._density_types):
+			print("Invalid density type, must be one of ", self._density_types.keys(), file = sys.stderr)
+			return
 
 		# Allocates the structure and initializes all elements to 0
 		self._thisptr = <t_density *> calloc(1, sizeof(t_density))
@@ -135,6 +140,20 @@ cdef class Species:
 			self._this.ufl, self._this.uth,
 			nx, box, dt, self._density._thisptr )
 		self._thisptr.bc_type = bc_type
+	
+	def add( self, int ix, float x, float[:] u):
+		# insure we have enough room for new particle
+		spec_grow_buffer( self._thisptr, self._thisptr.np + 1 )
+		
+		cdef t_part particle
+		particle.ix = ix
+		particle.x = x
+		particle.ux = u[0]
+		particle.uy = u[1]
+		particle.uz = u[2]
+
+		self._thisptr.part[ self._thisptr.np ] = particle
+		self._thisptr.np = self._thisptr.np + 1
 
 	def report( self, str type, *, list quants = [], list pha_nx = [], list pha_range = [] ):
 		cdef int _nx[2]
@@ -187,6 +206,23 @@ cdef class Species:
 		spec_deposit_pha( self._thisptr, rep_type, _nx, _range, &buf[0,0] )
 
 		return pha
+
+	@property
+	def dx(self):
+		return self._thisptr.dx
+
+	@property
+	def dt(self):
+		return self._thisptr.dt
+
+	@property
+	def iter(self):
+		return self._thisptr.iter
+
+	@property
+	def ppc(self):
+		return self._thisptr.ppc
+
 
 	@property
 	def n_sort(self):

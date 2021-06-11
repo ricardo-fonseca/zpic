@@ -140,6 +140,10 @@ int spec_np_inj( t_species* spec, const int range[] )
 		}
 		break;
 
+    case EMPTY: // Empty profile
+        np_inj = 0;
+        break;
+
 	default: // Uniform density
 		np_inj = ( range[1] - range[0] + 1 ) * spec -> ppc;
 	}
@@ -322,6 +326,8 @@ void spec_set_x( t_species* spec, const int range[] )
 		// printf("Injected %d particles with custom injection \n", ip - spec -> np );
 		break;
 
+    case EMPTY: // Empty profile
+        break;
 
 	default: // Uniform density
 		for (i = range[0]; i <= range[1]; i++) {
@@ -342,24 +348,44 @@ void spec_set_x( t_species* spec, const int range[] )
 		
 }
 
+/**
+ * Grows particle buffer to specified size.
+ * If the new size is smaller than the previous size the buffer size is not changed
+ * and the function returns silently.
+ * 
+ * @param   spec    Particle species
+ * @param   size    New buffer size (will be rounded up to next multiple of 1024)
+ **/
+void spec_grow_buffer( t_species* spec, const int size ) {
+    if ( size > spec -> np_max ) {
+        // Increase by chunks of 1024 particles
+        spec -> np_max = ( size/1024 + 1) * 1024;
+        spec -> part = realloc( (void*) spec -> part, spec -> np_max * sizeof(t_part) );
+    }
+}
+
+/**
+ * Inject new particles into the specified grid range.
+ * The particle buffer will be grown if required
+ * 
+ * @param   spec    Particle species
+ * @param   range   Grid range [ix0, ix1] where to inject particles
+ **/
 void spec_inject_particles( t_species* spec, const int range[] )
 {
-	int start = spec -> np;
+    int start = spec -> np;
 
-	// Get maximum number of particles to inject
-	int np_inj = spec_np_inj( spec, range );
+    // Get maximum number of particles to inject
+    int np_inj = spec_np_inj( spec, range );
 
-	// Check if buffer is large enough and if not reallocate
-	if ( spec -> np + np_inj > spec -> np_max ) {
-        spec -> np_max = (( spec -> np_max + np_inj )/1024 + 1) * 1024;
-		spec -> part = realloc( (void*) spec -> part, spec -> np_max * sizeof(t_part) );
-	}
+    // Check if buffer is large enough and if not reallocate
+    spec_grow_buffer( spec, spec -> np + np_inj );
 
-	// Set particle positions
-	spec_set_x( spec, range );
+    // Set particle positions
+    spec_set_x( spec, range );
 
-	// Set momentum of injected particles
-	spec_set_u( spec, start, spec -> np - 1 );
+    // Set momentum of injected particles
+    spec_set_u( spec, start, spec -> np - 1 );
 
 }
 

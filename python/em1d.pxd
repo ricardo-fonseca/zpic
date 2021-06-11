@@ -26,7 +26,7 @@ cdef extern from "../em1d/particles.h":
 		float uz
 
 	cdef enum density_type:
-		UNIFORM, STEP, SLAB, RAMP, CUSTOM
+		UNIFORM, EMPTY, STEP, SLAB, RAMP, CUSTOM
 
 	ctypedef struct t_density:
 		float n
@@ -67,6 +67,8 @@ cdef extern from "../em1d/particles.h":
 	void spec_new( t_species* spec, char name[], const float m_q, const int ppc,
 				  const float ufl[], const float uth[],
 				  const int nx, float box, const float dt, t_density* density )
+
+	void spec_grow_buffer( t_species* spec, const int size )
 
 	cdef int CHARGE
 	cdef int PHA
