@@ -93,6 +93,8 @@ void spec_new( t_species* spec, char name[], const float m_q, const int ppc,
 
 void spec_delete( t_species* spec );
 
+void spec_grow_buffer( t_species* spec, const int size );
+
 void spec_advance( t_species* spec, t_emf* emf, t_charge* charge, t_current* current );
 
 void spec_deposit_charge( const t_species* spec, float* charge );

@@ -98,11 +98,13 @@ void spec_new( t_species* spec, char name[], const t_part_data m_q, const int pp
               const t_part_data ufl[], const t_part_data uth[],
               const int nx[], t_part_data box[], const float dt, t_density* density );
 
-void spec_move_window( t_species *spec );
-
 void spec_delete( t_species* spec );
 
+void spec_grow_buffer( t_species* spec, const int size );
+
 void spec_advance( t_species* spec, t_emf* emf, t_current* current );
+
+void spec_move_window( t_species *spec );
 
 double spec_time( void );
 double spec_perf( void );

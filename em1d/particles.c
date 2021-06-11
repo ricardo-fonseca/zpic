@@ -426,6 +426,29 @@ void spec_set_x( t_species* spec, const int range[] )
 
 }
 
+/**
+ * Grows particle buffer to specified size.
+ * If the new size is smaller than the previous size the buffer size is not changed
+ * and the function returns silently.
+ * 
+ * @param   spec    Particle species
+ * @param   size    New buffer size (will be rounded up to next multiple of 1024)
+ **/
+void spec_grow_buffer( t_species* spec, const int size ) {
+    if ( size > spec -> np_max ) {
+        // Increase by chunks of 1024 particles
+        spec -> np_max = ( size/1024 + 1) * 1024;
+        spec -> part = realloc( (void*) spec -> part, spec -> np_max * sizeof(t_part) );
+    }
+}
+
+/**
+ * Inject new particles into the specified grid range.
+ * The particle buffer will be grown if required
+ * 
+ * @param   spec    Particle species
+ * @param   range   Grid range [ix0, ix1] where to inject particles
+ **/
 void spec_inject_particles( t_species* spec, const int range[] )
 {
     int start = spec -> np;
@@ -434,11 +457,7 @@ void spec_inject_particles( t_species* spec, const int range[] )
     int np_inj = spec_np_inj( spec, range );
 
     // Check if buffer is large enough and if not reallocate
-    if ( spec -> np + np_inj > spec -> np_max ) {
-        // Increase by chunks of 1024 particles
-        spec -> np_max = (( spec -> np_max + np_inj )/1024 + 1) * 1024;
-        spec -> part = realloc( (void*) spec -> part, spec -> np_max * sizeof(t_part) );
-    }
+    spec_grow_buffer( spec, spec -> np + np_inj );
 
     // Set particle positions
     spec_set_x( spec, range );
