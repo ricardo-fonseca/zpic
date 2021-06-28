@@ -30,20 +30,13 @@ void sim_iter( t_simulation* sim ) {
 
 void sim_timings( t_simulation* sim, uint64_t t0, uint64_t t1 ){
 
-
 	fprintf(stderr, "Time for spec. advance = %f s\n", spec_time());
 	fprintf(stderr, "Time for field advance = %f s\n", field_time());
 	fprintf(stderr, "Total simulation time  = %f s\n", timer_interval_seconds(t0, t1));
 	fprintf(stderr, "\n");
 
-
-	int npart = 0;
-
-	for(int i=0; i<sim -> n_species; i++)
-		npart += sim -> species[i].np;
-
-	if ( npart > 0 ) {
-		float perf = spec_time()/(npart);
+	double perf = spec_perf();
+	if ( perf > 0 ) {
 		fprintf(stderr, "Particle advance [nsec/part] = %f \n", 1.e9*perf);
 		fprintf(stderr, "Particle advance [Mpart/sec] = %f \n", 1.e-6/perf);
 	}

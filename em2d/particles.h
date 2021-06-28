@@ -92,6 +92,9 @@ typedef struct {
     int moving_window;
     int n_move;
 
+	// Sorting frequency
+	int n_sort;
+
 } t_species;
 
 void spec_new( t_species* spec, char name[], const t_part_data m_q, const int ppc[],
@@ -106,6 +109,7 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current );
 
 void spec_move_window( t_species *spec );
 
+uint64_t spec_npush( void );
 double spec_time( void );
 double spec_perf( void );
 

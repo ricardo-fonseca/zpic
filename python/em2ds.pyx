@@ -4,6 +4,7 @@ cimport em2ds
 from libc.stdlib cimport calloc, free
 
 import numpy as np
+import sys
 
 cdef class Density:
 	"""Extension type to wrap t_density objects"""
@@ -135,10 +136,6 @@ cdef class Species:
 			spec_report( self._thisptr, rep_type, NULL, NULL )
 
 	@property
-	def dx(self):
-		return self._thisptr.dx
-
-	@property
 	def particles(self):
 		cdef t_part[::1] buf = <t_part[:self._thisptr.np]>self._thisptr.part
 		return np.asarray( buf )
@@ -169,6 +166,32 @@ cdef class Species:
 
 		return pha
 
+	@property
+	def dx(self):
+		return self._thisptr.dx
+
+	@property
+	def dt(self):
+		return self._thisptr.dt
+
+	@property
+	def iter(self):
+		return self._thisptr.iter
+
+	@property
+	def ppc(self):
+		return self._thisptr.ppc
+
+	@property
+	def n_sort(self):
+		return self._thisptr.n_sort
+
+	@n_sort.setter
+	def n_sort(self, int value):
+		if ( value < 0 ):
+			print("(*error*) Invalid value for n_sort, must be >= 0.", file = sys.stderr)
+			return
+		self._thisptr.n_sort = value
 
 def phasespace( int a, int b ):
 	"""Returns the type of the requested phasespace"""

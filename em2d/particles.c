@@ -22,7 +22,7 @@
 #include "timer.h"
 
 static double _spec_time = 0.0;
-static double _spec_npush = 0.0;
+static uint64_t _spec_npush = 0;
 
 void spec_sort( t_species *spec );
 
@@ -36,12 +36,21 @@ double spec_time( void )
 }
 
 /**
+ * Returns the total number of particle pushes
+ * @return  Number of particle pushes
+ */
+uint64_t spec_npush( void )
+{
+    return _spec_npush;
+}
+
+/**
  * Returns the performance achieved by the code (push time)
  * @return  Performance in seconds per particle
  */
 double spec_perf( void )
 {
-    return (_spec_npush > 0 )? _spec_time / _spec_npush: 0.0;
+    return ( _spec_npush > 0 )? _spec_time / _spec_npush : -1.0;
 }
 
 /*********************************************************************************************
@@ -510,6 +519,9 @@ void spec_new( t_species* spec, char name[], const t_part_data m_q, const int pp
 
     spec_inject_particles( spec, range );
 
+    // Set default sorting frequency
+    spec -> n_sort = 16;
+
 }
 
 void spec_move_window( t_species *spec ){
@@ -919,8 +931,7 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
     int i;
     t_part_data qnx, qny, qvz;
     
-    uint64_t t0;
-    t0 = timer_ticks();
+    uint64_t t0 = timer_ticks();
     
     const t_part_data tem   = 0.5 * spec->dt/spec -> m_q;
     const t_part_data dt_dx = spec->dt / spec->dx[0]; 
@@ -1046,7 +1057,6 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 
     // Advance internal iteration number
     spec -> iter += 1;
-    _spec_npush += spec -> np;
 
     // Check for particles leaving the box
     if ( spec -> moving_window ){
@@ -1073,14 +1083,13 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
         }
     }
     
-    // Sort species at every 16 time steps
-    if ( ! (spec -> iter % 16) ) spec_sort( spec );
+    // Sort species at every n_sort time steps
+    if ( spec -> n_sort > 0 ) {
+        if ( ! (spec -> iter % spec -> n_sort) ) spec_sort( spec );
+    }
 
-
-    // Move simulation window if needed
-    if ( spec -> moving_window )
-        
-    
+    // Timing info
+    _spec_npush += spec -> np;
     _spec_time += timer_interval_seconds( t0, timer_ticks() );
 }
 

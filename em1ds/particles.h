@@ -99,6 +99,7 @@ void spec_advance( t_species* spec, t_emf* emf, t_charge* charge, t_current* cur
 
 void spec_deposit_charge( const t_species* spec, float* charge );
 
+uint64_t spec_npush( void );
 double spec_time( void );
 double spec_perf( void );
 

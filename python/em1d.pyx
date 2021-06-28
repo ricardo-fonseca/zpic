@@ -223,10 +223,9 @@ cdef class Species:
 	def ppc(self):
 		return self._thisptr.ppc
 
-
 	@property
 	def n_sort(self):
-		return self._thisptr.dx
+		return self._thisptr.n_sort
 
 	@n_sort.setter
 	def n_sort(self, int value):

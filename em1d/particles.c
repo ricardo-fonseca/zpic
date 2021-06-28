@@ -22,7 +22,7 @@
 #include "timer.h"
 
 static double _spec_time = 0.0;
-static double _spec_npush = 0.0;
+static uint64_t _spec_npush = 0;
 
 void spec_sort( t_species *spec );
 
@@ -37,12 +37,21 @@ double spec_time( void )
 }
 
 /**
+ * Returns the total number of particle pushes
+ * @return  Number of particle pushes
+ */
+uint64_t spec_npush( void )
+{
+    return _spec_npush;
+}
+
+/**
  * Returns the performance achieved by the code (push time)
  * @return  Performance in seconds per particle
  */
 double spec_perf( void )
 {
-    return (_spec_npush > 0 )? _spec_time / _spec_npush: 0.0;
+    return (_spec_npush > 0 )? _spec_time / _spec_npush: -1.0;
 }
 
 /*********************************************************************************************
@@ -931,7 +940,6 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 
     // Advance internal iteration number
     spec -> iter += 1;
-    _spec_npush += spec -> np;
 
     // Check for particles leaving the box
     if ( spec -> moving_window || spec -> bc_type == PART_BC_OPEN ){
@@ -961,6 +969,8 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
         if ( ! (spec -> iter % spec -> n_sort) ) spec_sort( spec );
     }
 
+    // Timing info
+    _spec_npush += spec -> np;
     _spec_time += timer_interval_seconds( t0, timer_ticks() );
 }
 

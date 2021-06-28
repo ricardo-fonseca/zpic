@@ -90,6 +90,9 @@ typedef struct {
     // Iteration number
     int iter;
 
+	// Sorting frequency
+	int n_sort;
+
 } t_species;
 
 void spec_new( t_species* spec, char name[], const float m_q, const int ppc[], 
@@ -104,6 +107,7 @@ void spec_advance( t_species* spec, t_emf* emf, t_charge* charge, t_current* cur
 
 void spec_deposit_charge( const t_species* spec, float* charge );
 
+uint64_t spec_npush( void );
 double spec_time( void );
 double spec_perf( void );
 

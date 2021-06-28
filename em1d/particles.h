@@ -106,6 +106,7 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current );
 
 void spec_move_window( t_species *spec );
 
+uint64_t spec_npush( void );
 double spec_time( void );
 double spec_perf( void );
 

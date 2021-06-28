@@ -24,7 +24,7 @@
 #include "timer.h"
 
 static double _spec_time = 0.0;
-static double _spec_npush = 0.0;
+static uint64_t _spec_npush = 0;
 
 void spec_sort( t_species *spec );
 
@@ -38,12 +38,21 @@ double spec_time( void )
 }
 
 /**
+ * Returns the total number of particle pushes
+ * @return  Number of particle pushes
+ */
+uint64_t spec_npush( void )
+{
+    return _spec_npush;
+}
+
+/**
  * Returns the performance achieved by the code (push time)
  * @return  Performance in seconds per particle
  */
 double spec_perf( void )
 {
-    return (_spec_npush > 0 )? _spec_time / _spec_npush: 0.0;
+    return ( _spec_npush > 0 )? _spec_time / _spec_npush : -1.0;
 }
 
 /*********************************************************************************************
@@ -483,6 +492,9 @@ void spec_new( t_species* spec, char name[], const float m_q, const int ppc[],
 
     spec_inject_particles( spec, range );
 
+    // Set default sorting frequency
+    spec -> n_sort = 16;
+
 }
 
 void spec_delete( t_species* spec )
@@ -821,7 +833,6 @@ void spec_advance( t_species* spec, t_emf* emf, t_charge* charge, t_current* cur
 
     // Advance internal iteration number
     spec -> iter += 1;
-    _spec_npush += spec -> np;
 
     // Use periodic boundaries in both directions
     for (i=0; i<spec->np; i++) {
@@ -829,10 +840,13 @@ void spec_advance( t_species* spec, t_emf* emf, t_charge* charge, t_current* cur
         spec -> part[i].iy += (( spec -> part[i].iy < 0 ) ? nx1 : 0 ) - (( spec -> part[i].iy >= nx1 ) ? nx1 : 0);
     }
     
-    // Sort species at every 16 time steps
-    if ( ! (spec -> iter % 16) ) spec_sort( spec );
+    // Sort species at every n_sort time steps
+    if ( spec -> n_sort > 0 ) {
+        if ( ! (spec -> iter % spec -> n_sort) ) spec_sort( spec );
+    }
         
-    
+    // Timing info
+    _spec_npush += spec -> np;
     _spec_time += timer_interval_seconds( t0, timer_ticks() );
 }
 

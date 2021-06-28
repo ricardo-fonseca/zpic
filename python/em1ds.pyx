@@ -162,11 +162,6 @@ cdef class Species:
 			# Other diagnostic
 			spec_report( self._thisptr, rep_type, NULL, NULL )
 
-
-	@property
-	def dx(self):
-		return self._thisptr.dx
-
 	@property
 	def particles(self):
 		cdef t_part[::1] buf = <t_part[:self._thisptr.np]>self._thisptr.part
@@ -199,8 +194,24 @@ cdef class Species:
 		return pha
 
 	@property
-	def n_sort(self):
+	def dx(self):
 		return self._thisptr.dx
+
+	@property
+	def dt(self):
+		return self._thisptr.dt
+
+	@property
+	def iter(self):
+		return self._thisptr.iter
+
+	@property
+	def ppc(self):
+		return self._thisptr.ppc
+
+	@property
+	def n_sort(self):
+		return self._thisptr.n_sort
 
 	@n_sort.setter
 	def n_sort(self, int value):
