@@ -15,6 +15,7 @@
 #include "current.h"
 #include "charge.h"
 
+#include <stdint.h>
 
 #define MAX_SPNAME_LEN 32
 

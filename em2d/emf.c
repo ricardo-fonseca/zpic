@@ -607,15 +607,14 @@ void emf_advance( t_emf *emf, const t_current *current )
 
 void emf_get_energy( const t_emf *emf, double energy[] )
 {
-	int i,j;
     t_vfld* const restrict E = emf -> E;
     t_vfld* const restrict B = emf -> B;
     const int nrow = emf -> nrow;
 
-	for( i = 0; i<6; i++) energy[i] = 0;
+	for( int i = 0; i<6; i++) energy[i] = 0;
 
-	for( j = 0; i < emf -> nx[1]; j ++ ) {
-		for( i = 0; i < emf -> nx[0]; i ++ ) {
+	for( int j = 0; j < emf -> nx[1]; j ++ ) {
+		for( int i = 0; i < emf -> nx[0]; i ++ ) {
 			energy[0] += E[i + j*nrow].x * E[i + j*nrow].x;
 			energy[1] += E[i + j*nrow].y * E[i + j*nrow].y;
 			energy[2] += E[i + j*nrow].z * E[i + j*nrow].z;
@@ -625,7 +624,7 @@ void emf_get_energy( const t_emf *emf, double energy[] )
 		}
 	}
 
-	for( i = 0; i<6; i++) energy[i] *= 0.5 * emf -> dx[0] * emf -> dx[1];
+	for( int i = 0; i<6; i++) energy[i] *= 0.5 * emf -> dx[0] * emf -> dx[1];
 
 }
 
