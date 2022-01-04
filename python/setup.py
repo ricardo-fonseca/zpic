@@ -14,9 +14,6 @@ cflags += ' -std=c99'
 
 sysconfig._config_vars['CFLAGS'] = cflags
 
-# Set custom compiler
-sysconfig._config_vars['CC'] = 'gcc-8.2.0'
-
 # Finit difference Electromagnetic codes
 em1d = Extension("em1d",
                 sources=["em1d.pyx",
