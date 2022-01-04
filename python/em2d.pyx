@@ -111,7 +111,7 @@ cdef class Species:
 	_pha_quants = { 'x1':X1, 'x2':X2, 'u1':U1, 'u2':U2, 'u3':U3 }
 
 	def __cinit__( self, str name, const float m_q, list ppc = [1,1], *,
-				  list ufl = [0.,0.,0.], list uth = [0.,0.,0.], Density density = None):
+				  list ufl = [0.,0.,0.], list uth = [0.,0.,0.], Density density = None, n_sort = 16 ):
 
 		self._thisptr = &self._this
 		self._name = name
@@ -119,6 +119,7 @@ cdef class Species:
 		self._this.ppc = np.array(ppc, dtype=np.int32)
 		self._this.ufl = np.array(ufl, dtype=np.float32)
 		self._this.uth = np.array(uth, dtype=np.float32)
+		self._this.n_sort = n_sort
 
 		if ( density ):
 			self._density = density.copy()
@@ -127,10 +128,12 @@ cdef class Species:
 			self._density = Density()
 
 	cdef new( self, t_species* ptr, int nx[], float box[], float dt ):
-		self._thisptr = ptr
+		# The spec_new() call resets the n_sort value
+		n_sort = self._this.n_sort
 		spec_new( self._thisptr, self._name.encode(), self._this.m_q, self._this.ppc,
 			self._this.ufl, self._this.uth,
 			nx, box, dt, self._density._thisptr )
+		self._this.n_sort = n_sort
 
 	def add( self, int[:] ix, float[:] x, float[:] u):
 		# insure we have enough room for new particle
