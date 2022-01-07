@@ -1,5 +1,6 @@
 all:
-	python3 setup.py build_ext -if
+	cd source && $(MAKE)
 
 clean:
-	rm -rf build *.c *.so
+	cd source && $(MAKE) clean
+
