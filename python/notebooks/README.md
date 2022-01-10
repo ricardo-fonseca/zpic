@@ -32,6 +32,8 @@ In this folder you can find example Jupyter notebooks using ZPIC. If you haven't
 * [Electrostatic Two-Stream](classes/Electrostatic%20Two-Stream.ipynb) - Numerical simulations of the Two-Stream instability using an electrostatic code;
 * [LWFA 1D](classes/LWFA%201D.ipynb) - Numerical simulations of a laser wakefield accelerator in 1D;
 * [LWFA 2D](classes/LWFA%202D.ipynb) - Numerical simulations of a laser wakefield accelerator in 2D;
+* [PWFA 1D](classes/PWFA%201D.ipynb) - Numerical simulations of a plasma wakefield accelerator in 1D;
+* [PBWA 1D](classes/PBWA%201D.ipynb) - Numerical simulations of a plasma beat wave accelerator in 1D;
 * [Weibel](classes/Weibel.ipynb) - Demonstration of the Weibel (electromagnetic filamentation) instability in the collision of neutral electron/positron plasma clouds;
 * [Coulomb Collisions](classes/Coulomb%20Collisions.ipynb) - Study of Coulomb Collisions / Rutherford scattering;
 * [Diamagnetic Drift](classes/Diamagnetic%20Drift.ipynb) - Focuses on the diamagnetic drift (or diamagnetic current), a fluid drift in which a current arrises in a magnetized plasma with a given density gradient;
