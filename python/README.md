@@ -26,8 +26,8 @@ Once you compiled the code, the best way to start using the code is to open the 
 
 This module includes a set of Jupyter notebooks exemplifying the use of ZPIC in multiple situations. These are found in the `notebooks` directory, and are organized as follows:
 
-* `basic` - Notebooks introducing code usage and functionalities
-* `tutorial` - Examples of ZPIC notebooks that can be used in a classrom to showcase some of the most fundamental plasma physics phenomena.
+* `tutorial` - Notebooks introducing code usage and functionalities
+* `classroom` - Examples of ZPIC notebooks that can be used in a classrom to showcase some of the most fundamental plasma physics phenomena.
 * `papers` - Notebooks reproducing and extend the work done in seminal plasma physics papers
 
 Check the [notebooks](notebooks) directory for more details.
