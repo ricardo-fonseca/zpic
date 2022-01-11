@@ -1,5 +1,4 @@
 
-
 # ZPIC Python interface
 
 ## Introduction
@@ -21,15 +20,14 @@ sys.path.append("path_to_module/lib")
 
 ## Getting Started
 
-Once you compiled the code, the best way to start using the code is to open the [ZPIC](notebooks/basic/ZPIC.ipynb) notebook (in the `notebooks/basic` folder) in a Jupyter session. This notebook covers the basic steps for running ZPIC simulations in a notebook environment.
+Once you compiled the code, the best way to start using the code is to open the [ZPIC](notebooks/tutorial/ZPIC.ipynb) notebook (in the `notebooks/tutorial` folder) in a Jupyter session. This notebook covers the basic steps for running ZPIC simulations in a notebook environment.
 
 ## Examples
 
 This module includes a set of Jupyter notebooks exemplifying the use of ZPIC in multiple situations. These are found in the `notebooks` directory, and are organized as follows:
 
-*  `basic` - Notebooks introducing code usage and functionalities
-* `classes` - Examples of ZPIC notebooks that can be used in a classrom to showcase some of the most fundamental plasma physics phenomena.
+* `basic` - Notebooks introducing code usage and functionalities
+* `tutorial` - Examples of ZPIC notebooks that can be used in a classrom to showcase some of the most fundamental plasma physics phenomena.
 * `papers` - Notebooks reproducing and extend the work done in seminal plasma physics papers
 
 Check the [notebooks](notebooks) directory for more details.
-
