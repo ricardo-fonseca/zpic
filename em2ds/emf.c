@@ -107,8 +107,9 @@ void emf_delete( t_emf *emf )
 *********************************************************************************************/
 
 
-t_fld gauss_phase( const t_emf_laser* const laser, const t_fld z, const t_fld r )
+t_fld gauss_phase( const t_emf_laser* const laser, const t_fld z_, const t_fld r )
 {
+	t_fld z = z_ - laser -> focus;
 	t_fld z0   = laser -> omega0 * ( laser->W0 * laser->W0 ) / 2;
 	t_fld rho2 = r*r;
 	t_fld curv = rho2 * z / (z0*z0 + z*z);

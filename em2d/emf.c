@@ -120,8 +120,9 @@ void emf_delete( t_emf *emf )
 *********************************************************************************************/
  
 
-t_fld gauss_phase( const t_emf_laser* const laser, const t_fld z, const t_fld r )
+t_fld gauss_phase( const t_emf_laser* const laser, const t_fld z_, const t_fld r )
 {
+	t_fld z = z_ - laser -> focus;
 	t_fld z0   = laser -> omega0 * ( laser->W0 * laser->W0 ) / 2;
 	t_fld rho2 = r*r;
 	t_fld curv = rho2 * z / (z0*z0 + z*z);
@@ -129,8 +130,8 @@ t_fld gauss_phase( const t_emf_laser* const laser, const t_fld z, const t_fld r 
 	t_fld gouy_shift = atan2( z, z0 );
 	
 	return sqrt( sqrt(rWl2) ) * 
-	exp( - rho2 * rWl2/(laser->W0 * laser->W0) ) * 
-	cos( laser -> omega0*( z + curv ) - gouy_shift );
+		exp( - rho2 * rWl2/(laser->W0 * laser->W0) ) * 
+		cos( laser -> omega0*( z + curv ) - gouy_shift );
 }
 
 t_fld lon_env( const t_emf_laser* const laser, const t_fld z )
@@ -264,7 +265,7 @@ void emf_add_laser( t_emf* const emf,  t_emf_laser*  laser )
 			break;
 
 		case GAUSSIAN:
-						
+
 			for (i = 0; i < emf->nx[0]; i++) {
 				z = i * dx;
 				z_2 = z + dx/2;

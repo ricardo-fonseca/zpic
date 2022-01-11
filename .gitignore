@@ -35,13 +35,12 @@ zpic
 # ignore test directories
 test*/
 
-/zdf/__pycache__
-__pycache__
-/python/em1d.c
-/python/em1ds.c
-/python/em2d.c
-/python/em2ds.c
-/python/es1d.c
+# Ignore Python and Cython leftovers
+__pycache__/
+/python/source/em1d.c
+/python/source/em1ds.c
+/python/source/em2d.c
+/python/source/em2ds.c
+/python/source/es1d.c
+
 /zpic.code-workspace
-/python/cas
-/em2d-omp
