@@ -16,6 +16,8 @@
 #                     port 8888 is published as 8888
 # -t                : Allocate a pseudo-TTY
 # --rm              : Automatically remove the container when it exits
+#
+# Then just open a web browser on https://locahost:8888
 
 # our base image
 FROM jupyter/base-notebook
@@ -69,9 +71,8 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
     make CC='gcc' && \
     mkdir -p /opt/zpic/lib && \
     chmod a+x /opt/zpic /opt/zpic/lib && \
-    cp -v *.so /opt/zpic/lib && \
-    cp -v *.ipynb /home/$NB_USER/ && \
-    cp -v zdf.py /home/$NB_USER/ && \
+    cp -v lib/*.so lib/zdf.py /opt/zpic/lib && \
+    cp -rv notebooks/* /home/$NB_USER/ && \
     chown $NB_UID /home/$NB_USER/* && \
     rm -rf /tmp/zpic && \
     apt-get --purge remove -yq \
@@ -85,11 +86,17 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
 COPY ipython_config.py /home/$NB_USER/.ipython/profile_default/
 RUN fix-permissions /home/$NB_USER/.ipython
 
+COPY plugin.jupyterlab-settings /home/$NB_USER/.jupyter/lab/user-settings/@jupyterlab/docmanager-extension/
+RUN fix-permissions /home/$NB_USER/.jupyter
+
 # Switch back to jovyan to avoid accidental container runs as root
 USER $NB_UID
 
 # Add ZPIC modules to Python searchpath
 ENV PYTHONPATH /opt/zpic/lib
+
+# Make Jupyter lab the default
+ENV JUPYTER_ENABLE_LAB yes
 
 
 

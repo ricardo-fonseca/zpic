@@ -1,0 +1,5 @@
+{
+  defaultViewers: {
+    markdown: "Markdown Preview"
+  }
+}
