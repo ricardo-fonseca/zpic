@@ -532,6 +532,10 @@ cdef class EMF:
 		return self._thisptr.box
 
 	@property
+	def n_move(self):
+		return self._thisptr.n_move
+
+	@property
 	def Ex( self ):
 		cdef float *buf = <float *> self._thisptr.E_buf
 		cdef int nx = self._thisptr.gc[0][0] + self._thisptr.nx[0] + self._thisptr.gc[0][1]
@@ -1004,6 +1008,10 @@ cdef class Simulation:
 	@property
 	def box(self):
 		return self.emf.box
+	
+	@property
+	def n_move(self):
+		return self.emf.n_move
 
 	@property
 	def report(self):

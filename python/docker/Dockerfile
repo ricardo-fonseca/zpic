@@ -3,14 +3,14 @@
 #
 # Create image with:
 #
-# docker build --force-rm --tag zamb/zpic .
+# > docker build --force-rm --tag zamb/zpic .
 #
 # --force-rm        : Always remove intermediate containers
 # --tag name        : Name for image (in this case zamb/zpic)
 #
 # Run image with:
 #
-# docker run -p 8888:8888 -t --rm zamb/zpic
+# > docker run -p 8888:8888 -t --rm zamb/zpic
 #
 # -p host:container : Publish a container's port(s) to the host. In this case
 #                     port 8888 is published as 8888
@@ -18,6 +18,9 @@
 # --rm              : Automatically remove the container when it exits
 #
 # Then just open a web browser on https://locahost:8888
+#
+# Upload image to Docker hub
+# > docker push zamb/zpic
 
 # our base image
 FROM jupyter/base-notebook

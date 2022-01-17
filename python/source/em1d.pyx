@@ -554,6 +554,10 @@ cdef class EMF:
 		return self._thisptr.nx
 
 	@property
+	def n_move(self):
+		return self._thisptr.n_move
+
+	@property
 	def dx(self):
 		return self._thisptr.dx
 
@@ -993,6 +997,10 @@ cdef class Simulation:
 	@property
 	def box(self):
 		return self.emf.box
+
+	@property
+	def n_move(self):
+		return self.emf.n_move
 
 	@property
 	def report(self):
