@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>es1d API documentation</title>
+<meta name="description" content="1D electrostatic PIC code …" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>es1d</code></h1>
+</header>
+<section id="section-intro">
+<h1 id="1d-electrostatic-pic-code">1D electrostatic PIC code</h1>
+<p>1D, electrostatic, Particle-in-Cell code, using a spectral EM field solver</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="es1d.Charge"><code class="flex name class">
+<span>class <span class="ident">Charge</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Electric charge density class</p>
+<p>This class allows access to the electric chrage density data
+structures in the simulation. An object of this class is created
+automatically when creating a <code><a title="es1d.Simulation" href="#es1d.Simulation">Simulation</a></code> object.</p>
+<h2 id="see-also">See Also</h2>
+<p><code><a title="es1d.Simulation" href="#es1d.Simulation">Simulation</a></code></p></div>
+<h3>Instance variables</h3>
+<dl>
+<dt id="es1d.Charge.rho"><code class="name">var <span class="ident">rho</span></code></dt>
+<dd>
+<div class="desc"><p>Charge density</p>
+<p>Grid of charge density values excluding guard cells</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>rho</code></strong> :&ensp;<code>numpy.array, (nx)</code></dt>
+<dd>Charge density values</dd>
+</dl></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="es1d.Charge.report"><code class="name flex">
+<span>def <span class="ident">report</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Save charge density information to disk. Files will be saved in
+the CHARGE directory below the current working directory.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="es1d.Density"><code class="flex name class">
+<span>class <span class="ident">Density</span></span>
+<span>(</span><span>type='uniform', start=0.0, end=0.0, n=1.0, ramp=[0.0, 0.0], custom=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class representing charge density profiles for particle species
+initialization</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>type</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Density profile type, one of "uniform", "empty", "step", "slab"
+or "custom", defaults to "uniform"</dd>
+<dt><strong><code>start</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Position of the plasma start position for "step", "slab" or "ramp"
+profiles, defaults to 0.0</dd>
+<dt><strong><code>end</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Position of the plasma end position for the "slab" or "ramp"
+profiles, defaults to 0.0</dd>
+<dt><strong><code>n</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Reference density to use, multiplies density profile value,
+defaults to 1.0</dd>
+<dt><strong><code>ramp</code></strong> :&ensp;<code>list</code> of <code>float</code></dt>
+<dd>2 element list specifying the required density at the start and
+end positions for the "ramp" density profile, defaults to [0.,0.]</dd>
+<dt><strong><code>custom</code></strong> :&ensp;<code>function</code>, optional</dt>
+<dd>Custom density function, defaults to None</dd>
+</dl>
+<h2 id="see-also">See Also</h2>
+<p><code><a title="es1d.Species" href="#es1d.Species">Species</a></code></p></div>
+<h3>Instance variables</h3>
+<dl>
+<dt id="es1d.Density.end"><code class="name">var <span class="ident">end</span></code></dt>
+<dd>
+<div class="desc"><p>Position of the plasma end position for "slab" or "ramp" profiles</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>end</code></strong> :&ensp;<code>float</code></dt>
+<dd>Position of the plasma end position</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Density.n"><code class="name">var <span class="ident">n</span></code></dt>
+<dd>
+<div class="desc"><p>Reference density to use</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>n</code></strong> :&ensp;<code>float</code></dt>
+<dd>Reference density to use</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Density.ramp"><code class="name">var <span class="ident">ramp</span></code></dt>
+<dd>
+<div class="desc"><p>Initial and final density values for the "ramp" profile</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>ramp</code></strong> :&ensp;<code>numpy.array, (2)</code></dt>
+<dd>[start,end] density values</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Density.start"><code class="name">var <span class="ident">start</span></code></dt>
+<dd>
+<div class="desc"><p>Position of the plasma start position for "step", "slab" or "ramp"
+profiles</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>start</code></strong> :&ensp;<code>float</code></dt>
+<dd>Position of the plasma start position</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Density.type"><code class="name">var <span class="ident">type</span></code></dt>
+<dd>
+<div class="desc"><p>Density profile type</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>type</code></strong> :&ensp;<code>{'uniform', 'empty', 'step', 'slab', 'ramp','custom'}</code></dt>
+<dd>Density profile type</dd>
+</dl></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="es1d.Density.copy"><code class="name flex">
+<span>def <span class="ident">copy</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Object copy.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="es1d.Field"><code class="flex name class">
+<span>class <span class="ident">Field</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Electric fields class</p>
+<p>This class allows access to the electric field data structures in the
+simulation. An object of this class is created automatically when
+creating a <code><a title="es1d.Simulation" href="#es1d.Simulation">Simulation</a></code> object.</p>
+<h2 id="see-also">See Also</h2>
+<p><code><a title="es1d.Simulation" href="#es1d.Simulation">Simulation</a></code></p></div>
+<h3>Instance variables</h3>
+<dl>
+<dt id="es1d.Field.E"><code class="name">var <span class="ident">E</span></code></dt>
+<dd>
+<div class="desc"><p>Electric field</p>
+<p>Grid of (scalar) Electric field values excluding guard cells</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>E</code></strong> :&ensp;<code>numpy.array, (nx)</code></dt>
+<dd>Electric field values.</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Field.box"><code class="name">var <span class="ident">box</span></code></dt>
+<dd>
+<div class="desc"><p>Simulation box physical size</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>box</code></strong> :&ensp;<code>float</code></dt>
+<dd>Simulation box size</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Field.dx"><code class="name">var <span class="ident">dx</span></code></dt>
+<dd>
+<div class="desc"><p>Cell size used for the Field object</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>dx</code></strong> :&ensp;<code>int</code></dt>
+<dd>Cell size</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Field.nx"><code class="name">var <span class="ident">nx</span></code></dt>
+<dd>
+<div class="desc"><p>Grid size used for the Field object</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>nx :int</code></dt>
+<dd>Number of grid cells for the simulation</dd>
+</dl></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="es1d.Field.report"><code class="name flex">
+<span>def <span class="ident">report</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Save diagnostic field information to disk. Files will be saved in the
+"field" directory below the current working directory.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="es1d.Simulation"><code class="flex name class">
+<span>class <span class="ident">Simulation</span></span>
+<span>(</span><span>nx, box, dt, species=None, report=None, init_fld=None, ext_fld=None, neutral_bkg=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>ZPIC ES1D Simulation class</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>nx</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of grid cells for the simulation</dd>
+<dt><strong><code>box</code></strong> :&ensp;<code>float</code></dt>
+<dd>Simulation box (phyiscal) size, in simulation units</dd>
+<dt><strong><code>dt</code></strong> :&ensp;<code>float</code></dt>
+<dd>Simulation time step, in simulation units</dd>
+<dt><strong><code>species</code></strong> :&ensp;<code><a title="es1d.Species" href="#es1d.Species">Species</a></code> or <code>list</code> of <code><a title="es1d.Species" href="#es1d.Species">Species</a></code>, optional</dt>
+<dd>Particle species to use in the simulation, defaults to None
+(no particles)</dd>
+<dt><strong><code>report</code></strong> :&ensp;<code>function</code>, optional</dt>
+<dd>Python function used for simulation reporting, defaults to None</dd>
+<dt><strong><code>neutral_bkg</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Controls adding a neutralizing charge background to the
+simulation at initialization, defaults to False.</dd>
+</dl>
+<h2 id="see-also">See Also</h2>
+<p><code><a title="es1d.Species" href="#es1d.Species">Species</a></code></p></div>
+<h3>Instance variables</h3>
+<dl>
+<dt id="es1d.Simulation.box"><code class="name">var <span class="ident">box</span></code></dt>
+<dd>
+<div class="desc"><p>Simulation box physical size</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>box</code></strong> :&ensp;<code>float</code></dt>
+<dd>Simulation box size</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Simulation.charge"><code class="name">var <span class="ident">charge</span></code></dt>
+<dd>
+<div class="desc"><p>Simulation electric charge density object</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>current</code></strong> :&ensp;<code><a title="es1d.Charge" href="#es1d.Charge">Charge</a></code></dt>
+<dd>Simulation electric charge density object</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Simulation.dx"><code class="name">var <span class="ident">dx</span></code></dt>
+<dd>
+<div class="desc"><p>Cell size used for the simulation</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>dx</code></strong> :&ensp;<code>float</code></dt>
+<dd>Cell size</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Simulation.field"><code class="name">var <span class="ident">field</span></code></dt>
+<dd>
+<div class="desc"><p>Simulation Electric field object</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>field</code></strong> :&ensp;<code><a title="es1d.Field" href="#es1d.Field">Field</a></code></dt>
+<dd>Simulation Electric field object</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Simulation.n"><code class="name">var <span class="ident">n</span></code></dt>
+<dd>
+<div class="desc"><p>Current simulation iteration number</p>
+<p>This number is advanced automatically by calls to the <code>iter()</code>
+and <code>run()</code> methods</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>n</code></strong> :&ensp;<code>int</code></dt>
+<dd>Current simulation iteration number</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Simulation.nx"><code class="name">var <span class="ident">nx</span></code></dt>
+<dd>
+<div class="desc"><p>Grid size used for the simulation</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>nx</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of grid cells for the simulation</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Simulation.report"><code class="name">var <span class="ident">report</span></code></dt>
+<dd>
+<div class="desc"><p>Report function for the simulation</p>
+<p>This function will be called once before each time step when using
+the <code>run()</code> method.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>report</code></strong> :&ensp;<code>function</code></dt>
+<dd>Report function for the simulation</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Simulation.species"><code class="name">var <span class="ident">species</span></code></dt>
+<dd>
+<div class="desc"><p>Simulation particle species list</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>species</code></strong> :&ensp;<code>list</code> of <code><a title="es1d.Species" href="#es1d.Species">Species</a></code></dt>
+<dd>Simulation particle species list</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Simulation.t"><code class="name">var <span class="ident">t</span></code></dt>
+<dd>
+<div class="desc"><p>Current simulation time value</p>
+<p>This value is advanced automatically by calls to the <code>iter()</code>
+and <code>run()</code> methods</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code></dt>
+<dd>Current simulation simulation time</dd>
+</dl></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="es1d.Simulation.add_neutral_bkg"><code class="name flex">
+<span>def <span class="ident">add_neutral_bkg</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Adds a (initial) neutralizing charge background to the simulation</p>
+<h2 id="note">Note</h2>
+<p>Use of this function has been deprecated and will be removed soon.
+Use the <code>neutral_bkg</code> parameter of the <code><a title="es1d.Simulation" href="#es1d.Simulation">Simulation</a></code> class instead.</p></div>
+</dd>
+<dt id="es1d.Simulation.iter"><code class="name flex">
+<span>def <span class="ident">iter</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Advance simulation 1 iteration.</p></div>
+</dd>
+<dt id="es1d.Simulation.run"><code class="name flex">
+<span>def <span class="ident">run</span></span>(<span>tmax)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Advance simulation up to time <code>tmax</code>. If specified earlier, the
+<code>report</code> function will be called before each iteration.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>tmax</code></strong> :&ensp;<code>float</code></dt>
+<dd>Intended final simulation time. If smaller than current
+simulation time, a warning message will be displayed</dd>
+</dl></div>
+</dd>
+</dl>
+</dd>
+<dt id="es1d.Species"><code class="flex name class">
+<span>class <span class="ident">Species</span></span>
+<span>(</span><span>name, m_q, ppc, vfl=0.0, vth=0.0, density=None, n_sort=16)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class representing particle species. Particle data can be accessed
+(read/write) using the <code>particles</code> property.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name used to identify the particle species</dd>
+<dt><strong><code>m_q</code></strong> :&ensp;<code>float</code></dt>
+<dd>Mass over charge ration in for particles in the species in
+simulaition units (e.g. for electrons use -1)</dd>
+<dt><strong><code>ppc</code></strong> :&ensp;<code>list</code></dt>
+<dd>Number of particles per cell in the form [nx,ny]</dd>
+<dt><strong><code>vfl</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Initial fluid (generalized) velocity for the particles,
+defaults to 0 (no fluid velocity)</dd>
+<dt><strong><code>vth</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Initial thermal velocity for the particles, defaults to 0
+(no thermal velocity).</dd>
+<dt><strong><code>density</code></strong> :&ensp;<code><a title="es1d.Density" href="#es1d.Density">Density</a></code>, optional</dt>
+<dd>Density profile for the particle species specified as using a
+<code><a title="es1d.Density" href="#es1d.Density">Density</a></code> object. Defaults to <code>None</code> which corresponds to a
+uniform density of value 1</dd>
+<dt><strong><code>n_sort</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Number of iterations between particle sort, defaults to 16</dd>
+</dl>
+<h2 id="see-also">See Also</h2>
+<p><code><a title="es1d.Density" href="#es1d.Density">Density</a></code></p></div>
+<h3>Instance variables</h3>
+<dl>
+<dt id="es1d.Species.dt"><code class="name">var <span class="ident">dt</span></code></dt>
+<dd>
+<div class="desc"><p>Time step used for advancing the species</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>dt</code></strong> :&ensp;<code>float</code></dt>
+<dd>Time step in simulation units</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Species.dx"><code class="name">var <span class="ident">dx</span></code></dt>
+<dd>
+<div class="desc"><p>Cell size used for the species</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dx :float</code></dt>
+<dd>Cell size</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Species.energy"><code class="name">var <span class="ident">energy</span></code></dt>
+<dd>
+<div class="desc"><p>Total kinetic energy of particle species</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>ene</code></strong> :&ensp;<code>float</code></dt>
+<dd>Time-centered total kinetic energy of particle species</dd>
+</dl>
+<h2 id="note">Note</h2>
+<p>To ensure the correct time-centering the particle kinetic energy
+is calculated during the particle advance, so it will be 0 before
+the first iteration is completed</p></div>
+</dd>
+<dt id="es1d.Species.iter"><code class="name">var <span class="ident">iter</span></code></dt>
+<dd>
+<div class="desc"><p>Last iteration completed by the particle species</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>iter</code></strong> :&ensp;<code>int</code></dt>
+<dd>Iteration number</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Species.n_sort"><code class="name">var <span class="ident">n_sort</span></code></dt>
+<dd>
+<div class="desc"><p>Number of iterations between sorting particle data buffer</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>n_sort</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of iteration between sorts</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Species.particles"><code class="name">var <span class="ident">particles</span></code></dt>
+<dd>
+<div class="desc"><p>ndarray of particle data</p>
+<p>Allows full read/write access to particle data</p></div>
+</dd>
+<dt id="es1d.Species.ppc"><code class="name">var <span class="ident">ppc</span></code></dt>
+<dd>
+<div class="desc"><p>Number of particles per cell used for initializing new particles
+from density profile.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>ppc</code></strong> :&ensp;<code>float</code></dt>
+<dd>Number of particles per cell</dd>
+</dl></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="es1d.Species.add"><code class="name flex">
+<span>def <span class="ident">add</span></span>(<span>ix, x, vx)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Adds a new particle to the particle buffer</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>ix</code></strong> :&ensp;<code>int</code></dt>
+<dd>New particle cell index</dd>
+<dt><strong><code>x</code></strong> :&ensp;<code>float</code></dt>
+<dd>New particle position inside the cell</dd>
+<dt><strong><code>vx</code></strong> :&ensp;<code>float</code></dt>
+<dd>New particle velocity</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Species.charge"><code class="name flex">
+<span>def <span class="ident">charge</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Calculate charge density of particle species</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>n</code></strong> :&ensp;<code>numpy.array, (nx)</code></dt>
+<dd>Charge density of particle species. Array will jhave the same
+shape as the simulation grid</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Species.phasespace"><code class="name flex">
+<span>def <span class="ident">phasespace</span></span>(<span>quants, pha_nx, pha_range)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Calculate phasespace density of particle species</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>quants</code></strong> :&ensp;<code>list</code> of <code>str</code></dt>
+<dd>2 element list of quantities to use for "pha" diagnostics.
+Each quantity must be one of 'x1' or 'v1'</dd>
+<dt><strong><code>pha_nx</code></strong> :&ensp;<code>list</code> of <code>int</code>, optional</dt>
+<dd>2 element list specifying the size of the phasespace grid</dd>
+<dt><strong><code>pha_range</code></strong> :&ensp;<code>list</code> of <code>float</code>, optional</dt>
+<dd>2x2 element list specifying the physical limits of the
+phasespace grid in the form [[xmin,xmax],[ymin,ymax]]</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>pha</code></strong> :&ensp;<code>numpy.ndarray, (pha_nx[0],pha_nx[1])</code></dt>
+<dd>Phasespace density of particle species.</dd>
+</dl></div>
+</dd>
+<dt id="es1d.Species.report"><code class="name flex">
+<span>def <span class="ident">report</span></span>(<span>type, quants=[], pha_nx=[], pha_range=[])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Saves diagnostic information to disk</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>type</code></strong> :&ensp;<code>{"charge", "pha", "particles"}</code></dt>
+<dd>Type of information to save, must be one of "charge" (charge
+density), "pha" (phasespace density), or "particles" (raw
+particle data)</dd>
+<dt><strong><code>quants</code></strong> :&ensp;<code>list</code>, optional</dt>
+<dd>2 element list of quantities to use for "pha" diagnostics.
+Each quantity must be one of 'x1' or 'v1'</dd>
+<dt><strong><code>pha_nx</code></strong> :&ensp;<code>list</code> of <code>int</code>, optional</dt>
+<dd>2 element list specifying the size of the phasespace grid</dd>
+<dt><strong><code>pha_range</code></strong> :&ensp;<code>list</code> of <code>float</code>, optional</dt>
+<dd>2x2 element list specifying the physical limits of the
+phasespace grid in the form [[xmin,xmax],[ymin,ymax]]</dd>
+</dl></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul>
+<li><a href="#1d-electrostatic-pic-code">1D electrostatic PIC code</a></li>
+</ul>
+</div>
+<ul id="index">
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="es1d.Charge" href="#es1d.Charge">Charge</a></code></h4>
+<ul class="">
+<li><code><a title="es1d.Charge.report" href="#es1d.Charge.report">report</a></code></li>
+<li><code><a title="es1d.Charge.rho" href="#es1d.Charge.rho">rho</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="es1d.Density" href="#es1d.Density">Density</a></code></h4>
+<ul class="two-column">
+<li><code><a title="es1d.Density.copy" href="#es1d.Density.copy">copy</a></code></li>
+<li><code><a title="es1d.Density.end" href="#es1d.Density.end">end</a></code></li>
+<li><code><a title="es1d.Density.n" href="#es1d.Density.n">n</a></code></li>
+<li><code><a title="es1d.Density.ramp" href="#es1d.Density.ramp">ramp</a></code></li>
+<li><code><a title="es1d.Density.start" href="#es1d.Density.start">start</a></code></li>
+<li><code><a title="es1d.Density.type" href="#es1d.Density.type">type</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="es1d.Field" href="#es1d.Field">Field</a></code></h4>
+<ul class="">
+<li><code><a title="es1d.Field.E" href="#es1d.Field.E">E</a></code></li>
+<li><code><a title="es1d.Field.box" href="#es1d.Field.box">box</a></code></li>
+<li><code><a title="es1d.Field.dx" href="#es1d.Field.dx">dx</a></code></li>
+<li><code><a title="es1d.Field.nx" href="#es1d.Field.nx">nx</a></code></li>
+<li><code><a title="es1d.Field.report" href="#es1d.Field.report">report</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="es1d.Simulation" href="#es1d.Simulation">Simulation</a></code></h4>
+<ul class="two-column">
+<li><code><a title="es1d.Simulation.add_neutral_bkg" href="#es1d.Simulation.add_neutral_bkg">add_neutral_bkg</a></code></li>
+<li><code><a title="es1d.Simulation.box" href="#es1d.Simulation.box">box</a></code></li>
+<li><code><a title="es1d.Simulation.charge" href="#es1d.Simulation.charge">charge</a></code></li>
+<li><code><a title="es1d.Simulation.dx" href="#es1d.Simulation.dx">dx</a></code></li>
+<li><code><a title="es1d.Simulation.field" href="#es1d.Simulation.field">field</a></code></li>
+<li><code><a title="es1d.Simulation.iter" href="#es1d.Simulation.iter">iter</a></code></li>
+<li><code><a title="es1d.Simulation.n" href="#es1d.Simulation.n">n</a></code></li>
+<li><code><a title="es1d.Simulation.nx" href="#es1d.Simulation.nx">nx</a></code></li>
+<li><code><a title="es1d.Simulation.report" href="#es1d.Simulation.report">report</a></code></li>
+<li><code><a title="es1d.Simulation.run" href="#es1d.Simulation.run">run</a></code></li>
+<li><code><a title="es1d.Simulation.species" href="#es1d.Simulation.species">species</a></code></li>
+<li><code><a title="es1d.Simulation.t" href="#es1d.Simulation.t">t</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="es1d.Species" href="#es1d.Species">Species</a></code></h4>
+<ul class="two-column">
+<li><code><a title="es1d.Species.add" href="#es1d.Species.add">add</a></code></li>
+<li><code><a title="es1d.Species.charge" href="#es1d.Species.charge">charge</a></code></li>
+<li><code><a title="es1d.Species.dt" href="#es1d.Species.dt">dt</a></code></li>
+<li><code><a title="es1d.Species.dx" href="#es1d.Species.dx">dx</a></code></li>
+<li><code><a title="es1d.Species.energy" href="#es1d.Species.energy">energy</a></code></li>
+<li><code><a title="es1d.Species.iter" href="#es1d.Species.iter">iter</a></code></li>
+<li><code><a title="es1d.Species.n_sort" href="#es1d.Species.n_sort">n_sort</a></code></li>
+<li><code><a title="es1d.Species.particles" href="#es1d.Species.particles">particles</a></code></li>
+<li><code><a title="es1d.Species.phasespace" href="#es1d.Species.phasespace">phasespace</a></code></li>
+<li><code><a title="es1d.Species.ppc" href="#es1d.Species.ppc">ppc</a></code></li>
+<li><code><a title="es1d.Species.report" href="#es1d.Species.report">report</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

@@ -1,5 +1,4 @@
 ---
-layout: page
 title: Accessing simulation data
 permalink: /python/data
 ---

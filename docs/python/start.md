@@ -1,10 +1,11 @@
 ---
-layout: page
-title: Setting simulation parameters
-permalink: /python/sim
+title: Getting started
+permalink: /python/start
 ---
 
-## Initializing a ZPIC simulation in Python
+
+
+## Choosing the code version
 
 To run a ZPIC simulation in Python (including Jupyter notebooks) users must first choose which code version is to be used and import the appropriate module. Available versions are:
 
@@ -12,7 +13,7 @@ To run a ZPIC simulation in Python (including Jupyter notebooks) users must firs
 * `em2d`, `em2ds` - 2D electromagnetic code using a finite difference field solver (`em2d`) or a spectral field solver (`em2ds`)
 * `es1d` - 1D electrostatic code using a spectral field solver
 
-To run the simulation users must create a `Simulation` object from the appropriate module, e.g.:
+To run the simulation users must start by creating a `Simulation` object from the appropriate module, e.g.:
 
 ```python
 import em1d
@@ -31,7 +32,7 @@ The parameters are the following:
 
 * `nx` - Number of grid cells to use
 * `box`- Simulation box (phyiscal) size, in simulation units
-* `dt` - Simulation time step, in physical units
+* `dt` - Simulation time step, in simulation units
 * `species` (optional) - List of particle species to use in the simulation
 * `report` (optional) - Python function to call at every time-step when using the `run()` method.
 
@@ -53,7 +54,7 @@ sim = em2d.Simulation( nx, box, dt )
 
 ## Adding particles
 
-Adding particle species to the simulation is done using the `species` keyword of the `Simulation` class. Users may define an an arbitrary number of particle species, defining the required plasma properties, such as density, temperature, fluid velocity, etc. See the [particles.md] file for details.
+Adding particle species to the simulation is done using the `species` keyword of the `Simulation` class. Users may define an an arbitrary number of particle species, defining the required plasma properties, such as density, temperature, fluid velocity, etc. See the [particles](particles) section for details.
 
 The following example initializes a 1D simulation with a warm plasma:
 
@@ -86,18 +87,3 @@ while sim.t < 10.0:
     print('n = {:d}, t = {:g}'.format(sim.n,sim.t) )
     sim.iter()
 ```
-
-## Additional topics
-
-* Accessing simulation data
-* Saving simulation output
-* Laser pulses
-* Moving simulation window
-* Electric Current Smoothing
-* Initial EM fields
-* External EM fields
-* Spectral Field solver type
-* Custom filtering
-
-## Complete example - Two-stream instability
-

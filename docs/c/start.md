@@ -1,10 +1,28 @@
 ---
-layout: page
 title: Getting started in C
-permalink: /startc/
+permalink: /c/start
 ---
 
+## Compiling the code
 
+Each top level directory (em1d, em2d, etc.) has a self-contained version of the code. You can just open a terminal, navigate into into the required directory and execute `make`. No additional / external libraries are required.
+
+You can find detailed instructions for Windows / Mac OS X / Linux in the [Compiling](/compile) page, including instructions on how to get a C99 compiler for your system.
+
+## Setting the simulation parameters
+Simulation parameters are defined using a C file that is included in the `main.c` file of each code. For example, to launch the Two-Stream instability simulation on the 1D electrostatic code, you need to edit the `es1d/main.c` file and add:
+
+```C
+// Include Simulation parameters here
+#include "input/twostream.c"
+```
+
+This file must define two functions:
+
+* `sim_init()`	 - Initialization of the simulation
+* `sim_report()` - Simulation diagnostics
+
+Please check the examples available on the `input` directories for each code.
 
 # Initializing Simulation Parameters
 

@@ -1,12 +1,23 @@
 ---
-layout: page
 title: Compiling
 permalink: /compile/
 ---
 
+## Contents
+
+* [Pre-requisites](#pre-requisites)
+  * [Python module / notebooks](#python-module--notebooks)
+* [Compiling the code](#compiling-the-code)
+  * [Individual code versions](#individual-code-versions)
+  * [Python Modules](#python-modules)
+* [Getting a C99 compiler](#getting-a-c99-compiler)
+  * [Linux](#linux)
+  * [Mac OS X](#mac-os-x)
+  * [Windows](#windows)
+
 ## Pre-requisites
 
-The only pre-requisites for ZPIC are a C99 compliant compiler and (GNU) make (check the [Getting a C99 compiler](#Getting-a-C99-compiler) below). Our recommendation is to use the GCC compiler, but other compilers such as Clang, Intel icc, and PGI pgcc are known to work. No additional / external libraries are required.
+The only pre-requisites for ZPIC are a C99 compliant compiler and (GNU) make (check the [Getting a C99 compiler](#getting-a-c99-compiler) below). Our recommendation is to use the [GCC](https://gnu.gcc.org/) compiler, but other compilers such as Clang, Intel icc, and PGI pgcc are known to work. No additional / external libraries are required.
 
 ### Python module / notebooks
 
@@ -92,7 +103,7 @@ Otherwise a dialog box should pop up. Just click "Install" to download and insta
 
 ### Windows
 
-There are many ways to get GCC working under Windows. The recommended way is to use the mingw-w64 project: [http://mingw-w64.org/](http://mingw-w64.org/). Just download and run the installer from the Downloads page. We recommend the Mingw-builds package: [http://mingw-w64.org/doku.php/download/mingw-builds](http://mingw-w64.org/doku.php/download/mingw-builds).
+There are many ways to get GCC working under Windows. The recommended way is to use the mingw-w64 project: [http://mingw-w64.org/](http://mingw-w64.org/). Just download and run the installer from the Downloads page. We recommend the [Mingw-builds package](https://www.mingw-w64.org/downloads/#mingw-builds).
 
 The default settings work well. To launch a terminal with the appropriate path just click the Start button, and choose "Run terminal" under the "MinGW-W64 project" folder.
 

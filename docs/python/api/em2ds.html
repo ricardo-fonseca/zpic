@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>em2ds API documentation</title>
+<meta name="description" content="2D spectral EM-PIC code …" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>em2ds</code></h1>
+</header>
+<section id="section-intro">
+<h1 id="2d-spectral-em-pic-code">2D spectral EM-PIC code</h1>
+<p>2D, electro-magnetic, fully relativistic, Particle-in-Cell code, using
+a spectral EM field solver</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="em2ds.Charge"><code class="flex name class">
+<span>class <span class="ident">Charge</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Electric charge density class</p>
+<p>This class allows access to the electric chrage density data
+structures in the simulation. An object of this class is created
+automatically when creating a <code><a title="em2ds.Simulation" href="#em2ds.Simulation">Simulation</a></code> object.</p>
+<h2 id="see-also">See Also</h2>
+<p><code><a title="em2ds.Simulation" href="#em2ds.Simulation">Simulation</a></code></p></div>
+<h3>Instance variables</h3>
+<dl>
+<dt id="em2ds.Charge.rho"><code class="name">var <span class="ident">rho</span></code></dt>
+<dd>
+<div class="desc"><p>Charge density</p>
+<p>Grid of charge density values excluding guard cells</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>rho</code></strong> :&ensp;<code>numpy.ndarray, [nx,ny]</code></dt>
+<dd>Charge density values</dd>
+</dl></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="em2ds.Charge.report"><code class="name flex">
+<span>def <span class="ident">report</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Save charge density information to disk. Files will be saved in
+the CHARGE directory below the current working directory.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="em2ds.Current"><code class="flex name class">
+<span>class <span class="ident">Current</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Electric current density class</p>
+<p>This class allows access to the electric current density data
+structures in the simulation. An object of this class is created
+automatically when creating a <code><a title="em2d.Simulation" href="em2d.html#em2d.Simulation">Simulation</a></code> object.</p>
+<h2 id="see-also">See Also</h2>
+<p><code><a title="em2ds.Simulation" href="#em2ds.Simulation">Simulation</a></code></p></div>
+<h3>Instance variables</h3>
+<dl>
+<dt id="em2ds.Current.Jx"><code class="name">var <span class="ident">Jx</span></code></dt>
+<dd>
+<div class="desc"><p>Jx current density component</p>
+<p>Grid of (scalar) Jx field values excluding guard cells</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>Jx</code></strong> :&ensp;<code>numpy.ndarray, [nx,ny]</code></dt>
+<dd>X component values of the current density</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Current.Jy"><code class="name">var <span class="ident">Jy</span></code></dt>
+<dd>
+<div class="desc"><p>Jy current density component</p>
+<p>Grid of (scalar) Jy field values excluding guard cells</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>Jy</code></strong> :&ensp;<code>numpy.ndarray, [nx,ny]</code></dt>
+<dd>Y component values of the current density</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Current.Jz"><code class="name">var <span class="ident">Jz</span></code></dt>
+<dd>
+<div class="desc"><p>Jz current density component</p>
+<p>Grid of (scalar) Jz field values excluding guard cells</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>Jz</code></strong> :&ensp;<code>numpy.ndarray, [nx,ny]</code></dt>
+<dd>Z component values of the current density</dd>
+</dl></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="em2ds.Current.report"><code class="name flex">
+<span>def <span class="ident">report</span></span>(<span>jc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Save diagnostic information to disk. Files will be saved in the
+CURRENT directory below the current working directory.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>jc</code></strong> :&ensp;<code>{0,1,2}</code></dt>
+<dd>Current density component to save, must be one of 0 (x), 1 (y)
+or 2 (z)</dd>
+</dl></div>
+</dd>
+</dl>
+</dd>
+<dt id="em2ds.Density"><code class="flex name class">
+<span>class <span class="ident">Density</span></span>
+<span>(</span><span>type='uniform', start=0.0, end=0.0, n=1.0)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class representing charge density profiles for particle species
+initialization</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>type</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Density profile type, one of "uniform", "empty", "step", "slab"
+or "custom", defaults to "uniform"</dd>
+<dt><strong><code>start</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Position of the plasma start position for "step" or "slab"
+profiles, defaults to 0.0</dd>
+<dt><strong><code>end</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Position of the plasma end position for the "slab" profiles,
+defaults to 0.0</dd>
+<dt><strong><code>n</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Reference density to use, multiplies density profile value,
+defaults to 1.0</dd>
+</dl>
+<h2 id="see-also">See Also</h2>
+<p><code><a title="em2ds.Species" href="#em2ds.Species">Species</a></code></p></div>
+<h3>Instance variables</h3>
+<dl>
+<dt id="em2ds.Density.end"><code class="name">var <span class="ident">end</span></code></dt>
+<dd>
+<div class="desc"><p>Position of the plasma end position for "slab" profiles</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>end</code></strong> :&ensp;<code>float</code></dt>
+<dd>Position of the plasma end position</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Density.n"><code class="name">var <span class="ident">n</span></code></dt>
+<dd>
+<div class="desc"><p>Reference density to use</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>n</code></strong> :&ensp;<code>float</code></dt>
+<dd>Reference density to use</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Density.start"><code class="name">var <span class="ident">start</span></code></dt>
+<dd>
+<div class="desc"><p>Position of the plasma start position for "step" or "slab" profiles</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>start</code></strong> :&ensp;<code>float</code></dt>
+<dd>Position of the plasma start position</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Density.type"><code class="name">var <span class="ident">type</span></code></dt>
+<dd>
+<div class="desc"><p>Density profile type</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>type</code></strong> :&ensp;<code>{'uniform', 'empty', 'step', 'slab'}</code></dt>
+<dd>Density profile type</dd>
+</dl></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="em2ds.Density.copy"><code class="name flex">
+<span>def <span class="ident">copy</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Object copy.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="em2ds.EMF"><code class="flex name class">
+<span>class <span class="ident">EMF</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Electro-Magnetic fields class</p>
+<p>This class allows access to the EM field data structures in the
+simulation. An object of this class is created automatically when
+creating a <code><a title="em2d.Simulation" href="em2d.html#em2d.Simulation">Simulation</a></code> object.</p>
+<h2 id="see-also">See Also</h2>
+<p><code><a title="em2ds.Simulation" href="#em2ds.Simulation">Simulation</a></code></p></div>
+<h3>Instance variables</h3>
+<dl>
+<dt id="em2ds.EMF.Bx"><code class="name">var <span class="ident">Bx</span></code></dt>
+<dd>
+<div class="desc"><p>Bx field component</p>
+<p>Grid of (scalar) Bx field values excluding guard cells</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>Bx</code></strong> :&ensp;<code>numpy.ndarray, [nx,ny]</code></dt>
+<dd>X component values of the magnetic field.</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.EMF.By"><code class="name">var <span class="ident">By</span></code></dt>
+<dd>
+<div class="desc"><p>By field component</p>
+<p>Grid of (scalar) By field values excluding guard cells</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>By</code></strong> :&ensp;<code>numpy.ndarray, [nx,ny]</code></dt>
+<dd>Y component values of the magnetic field.</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.EMF.Bz"><code class="name">var <span class="ident">Bz</span></code></dt>
+<dd>
+<div class="desc"><p>Bz field component</p>
+<p>Grid of (scalar) Bz field values excluding guard cells</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>Bz</code></strong> :&ensp;<code>numpy.ndarray, [nx,ny]</code></dt>
+<dd>Z component values of the magnetic field.</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.EMF.Ex"><code class="name">var <span class="ident">Ex</span></code></dt>
+<dd>
+<div class="desc"><p>Ex field component</p>
+<p>Grid of (scalar) Ex field values excluding guard cells</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>Ex</code></strong> :&ensp;<code>numpy.ndarray, [nx,ny]</code></dt>
+<dd>X component values of the electric field.</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.EMF.Ey"><code class="name">var <span class="ident">Ey</span></code></dt>
+<dd>
+<div class="desc"><p>Ey field component</p>
+<p>Grid of (scalar) Ey field values excluding guard cells</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>Ey</code></strong> :&ensp;<code>numpy.ndarray, [nx,ny]</code></dt>
+<dd>Y component values of the electric field.</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.EMF.Ez"><code class="name">var <span class="ident">Ez</span></code></dt>
+<dd>
+<div class="desc"><p>Ez field component</p>
+<p>Grid of (scalar) Ey field values excluding guard cells</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>Ez</code></strong> :&ensp;<code>numpy.ndarray, [nx,ny]</code></dt>
+<dd>Z component values of the electric field.</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.EMF.box"><code class="name">var <span class="ident">box</span></code></dt>
+<dd>
+<div class="desc"><p>Simulation box physical size</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>box</code></strong> :&ensp;<code>numpy.ndarray, float(2)</code></dt>
+<dd>Simulation box size</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.EMF.dx"><code class="name">var <span class="ident">dx</span></code></dt>
+<dd>
+<div class="desc"><p>Cell sizes used for the EMF object</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>dx</code></strong> :&ensp;<code>numpy.ndarray, float(2)</code></dt>
+<dd>Array of cell sizes</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.EMF.energy"><code class="name">var <span class="ident">energy</span></code></dt>
+<dd>
+<div class="desc"><p>EM field energy per field component</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>energy</code></strong> :&ensp;<code>numpy.array, (6)</code></dt>
+<dd>Total energy in each field component. Electric field energy is
+in the first 3 values and magnetic field energy is in the last
+3 values.</dd>
+</dl>
+<h2 id="note">Note</h2>
+<p>These values are recalculated each time this function is called.</p></div>
+</dd>
+<dt id="em2ds.EMF.nx"><code class="name">var <span class="ident">nx</span></code></dt>
+<dd>
+<div class="desc"><p>Grid size used for the EMF object</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>nx</code></strong> :&ensp;<code>numpy.ndarray, int(2)</code></dt>
+<dd>Number of grid cells [nx,ny] for the simulation</dd>
+</dl></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="em2ds.EMF.report"><code class="name flex">
+<span>def <span class="ident">report</span></span>(<span>type, fc)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Save diagnostic information to disk. Files will be saved in the
+EMF directory below the current working directory.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>type</code></strong> :&ensp;<code>{'E','B'}</code></dt>
+<dd>Type of data to save, must be one of 'E' (electric field),
+'B' (magnetic field), 'Ep' (self-consistent + external
+electric field), 'Bp' (self-consistent + external magnetic
+field)</dd>
+<dt><strong><code>fc</code></strong> :&ensp;<code>{0,1,2}</code></dt>
+<dd>Field component to save, must be one of 0 (x), 1 (y) or 2 (z)</dd>
+</dl></div>
+</dd>
+</dl>
+</dd>
+<dt id="em2ds.Laser"><code class="flex name class">
+<span>class <span class="ident">Laser</span></span>
+<span>(</span><span>type='plane', start=0.0, fwhm=0.0, rise=0.0, flat=0.0, fall=0.0, a0=0.0, omega0=0.0, polarization=0.0, W0=0.0, focus=0.0, axis=0.0)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class representing laser pulses. Laser pulses are added to the
+simulation using the <code><a title="em2ds.Simulation.add_laser" href="#em2ds.Simulation.add_laser">Simulation.add_laser()</a></code> method.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>type</code></strong> :&ensp;<code>{'plane', 'gaussian'}</code>, optional</dt>
+<dd>Type of laser pulse to launch, defaults to 'plane'</dd>
+<dt><strong><code>start</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Position of the starting (leading) point for the laser envelope,
+defaults to 0.</dd>
+<dt><strong><code>fwhm</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Full width at half-max of the laser pulse. If set it overrides the
+<code>rise</code>, <code>flat</code>, and <code>fall</code> parameters, defaults to 0</dd>
+<dt><strong><code>rise</code></strong>, <strong><code>flat</code></strong>, <strong><code>fall</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Rise time (<code>rise</code>), flat time (<code>flat</code>) and fall time (<code>fall</code>) of
+the temporal envelope, default to 0</dd>
+<dt><strong><code>a0</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Normalized vector potential value at peak intensity of the laser
+pulse, default to 0</dd>
+<dt><strong><code>omega0</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Laser frequency in simulation units, defaults to 0</dd>
+<dt><strong><code>polarization</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Laser polarization in radians measured in reference to the y
+direction, defaults to 0</dd>
+<dt><strong><code>W0</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Gaussian pulse waist size in simulation units, defaults to 0</dd>
+<dt><strong><code>focus</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>Position of focal plane for Gaussian pulse in simulation units,
+may be set outside of the simulation box, defaults to 0</dd>
+<dt><strong><code>axis</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>y position of the propagation axis for Gaussian pulses in
+simulation units, defaults to 0.</dd>
+</dl>
+<h2 id="see-also">See Also</h2>
+<p><code><a title="em2ds.Simulation" href="#em2ds.Simulation">Simulation</a></code></p></div>
+<h3>Instance variables</h3>
+<dl>
+<dt id="em2ds.Laser.W0"><code class="name">var <span class="ident">W0</span></code></dt>
+<dd>
+<div class="desc"><p>Gaussian pulse waist size in simulation units</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>W0</code></strong> :&ensp;<code>float</code></dt>
+<dd>Gaussian envelope waist size</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Laser.a0"><code class="name">var <span class="ident">a0</span></code></dt>
+<dd>
+<div class="desc"><p>Normalized vector potential value at peak intensity of the
+laser pulse</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>a0</code></strong> :&ensp;<code>float</code></dt>
+<dd>Normalized vector potential value</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Laser.axis"><code class="name">var <span class="ident">axis</span></code></dt>
+<dd>
+<div class="desc"><p>Y position of the propagation axis for Gaussian pulses</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>focus</code></strong> :&ensp;<code>float</code></dt>
+<dd>Y axis position</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Laser.fall"><code class="name">var <span class="ident">fall</span></code></dt>
+<dd>
+<div class="desc"><p>Fall length of laser envelope</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>fall</code></strong> :&ensp;<code>float</code></dt>
+<dd>fall length of laser envelope</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Laser.flat"><code class="name">var <span class="ident">flat</span></code></dt>
+<dd>
+<div class="desc"><p>Flat length of laser envelope</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>flat</code></strong> :&ensp;<code>float</code></dt>
+<dd>flat length of laser envelope</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Laser.focus"><code class="name">var <span class="ident">focus</span></code></dt>
+<dd>
+<div class="desc"><p>Position of focal plane for Gaussian pulse in simulation units</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>focus</code></strong> :&ensp;<code>float</code></dt>
+<dd>Focal plane position</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Laser.fwhm"><code class="name">var <span class="ident">fwhm</span></code></dt>
+<dd>
+<div class="desc"><p>FWHM of laser envelope</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>fwhm</code></strong> :&ensp;<code>float</code></dt>
+<dd>Full width at half-max of the laser pulse</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Laser.omega0"><code class="name">var <span class="ident">omega0</span></code></dt>
+<dd>
+<div class="desc"><p>Laser frequency in simulation units</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>omega0</code></strong> :&ensp;<code>float</code></dt>
+<dd>Laser frequency</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Laser.polarization"><code class="name">var <span class="ident">polarization</span></code></dt>
+<dd>
+<div class="desc"><p>Laser polarization in radians measured in reference to the y
+direction</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>pol</code></strong> :&ensp;<code>float</code></dt>
+<dd>Polarization angle</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Laser.rise"><code class="name">var <span class="ident">rise</span></code></dt>
+<dd>
+<div class="desc"><p>Rise length of laser envelope</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>rise</code></strong> :&ensp;<code>float</code></dt>
+<dd>Rise length of laser envelope</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Laser.start"><code class="name">var <span class="ident">start</span></code></dt>
+<dd>
+<div class="desc"><p>Start position of laser envelope</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>start</code></strong> :&ensp;<code>float</code></dt>
+<dd>Position of the starting (leading) point for the laser envelope</dd>
+</dl></div>
+</dd>
+</dl>
+</dd>
+<dt id="em2ds.Simulation"><code class="flex name class">
+<span>class <span class="ident">Simulation</span></span>
+<span>(</span><span>nx, box, dt, species=None, report=None, neutral_bkg=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>ZPIC EM2D Simulation class</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>nx</code></strong> :&ensp;<code>list</code> of <code>int</code></dt>
+<dd>Number of grid cells [nx,ny] for the simulation</dd>
+<dt><strong><code>box</code></strong> :&ensp;<code>list</code> of <code>float</code></dt>
+<dd>Simulation box (phyiscal) size, in simulation units</dd>
+<dt><strong><code>dt</code></strong> :&ensp;<code>float</code></dt>
+<dd>Simulation time step, in simulation units</dd>
+<dt><strong><code>species</code></strong> :&ensp;<code><a title="em2ds.Species" href="#em2ds.Species">Species</a></code> or <code>list</code> of <code><a title="em2ds.Species" href="#em2ds.Species">Species</a></code>, optional</dt>
+<dd>Particle species to use in the simulation, defaults to None
+(no particles)</dd>
+<dt><strong><code>report</code></strong> :&ensp;<code>function</code>, optional</dt>
+<dd>Python function used for simulation reporting, defaults to None</dd>
+<dt><strong><code>neutral_bkg</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Controls adding a neutralizing charge background to the
+simulation at initialization, defaults to False.</dd>
+</dl>
+<h2 id="see-also">See Also</h2>
+<p><code><a title="em2ds.Species" href="#em2ds.Species">Species</a></code></p></div>
+<h3>Instance variables</h3>
+<dl>
+<dt id="em2ds.Simulation.box"><code class="name">var <span class="ident">box</span></code></dt>
+<dd>
+<div class="desc"><p>Simulation box physical size</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>box</code></strong> :&ensp;<code>numpy.ndarray, float(2)</code></dt>
+<dd>Simulation box size</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Simulation.charge"><code class="name">var <span class="ident">charge</span></code></dt>
+<dd>
+<div class="desc"><p>Simulation electric charge density object</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>current</code></strong> :&ensp;<code><a title="em2ds.Charge" href="#em2ds.Charge">Charge</a></code></dt>
+<dd>Simulation electric charge density object</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Simulation.current"><code class="name">var <span class="ident">current</span></code></dt>
+<dd>
+<div class="desc"><p>Simulation electric current density object</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>current</code></strong> :&ensp;<code><a title="em2ds.Current" href="#em2ds.Current">Current</a></code></dt>
+<dd>Simulation electric current density object</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Simulation.dx"><code class="name">var <span class="ident">dx</span></code></dt>
+<dd>
+<div class="desc"><p>Cell sizes used for the simulation</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>dx</code></strong> :&ensp;<code>numpy.ndarray, float(2)</code></dt>
+<dd>Array of cell sizes</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Simulation.emf"><code class="name">var <span class="ident">emf</span></code></dt>
+<dd>
+<div class="desc"><p>Simulation EM fields object</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>emf</code></strong> :&ensp;<code><a title="em2ds.EMF" href="#em2ds.EMF">EMF</a></code></dt>
+<dd>Simulation EM fields object</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Simulation.n"><code class="name">var <span class="ident">n</span></code></dt>
+<dd>
+<div class="desc"><p>Current simulation iteration number</p>
+<p>This number is advanced automatically by calls to the <code>iter()</code>
+and <code>run()</code> methods</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>n</code></strong> :&ensp;<code>int</code></dt>
+<dd>Current simulation iteration number</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Simulation.nx"><code class="name">var <span class="ident">nx</span></code></dt>
+<dd>
+<div class="desc"><p>Grid size used for the simulation</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>nx</code></strong> :&ensp;<code>numpy.ndarray, int(2)</code></dt>
+<dd>Number of grid cells [nx,ny] for the simulation</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Simulation.report"><code class="name">var <span class="ident">report</span></code></dt>
+<dd>
+<div class="desc"><p>Report function for the simulation</p>
+<p>This function will be called once before each time step when using
+the <code>run()</code> method.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>report</code></strong> :&ensp;<code>function</code></dt>
+<dd>Report function for the simulation</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Simulation.species"><code class="name">var <span class="ident">species</span></code></dt>
+<dd>
+<div class="desc"><p>Simulation particle species list</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>species</code></strong> :&ensp;<code>list</code> of <code><a title="em2ds.Species" href="#em2ds.Species">Species</a></code></dt>
+<dd>Simulation particle species list</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Simulation.t"><code class="name">var <span class="ident">t</span></code></dt>
+<dd>
+<div class="desc"><p>Current simulation time value</p>
+<p>This value is advanced automatically by calls to the <code>iter()</code>
+and <code>run()</code> methods</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>t</code></strong> :&ensp;<code>float</code></dt>
+<dd>Current simulation simulation time</dd>
+</dl></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="em2ds.Simulation.add_laser"><code class="name flex">
+<span>def <span class="ident">add_laser</span></span>(<span>laser)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Adds laser pulse to the simulation</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>laser</code></strong> :&ensp;<code><a title="em2ds.Laser" href="#em2ds.Laser">Laser</a></code></dt>
+<dd>Laser pulse to be added to the simulation</dd>
+</dl>
+<h2 id="see-also">See Also</h2>
+<p><code><a title="em2ds.Laser" href="#em2ds.Laser">Laser</a></code></p></div>
+</dd>
+<dt id="em2ds.Simulation.add_neutral_bkg"><code class="name flex">
+<span>def <span class="ident">add_neutral_bkg</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Adds a (initial) neutralizing charge background to the simulation</p>
+<h2 id="note">Note</h2>
+<p>Use of this function has been deprecated and will be removed soon.
+Use the <code>neutral_bkg</code> parameter of the <code><a title="em2ds.Simulation" href="#em2ds.Simulation">Simulation</a></code> class instead.</p></div>
+</dd>
+<dt id="em2ds.Simulation.iter"><code class="name flex">
+<span>def <span class="ident">iter</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Advance simulation 1 iteration.</p></div>
+</dd>
+<dt id="em2ds.Simulation.run"><code class="name flex">
+<span>def <span class="ident">run</span></span>(<span>tmax)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Advance simulation up to time <code>tmax</code>. If specified earlier, the
+<code>report</code> function will be called before each iteration.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>tmax</code></strong> :&ensp;<code>float</code></dt>
+<dd>Intended final simulation time. If smaller than current
+simulation time, a warning message will be displayed</dd>
+</dl></div>
+</dd>
+</dl>
+</dd>
+<dt id="em2ds.Species"><code class="flex name class">
+<span>class <span class="ident">Species</span></span>
+<span>(</span><span>name, m_q, ppc, ufl=[0.0, 0.0, 0.0], uth=[0.0, 0.0, 0.0], density=None, n_sort=16)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class representing particle species. Particle data can be accessed
+(read/write) using the <code>particles</code> property.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>name</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name used to identify the particle species</dd>
+<dt><strong><code>m_q</code></strong> :&ensp;<code>float</code></dt>
+<dd>Mass over charge ration in for particles in the species in
+simulaition units (e.g. for electrons use -1)</dd>
+<dt><strong><code>ppc</code></strong> :&ensp;<code>list</code></dt>
+<dd>Number of particles per cell in the form [nx,ny]</dd>
+<dt><strong><code>ufl</code></strong> :&ensp;<code>list</code>, optional</dt>
+<dd>Initial fluid (generalized) velocity for the particles,
+defaults to [0,0,0] (no fluid velocity)</dd>
+<dt><strong><code>uth</code></strong> :&ensp;<code>list</code>, optional</dt>
+<dd>Initial thermal velocity for the particles, defaults to [0,0,0]
+(no thermal velocity).</dd>
+<dt><strong><code>density</code></strong> :&ensp;<code><a title="em2ds.Density" href="#em2ds.Density">Density</a></code>, optional</dt>
+<dd>Density profile for the particle species specified as using a
+<code><a title="em2ds.Density" href="#em2ds.Density">Density</a></code> object. Defaults to <code>None</code> which corresponds to a
+uniform density of value 1</dd>
+<dt><strong><code>n_sort</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Number of iterations between particle sort, defaults to 16.</dd>
+</dl>
+<h2 id="see-also">See Also</h2>
+<p><code><a title="em2ds.Density" href="#em2ds.Density">Density</a></code></p></div>
+<h3>Instance variables</h3>
+<dl>
+<dt id="em2ds.Species.dt"><code class="name">var <span class="ident">dt</span></code></dt>
+<dd>
+<div class="desc"><p>Time step used for advancing the species</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>dt</code></strong> :&ensp;<code>float</code></dt>
+<dd>Time step in simulation units</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Species.dx"><code class="name">var <span class="ident">dx</span></code></dt>
+<dd>
+<div class="desc"><p>Cell sizes used for the species</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>dx</code></strong> :&ensp;<code>numpy.ndarray, float(2)</code></dt>
+<dd>Array of cell sizes</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Species.energy"><code class="name">var <span class="ident">energy</span></code></dt>
+<dd>
+<div class="desc"><p>Total kinetic energy of particle species</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>ene</code></strong> :&ensp;<code>float</code></dt>
+<dd>Time-centered total kinetic energy of particle species</dd>
+</dl>
+<h2 id="note">Note</h2>
+<p>To ensure the correct time-centering the particle kinetic energy
+is calculated during the particle advance, so it will be 0 before
+the first iteration is completed</p></div>
+</dd>
+<dt id="em2ds.Species.iter"><code class="name">var <span class="ident">iter</span></code></dt>
+<dd>
+<div class="desc"><p>Last iteration completed by the particle species</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>iter</code></strong> :&ensp;<code>int</code></dt>
+<dd>Iteration number</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Species.n_sort"><code class="name">var <span class="ident">n_sort</span></code></dt>
+<dd>
+<div class="desc"><p>Number of iterations between sorting particle data buffer</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>n_sort</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of iteration between sorts</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Species.particles"><code class="name">var <span class="ident">particles</span></code></dt>
+<dd>
+<div class="desc"><p>ndarray of particle data</p>
+<p>Allows full read/write access to particle data</p></div>
+</dd>
+<dt id="em2ds.Species.ppc"><code class="name">var <span class="ident">ppc</span></code></dt>
+<dd>
+<div class="desc"><p>Number of particles per cell used for initializing new particles
+from density profile.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>ppc</code></strong> :&ensp;<code>numpy.ndarray, (2)</code></dt>
+<dd>Number of particles per cell along x and y</dd>
+</dl></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="em2ds.Species.add"><code class="name flex">
+<span>def <span class="ident">add</span></span>(<span>ix, x, u)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Adds a new particle to the particle buffer</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>ix</code></strong> :&ensp;<code>int[:]</code></dt>
+<dd>New particle cell index</dd>
+<dt><strong><code>x</code></strong> :&ensp;<code>float[:]</code></dt>
+<dd>New particle position inside the cell</dd>
+<dt><strong><code>u</code></strong> :&ensp;<code>float[:]</code></dt>
+<dd>New particle (generalized velocity)</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Species.charge"><code class="name flex">
+<span>def <span class="ident">charge</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Calculate charge density of particle species</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>n</code></strong> :&ensp;<code>numpy.ndarray, (nx,ny)</code></dt>
+<dd>Charge density of particle species. Array will jhave the same
+shape as the simulation grid</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Species.phasespace"><code class="name flex">
+<span>def <span class="ident">phasespace</span></span>(<span>quants, pha_nx, pha_range)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Calculate phasespace density of particle species</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>quants</code></strong> :&ensp;<code>list</code> of <code>str</code></dt>
+<dd>2 element list of quantities to use for "pha" diagnostics.
+Each quantity must be one of 'x1', 'x2', 'u1', 'u2' or 'u3'</dd>
+<dt><strong><code>pha_nx</code></strong> :&ensp;<code>list</code> of <code>int</code>, optional</dt>
+<dd>2 element list specifying the size of the phasespace grid</dd>
+<dt><strong><code>pha_range</code></strong> :&ensp;<code>list</code> of <code>float</code>, optional</dt>
+<dd>2x2 element list specifying the physical limits of the
+phasespace grid in the form [[xmin,xmax],[ymin,ymax]]</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>pha</code></strong> :&ensp;<code>numpy.ndarray, (pha_nx[0],pha_nx[1])</code></dt>
+<dd>Phasespace density of particle species.</dd>
+</dl></div>
+</dd>
+<dt id="em2ds.Species.report"><code class="name flex">
+<span>def <span class="ident">report</span></span>(<span>type, quants=[], pha_nx=[], pha_range=[])</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Saves diagnostic information to disk</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>type</code></strong> :&ensp;<code>{"charge", "pha", "particles"}</code></dt>
+<dd>Type of information to save, must be one of "charge" (charge
+density), "pha" (phasespace density), or "particles" (raw
+particle data)</dd>
+<dt><strong><code>quants</code></strong> :&ensp;<code>list</code>, optional</dt>
+<dd>2 element list of quantities to use for "pha" diagnostics.
+Each quantity must be one of 'x1', 'x2', 'u1', 'u2' or 'u3'</dd>
+<dt><strong><code>pha_nx</code></strong> :&ensp;<code>list</code> of <code>int</code>, optional</dt>
+<dd>2 element list specifying the size of the phasespace grid</dd>
+<dt><strong><code>pha_range</code></strong> :&ensp;<code>list</code> of <code>float</code>, optional</dt>
+<dd>2x2 element list specifying the physical limits of the
+phasespace grid in the form [[xmin,xmax],[ymin,ymax]]</dd>
+</dl></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul>
+<li><a href="#2d-spectral-em-pic-code">2D spectral EM-PIC code</a></li>
+</ul>
+</div>
+<ul id="index">
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="em2ds.Charge" href="#em2ds.Charge">Charge</a></code></h4>
+<ul class="">
+<li><code><a title="em2ds.Charge.report" href="#em2ds.Charge.report">report</a></code></li>
+<li><code><a title="em2ds.Charge.rho" href="#em2ds.Charge.rho">rho</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="em2ds.Current" href="#em2ds.Current">Current</a></code></h4>
+<ul class="">
+<li><code><a title="em2ds.Current.Jx" href="#em2ds.Current.Jx">Jx</a></code></li>
+<li><code><a title="em2ds.Current.Jy" href="#em2ds.Current.Jy">Jy</a></code></li>
+<li><code><a title="em2ds.Current.Jz" href="#em2ds.Current.Jz">Jz</a></code></li>
+<li><code><a title="em2ds.Current.report" href="#em2ds.Current.report">report</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="em2ds.Density" href="#em2ds.Density">Density</a></code></h4>
+<ul class="">
+<li><code><a title="em2ds.Density.copy" href="#em2ds.Density.copy">copy</a></code></li>
+<li><code><a title="em2ds.Density.end" href="#em2ds.Density.end">end</a></code></li>
+<li><code><a title="em2ds.Density.n" href="#em2ds.Density.n">n</a></code></li>
+<li><code><a title="em2ds.Density.start" href="#em2ds.Density.start">start</a></code></li>
+<li><code><a title="em2ds.Density.type" href="#em2ds.Density.type">type</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="em2ds.EMF" href="#em2ds.EMF">EMF</a></code></h4>
+<ul class="two-column">
+<li><code><a title="em2ds.EMF.Bx" href="#em2ds.EMF.Bx">Bx</a></code></li>
+<li><code><a title="em2ds.EMF.By" href="#em2ds.EMF.By">By</a></code></li>
+<li><code><a title="em2ds.EMF.Bz" href="#em2ds.EMF.Bz">Bz</a></code></li>
+<li><code><a title="em2ds.EMF.Ex" href="#em2ds.EMF.Ex">Ex</a></code></li>
+<li><code><a title="em2ds.EMF.Ey" href="#em2ds.EMF.Ey">Ey</a></code></li>
+<li><code><a title="em2ds.EMF.Ez" href="#em2ds.EMF.Ez">Ez</a></code></li>
+<li><code><a title="em2ds.EMF.box" href="#em2ds.EMF.box">box</a></code></li>
+<li><code><a title="em2ds.EMF.dx" href="#em2ds.EMF.dx">dx</a></code></li>
+<li><code><a title="em2ds.EMF.energy" href="#em2ds.EMF.energy">energy</a></code></li>
+<li><code><a title="em2ds.EMF.nx" href="#em2ds.EMF.nx">nx</a></code></li>
+<li><code><a title="em2ds.EMF.report" href="#em2ds.EMF.report">report</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="em2ds.Laser" href="#em2ds.Laser">Laser</a></code></h4>
+<ul class="two-column">
+<li><code><a title="em2ds.Laser.W0" href="#em2ds.Laser.W0">W0</a></code></li>
+<li><code><a title="em2ds.Laser.a0" href="#em2ds.Laser.a0">a0</a></code></li>
+<li><code><a title="em2ds.Laser.axis" href="#em2ds.Laser.axis">axis</a></code></li>
+<li><code><a title="em2ds.Laser.fall" href="#em2ds.Laser.fall">fall</a></code></li>
+<li><code><a title="em2ds.Laser.flat" href="#em2ds.Laser.flat">flat</a></code></li>
+<li><code><a title="em2ds.Laser.focus" href="#em2ds.Laser.focus">focus</a></code></li>
+<li><code><a title="em2ds.Laser.fwhm" href="#em2ds.Laser.fwhm">fwhm</a></code></li>
+<li><code><a title="em2ds.Laser.omega0" href="#em2ds.Laser.omega0">omega0</a></code></li>
+<li><code><a title="em2ds.Laser.polarization" href="#em2ds.Laser.polarization">polarization</a></code></li>
+<li><code><a title="em2ds.Laser.rise" href="#em2ds.Laser.rise">rise</a></code></li>
+<li><code><a title="em2ds.Laser.start" href="#em2ds.Laser.start">start</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="em2ds.Simulation" href="#em2ds.Simulation">Simulation</a></code></h4>
+<ul class="two-column">
+<li><code><a title="em2ds.Simulation.add_laser" href="#em2ds.Simulation.add_laser">add_laser</a></code></li>
+<li><code><a title="em2ds.Simulation.add_neutral_bkg" href="#em2ds.Simulation.add_neutral_bkg">add_neutral_bkg</a></code></li>
+<li><code><a title="em2ds.Simulation.box" href="#em2ds.Simulation.box">box</a></code></li>
+<li><code><a title="em2ds.Simulation.charge" href="#em2ds.Simulation.charge">charge</a></code></li>
+<li><code><a title="em2ds.Simulation.current" href="#em2ds.Simulation.current">current</a></code></li>
+<li><code><a title="em2ds.Simulation.dx" href="#em2ds.Simulation.dx">dx</a></code></li>
+<li><code><a title="em2ds.Simulation.emf" href="#em2ds.Simulation.emf">emf</a></code></li>
+<li><code><a title="em2ds.Simulation.iter" href="#em2ds.Simulation.iter">iter</a></code></li>
+<li><code><a title="em2ds.Simulation.n" href="#em2ds.Simulation.n">n</a></code></li>
+<li><code><a title="em2ds.Simulation.nx" href="#em2ds.Simulation.nx">nx</a></code></li>
+<li><code><a title="em2ds.Simulation.report" href="#em2ds.Simulation.report">report</a></code></li>
+<li><code><a title="em2ds.Simulation.run" href="#em2ds.Simulation.run">run</a></code></li>
+<li><code><a title="em2ds.Simulation.species" href="#em2ds.Simulation.species">species</a></code></li>
+<li><code><a title="em2ds.Simulation.t" href="#em2ds.Simulation.t">t</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="em2ds.Species" href="#em2ds.Species">Species</a></code></h4>
+<ul class="two-column">
+<li><code><a title="em2ds.Species.add" href="#em2ds.Species.add">add</a></code></li>
+<li><code><a title="em2ds.Species.charge" href="#em2ds.Species.charge">charge</a></code></li>
+<li><code><a title="em2ds.Species.dt" href="#em2ds.Species.dt">dt</a></code></li>
+<li><code><a title="em2ds.Species.dx" href="#em2ds.Species.dx">dx</a></code></li>
+<li><code><a title="em2ds.Species.energy" href="#em2ds.Species.energy">energy</a></code></li>
+<li><code><a title="em2ds.Species.iter" href="#em2ds.Species.iter">iter</a></code></li>
+<li><code><a title="em2ds.Species.n_sort" href="#em2ds.Species.n_sort">n_sort</a></code></li>
+<li><code><a title="em2ds.Species.particles" href="#em2ds.Species.particles">particles</a></code></li>
+<li><code><a title="em2ds.Species.phasespace" href="#em2ds.Species.phasespace">phasespace</a></code></li>
+<li><code><a title="em2ds.Species.ppc" href="#em2ds.Species.ppc">ppc</a></code></li>
+<li><code><a title="em2ds.Species.report" href="#em2ds.Species.report">report</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>
