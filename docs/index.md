@@ -1,7 +1,3 @@
----
-title: ZPIC educational code suite
----
-
 ![front image](/zpic/assets/zpic-front.jpg)
 
 # The ZPIC educational code suite
