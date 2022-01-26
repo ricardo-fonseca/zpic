@@ -2,7 +2,7 @@
 title: ZPIC educational code suite
 ---
 
-![front image](assets/zpic-front.jpg)
+![front image](/zpic/assets/zpic-front.jpg)
 
 # The ZPIC educational code suite
 
