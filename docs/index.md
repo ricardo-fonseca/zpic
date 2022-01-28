@@ -1,6 +1,5 @@
 ---
 title: zpic@edu
-description: ZPIC educational code suite
 
 layout: splash
 
