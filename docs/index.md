@@ -1,16 +1,39 @@
 ---
-title: ZPIC educational code suite
+title: zpic@edu
+description: ZPIC educational code suite
+
+layout: splash
+
+header:
+  overlay_color: "#303030"
+  overlay_filter: "0.05"
+  overlay_image: /assets/images/twostream.png
+  actions:
+    - label: "Find us on GitHub"
+      url: "https://github.com/ricardo-fonseca/zpic/"
+#  caption: "PIC simulation of the Two-Stream instability"
+excerpt: "Particle-in-Cell codes for plasma physics education and research"
+
+intro: 
+  - excerpt: 'The __ZPIC__ project is a suite of 1D/2D fully relativistic electromagnetic PIC codes, as well as 1D electrostatic. __ZPIC__ is geared towards plasma physics education and researchers looking for a simple, easily customizable, PIC code. Learn more about ZPIC [here](about).'
+feature_row:
+  - title: "Getting started"
+    excerpt: "Learn the basics about ZPIC, including downloading and compiling instructions"
+    url: "start"
+    btn_label: "Start here"
+    btn_class: "btn--primary"
+  - title: "Documentation"
+    excerpt: "Access user guides, algorithm details, and API reference"
+    url: "documentation"
+    btn_label: "Read the documentation"
+    btn_class: "btn--primary"
+  - title: "Examples"
+    excerpt: "Check our library of well documented example ZPIC Jupyter notebooks"
+    url: "examples"
+    btn_label: "Notebook examples"
+    btn_class: "btn--primary"
 ---
 
-![front image](assets/zpic-front.jpg)
+{% include feature_row id="intro" type="center"%}
 
-# The ZPIC educational code suite
-
-Particle-in-Cell (PIC) codes are used in almost all areas of plasma physics, such as fusion energy research, plasma accelerators, space physics, ion propulsion, and plasma processing, and many other areas. Leveraging on our expertise and experience from the development and use of the OSIRIS PIC code, we have developed a suite of 1D/2D fully relativistic electromagnetic PIC codes, as well as 1D electrostatic. These codes are self-contained and require only a standard laptop/desktop computer with a C compiler to be run. The output files are written in a new file format called ZDF that can be easily read using the supplied routines in a number of languages, such as Python, and IDL. The code suite also includes a number of example problems that can be used to illustrate several textbook and advanced plasma mechanisms, including instructions for parameter space exploration. We also invite contributions to this repository of test problems that will be made freely available to the community provided the input files comply with the format defined by the ZPIC team.
-
-## Getting the code
-
-ZPIC is hosted on an open repository on GitHub
-
-## Compilation / Dependencies
-
+{% include feature_row %}

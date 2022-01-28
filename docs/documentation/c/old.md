@@ -1,6 +1,9 @@
 ---
 title: Getting started in C
-permalink: /c/start
+permalink: /documentation/c/start_old
+
+layout: single
+toc: true
 ---
 
 ## Compiling the code
@@ -12,7 +15,7 @@ You can find detailed instructions for Windows / Mac OS X / Linux in the [Compil
 ## Setting the simulation parameters
 Simulation parameters are defined using a C file that is included in the `main.c` file of each code. For example, to launch the Two-Stream instability simulation on the 1D electrostatic code, you need to edit the `es1d/main.c` file and add:
 
-```C
+```c
 // Include Simulation parameters here
 #include "input/twostream.c"
 ```
@@ -32,7 +35,7 @@ These parameters are defined in the `sim_init()` function in the input file. Thi
 
 The following example sets the minimal parameters for a 2D ZPIC simulation (with no particles):
 
-```C
+```c
 void sim_init( t_simulation* sim ){
 
 	// Simulation box
@@ -54,7 +57,7 @@ Please check the `input` directories under each code for several complete exampl
 
 The input parameters must define the number of grid points in each direction of the simulation grid, and the physical dimensions (in simulation units) of this box. These dimensions are measured from the lower boundary of the first cell to the upper boundary of the last cell.
 
-```C
+```c
 	// Simulation box
 	int   nx[2]  = { 100, 100 };
 	float box[2] = { 10.0, 10.0 };
@@ -67,7 +70,7 @@ The input parameters must define the number of grid points in each direction of 
 
 The input parameters must define the simulation time step and the total simulation time (in simulation units)
 
-```C
+```c
 	// Time step
 	float dt = 0.07;
 	float tmax = 70.0;
@@ -82,7 +85,7 @@ The code will check if the time step is compatible with the specified resolution
 
 The input parameters must also define the frequency at which the `sim_report()` function is called from the main loop. For this purpose the user specifies the number of iterations between these function calls:
 
-```C
+```c
 	// Diagnostic frequency - call sim_report() every 50 iterations
 	int ndump = 50;
 
@@ -94,66 +97,11 @@ Setting this parameter to 0 disables all diagnostics. For details on simulation 
 
 ## Particles
 
-The input parameters may define an arbitrary number of particle species, defining the required plasma properties, such as density, temperature, fluid velocity, etc. See the [Particle injection.md](Particle_Injection.md) file.
+The input parameters may define an arbitrary number of particle species, defining the required plasma properties, such as density, temperature, fluid velocity, etc. See the [Particle injection](particles) page for details.
 
 ## Adding laser pulses
 
-The input parameters may optionally define an arbitrary number of laser pulses to be added to the simulation. Each laser pulse is added through a call to the `sim_add_laser()` routine:
-
-```C
-void sim_add_laser( t_simulation* sim, t_emf_laser* laser)
-```
-
-This routine should be called inside `sim_init()`, somewhere after the call to `sim_new()`. Laser parameters are defined in the supplied _t\_emf\_laser_ structure.
-
-| Laser parameters| Description|
-|---|---|
-| type | PLANE for a plane wave or GAUSSIAN for a gaussian beam |
-| start | Front edge of the laser pulse |
-| fwhm  | FWHM of the laser pulse duration |
-| rise, flat, fall  | Rise / flat / fall time of the laser pulse |
-| a0  | Normalized peak vector potential of the pulse |
-| omega0 | Laser frequency |
-| polarization | Laser polarization angle, 0 aligns $E$ field along $x_2$ |
-| W0 | Gaussian beam waist |
-| focus | Focal plane position |
-| axis | Position of the optical axis |
-
-All parameters are in normalized simulation units except for the normalized peak vector potential, $a_0$, which is adimensional. In 1D only plane waves exist, so the _type_, _W0_, _focus_ and _axis_ parameters are not supported.
-
-Using the _fwhm_ parameter will override the _rise_, _flat_ and _fall_ parameters. Specifically, it sets _rise = fwhm/2_, _flat = 0_, and _fall = fwhm/2_.
-
-The following example launches a laser starting at position 17.0, with a (temporal) full width at half max of 2.0. The peak normalized vector potential is 2.0, and the laser frequency is 10.0. The polarization degree is $\pi/2$, which aligns the $E$ field along the $x_3$ direction. All values are in normalized simulation units.
-
-```C
-t_emf_laser laser = {
-	.start = 17.0,
-	.fwhm  = 2.0,
-	.a0 = 2.0,
-	.omega0 = 10.0,
-	.polarization = M_PI_2
-};
-sim_add_laser( sim, &laser );
-```
-
-The following is a 2D example of a gaussian laser pulse. It uses the same parameters as the previous example, set the beam focus waist to 4.0, the focal plane position to x=20.0, and the propagation axis to y=12.8.
-
-```C
-t_emf_laser laser = {
-	.type = GAUSSIAN,
-	.start = 17.0,
-	.fwhm  = 2.0,
-	.a0 = 2.0,
-	.omega0 = 10.0,
-	.W0 = 4.0,
-	.focus = 20.0,
-	.axis = 12.8,
-	.polarization = M_PI_2
-};
-sim_add_laser( sim, &laser );
-```
-
-See for example the Laser Wakefield input files (e.g. [lwfa.c](../em1d/input/lwfa.c)).
+The input parameters may optionally define an arbitrary number of laser pulses to be added to the simulation. See the [Laser pulses](laser) page for details.
 
 ## Moving simulation window
 
@@ -161,7 +109,7 @@ The finite difference models can be run using a moving simulation window that mo
 
 Using a moving window requires calling the `sim_set_moving_window()` routine:
 
-```C
+```c
 void sim_set_moving_window( t_simulation* sim )
 ```
 
@@ -180,7 +128,7 @@ When using the finite difference models, the code will always behave as if the t
 
 For the spectral models this is no longer the case, and if required a neutralizing background must be explicitly added. This is achieved through a call to the `sim_add_neutral_bkg()` routine:
 
-```C
+```c
 void sim_add_neutral_bkg( t_simulation* sim )
 ```
 
@@ -192,9 +140,12 @@ For an example, see the Laser Wakefield example for the 1D electromagnetic spect
 
 ## Electric Current Smoothing
 
-For the finite difference models, the input parameters may also optionally define some smoothing (filtering) parameters to be applied to the electric current following the deposition of this quantity from particle motion. This is achieved through a call to the `sim_set_smooth()` routine:
+For the finite difference models, the input parameters may also optionally define some smoothing (filtering) parameters to be applied to the electric current. See the 
 
-```C
+
+ following the deposition of this quantity from particle motion. This is achieved through a call to the `sim_set_smooth()` routine:
+
+```c
 void sim_set_smooth( t_simulation* sim, t_smooth* smooth)
 ```
 
@@ -217,7 +168,7 @@ Simulation diagnostics are defined in the `sim_report()` function of the input f
 
 Here's an example from a 2D Weibel instability simulation:
 
-```C
+```c
 void sim_report( t_simulation* sim ){
 	// Bx, By
 	emf_report( &sim -> emf, BFLD, 0 );
@@ -235,7 +186,7 @@ void sim_report( t_simulation* sim ){
 ## Electromagnetic Field Diagnostics
 
 Electromagnetic field diagnostics are done through a call to the `emf_report()` function:
-```C
+```c
 void emf_report( t_emf *emf, char field, char fc )
 ```
 
@@ -249,7 +200,7 @@ This function may be called multiple times inside `sim_report()` with the follow
 ## Electric Current Diagnostics
 
 Electric Current diagnostics are done through a call to the `current_report()` function:
-```C
+```c
 void current_report( const t_current *emf, const char field, const char fc )
 ```
 
@@ -262,7 +213,7 @@ This function may be called multiple times inside `sim_report()` with the follow
 ## Electric Charge Diagnostics (spectral codes only)
 
 Global electric Charge diagnostics are done through a call to the `charge_report()` function:
-```C
+```c
 void charge_report( t_current *charge )
 ```
 This function is only available in spectral code (es1d, em1ds, em2ds) as this quantity is not required for the finit difference models.
@@ -272,7 +223,7 @@ This function should only be called once inside `sim_report()`.
 ## Particle diagnostics
 
 Particle species diagnostics are done through a call to the `spec_report()` function:
-```C
+```c
 spec_report( t_species *spec, int rep_type, int pha_nx[], float pha_range[][2] )
 ```
 
@@ -296,7 +247,7 @@ The following types of reports are available:
 
 In the following example, a simulation with two species saves diagnostic information for the charge density and $(x_1,u_1)$ phasespace density of species 0, and the complete particle dataset for species 1:
 
-```C
+```c
 void sim_report( t_simulation* sim ){
 
     spec_report( &sim -> species[0], CHARGE, NULL, NULL );

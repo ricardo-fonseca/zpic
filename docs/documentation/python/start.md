@@ -1,9 +1,16 @@
 ---
 title: Getting started
-permalink: /python/start
+description: Getting started with ZPIC simulations in Python
+permalink: /documentation/python/start
+usemathjax: true
+
+layout: single
+toc: true
+toc_label: Getting started
+
+sidebar:
+  nav: "docs"
 ---
-
-
 
 ## Choosing the code version
 

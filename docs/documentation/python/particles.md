@@ -1,16 +1,16 @@
 ---
 title: Particle species
-permalink: /python/particles
+description: Initializing particle data in ZPIC simulations
+permalink: /documentation/python/particles
 usemathjax: true
+
+layout: single
+toc: true
+toc_label: Particle species
+
+sidebar:
+  nav: "docs"
 ---
-
-## Contents
-
-* [Introduction](#introduction)
-* [The `Species` object](#the-species-object)
-* [1D Density profiles](#1d-density-profiles)
-* [2D Density profiles](#2d-density-profiles)
-* [Diagnostics](#diagnostics)
 
 ## Introduction
 

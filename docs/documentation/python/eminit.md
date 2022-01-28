@@ -1,8 +1,18 @@
 ---
 title: Initial EM fields
-permalink: /python/eminit
+description: Setting the initial electro-magnetic fields for your simulation
 usemathjax: true
+permalink: /documentation/python/eminit
+
+layout: single
+toc: true
+toc_label: Initial EM fields
+
+sidebar:
+  nav: "docs"
 ---
+
+## Introduction
 
 The EM codes in ZPIC work by advancing the EM fields in time using the electric current density from particle motion as a source term. The algorithm implcitly assumes that the initial fields in the simulation are self-consistent, and they will be evolved accordingly.
 

@@ -1,6 +1,15 @@
 ---
-title: Accessing simulation data
-permalink: /python/data
+title: Simulation data
+description: Accessing simulation data from Python
+usemathjax: true
+permalink: /documentation/python/data
+
+layout: single
+toc: true
+toc_label: Accessing simulation data
+
+sidebar:
+  nav: "docs"
 ---
 
 The Python interface allows users to access simulation data directly, without requiring file output. All simulation data is exposed as data members of the `Simulation` object that was used.

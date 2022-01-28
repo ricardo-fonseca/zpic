@@ -1,0 +1,81 @@
+main:
+  - title: "About ZPIC"
+    url: /about/
+  - title: "Getting started"
+    url: /start/
+  - title: "Documentation"
+    url: /documentation/
+  - title: "Examples"
+    url: /examples
+
+docs:
+  - title: "Getting started"
+    url: /start
+    children:
+      - title: "Download ZPIC"
+        url: /start/download
+      - title: "Compiling the code"
+        url: /start/compile
+      - title: "Running a Docker image"
+        url: /start/docker
+
+
+  - title: "Using ZPIC with Python"
+    url: /documentation/python/
+    children:
+    - title: "Getting started with Python"
+      url: /documentation/python/start/
+    - title: "Particle species"
+      url: /documentation/python/particles/
+    - title: "Simulation data"
+      url: /documentation/python/data/
+    - title: "Saving output"
+      url: /documentation/python/save/
+    - title: "Laser pulses"
+      url: /documentation/python/laser/
+    - title: "Moving simulation window"
+      url: /documentation/python/movwindow/
+    - title: "Current smoothing"
+      url: /documentation/python/smooth/
+    - title: "Initial EM fields"
+      url: /documentation/python/eminit/
+    - title: "External EM fields"
+      url: /documentation/python/emext/
+    - title: "Spectral EM field solver"
+      url: /documentation/python/spectralsolver/
+    - title: "Python API reference"
+      url: /documentation/python/api/
+
+  - title: "Using ZPIC with C"
+    url: /documentation/c/
+    children:
+    - title: "Getting started with C"
+      url: /documentation/c/start/
+    - title: "Particle species"
+      url: /documentation/c/particles/
+    - title: "Simulation diagnostics"
+      url: /documentation/c/diag
+    - title: "Laser pulses"
+      url: /documentation/c/laser
+    - title: "Moving simulation window"
+      url: /documentation/c/movwindow
+    - title: "Current smoothing"
+      url: /documentation/c/smooth
+
+  - title: "Algorithm details"
+    url: /documentation/algorithm/
+    children:
+    - title: "Units"
+      url: "/documentation/algorithm/#units"
+    - title: "Time centering"
+      url: "/documentation/algorithm/#time-centering-of-quantities"
+
+  - title: "Examples"
+    url: /examples
+    children:
+    - title: "Tutorial"
+      url: /examples/#tutorials
+    - title: "Classroom examples"
+      url: /examples/#classroom-examples
+    - title: "Landmark papers"
+      url: /examples/#landmark-papers

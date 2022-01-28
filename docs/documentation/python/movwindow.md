@@ -1,8 +1,18 @@
 ---
 title: Moving simulation window
-permalink: /python/movwindow
+description: Simulating phenomena travelling close to the speed of light
 usemathjax: true
+permalink: /documentation/python/movwindow
+
+layout: single
+toc: true
+toc_label: Moving simulation window
+
+sidebar:
+  nav: "docs"
 ---
+
+## Introduction
 
 The finite difference models can be run using a moving simulation window that moves at the speed of light along the _x_ direction. Please note that simulation is done in the lab reference frame; it is the simulation box that moves and follows relevant phenomena moving at, or close to, this speed, such as laser pulses or relativistic particle beams.
 

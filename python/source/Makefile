@@ -1,5 +1,5 @@
 BUILD_LIB = ../lib
-DOC_HTML = ../../docs/python/api
+DOC_HTML = ../../documentation/python/api
 DOC_MODS = em1d em2d em1ds em2ds es1d
 
 all:

@@ -1,8 +1,18 @@
 ---
 title: Laser Pulses
-permalink: /python/laser
+description: Initializing laser pulses
 usemathjax: true
+permalink: /documentation/python/laser
+
+layout: single
+toc: true
+toc_label: Laser pulses
+
+sidebar:
+  nav: "docs"
 ---
+
+## Introduction
 
 To simplify the use of laser pulses in ZPIC simulations, the code includes the ability to launch laser pulses. The code allows the user to choose the frequency, amplitude, temporal envelope and polarization of the laser pulse, and will calculate the self-consistent electric and magnetic fields:
 

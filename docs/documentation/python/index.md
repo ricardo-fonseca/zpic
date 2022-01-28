@@ -1,6 +1,13 @@
 ---
 title: Using ZPIC with python
-permalink: /python/
+permalink: /documentation/python/
+
+layout: single
+toc: true
+toc_label: Using ZPIC with python
+
+sidebar:
+  nav: "docs"
 ---
 
 ZPIC simulations can be run directly from a python environment, allowing detailed control over the simulation parameter, and easy access to simulation results. To get started with running ZPIC simulations be sure to check the [Getting started](start) page.
@@ -20,7 +27,7 @@ ZPIC simulations can be run directly from a python environment, allowing detaile
 
 ## Example notebooks
 
-ZPIC also includes several Jupyter notebooks exemplifying code usage, be sure to check the examples section of the website.
+ZPIC also includes several Jupyter notebooks exemplifying code usage, be sure to check the [examples](/examples) section of the website.
 
 ## Python API Reference
 

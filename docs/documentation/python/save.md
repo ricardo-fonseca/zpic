@@ -1,16 +1,16 @@
 ---
 title: Saving simulation data
-permalink: /python/save
+description: Saving simulation results to disk for post-processing
+permalink: /documentation/python/save
 usemathjax: true
+
+layout: single
+toc: true
+toc_label: Saving simulation data
+
+sidebar:
+  nav: "docs"
 ---
-
-## Contents
-
-* [Introduction](#introduction)
-* [EM fields](#saving-em-fields)
-* [Current/Charge density](#saving-current/charge-density)
-* [Particles](#particle-data)
-* [Using the `report` function](#using-the-report-function)
 
 ## Introduction
 

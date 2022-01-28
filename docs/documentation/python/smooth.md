@@ -1,8 +1,18 @@
 ---
 title: Electric Current Smoothing
-permalink: /python/smooth
+description: Units used for ZPIC simulations
+permalink: /documentation/python/smooth
 usemathjax: true
+
+layout: single
+toc: true
+toc_label: Electric Current Smoothing
+
+sidebar:
+  nav: "docs"
 ---
+
+## Introduction
 
 In the finite difference ZPIC codes (`em1d`, `em2d`) you may specify a digital filter that will be applied to the electric current density after this has been deposited by particle motion and before using it for advancing the EM fields.
 

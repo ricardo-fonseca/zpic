@@ -1,15 +1,16 @@
 ---
 title: External EM fields
-permalink: /python/emext
+description: Setting external electro-magnetic fields for you simulation
 usemathjax: true
+permalink: /documentation/python/emext
+
+layout: single
+toc: true
+toc_label: External EM fields
+
+sidebar:
+  nav: "docs"
 ---
-
-## Contents
-
-* [Introduction](#introduction)
-* [Setting the external EM fields](#setting-the-external-em-fields)
-* [Setting "custom" external EM fields](#setting-custom-external-em-fields)
-* [Self-consistent EM fields and total EM fields](#self-consistent-em-fields-and-total-em-fields)
 
 ## Introduction
 

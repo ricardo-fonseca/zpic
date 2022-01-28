@@ -1,19 +1,25 @@
 ---
+title: ZPIC Examples
+layout: single
+#usemathjax: true
+permalink: /examples/
+
+toc: true
+toc_label: "ZPIC Examples"
+
+sidebar:
+  nav: "docs"
 
 nbroot : https://github.com/ricardo-fonseca/zpic/blob/master/python/notebooks
 ---
 
-# ZPIC Examples
+ZPIC makes available a set of well documented Jupyter notebooks, with example problems of textbook and advanced plasma mechanisms, ranging from Debye shielding, to EM waves in density ramps and kinetic instabilities, as well as notebooks that reproduce and extend the work done in seminal plasma physics papers.
 
-ZPIC includes a comprehensive set of example Jupyter notebooks. If you haven't, make sure you start with the [ZPIC]({{page.nbroot}}/tutorial/ZPIC.ipynb) notebook that covers the basic usage of ZPIC in these environments.
-
-## Contents
-
-* [Tutorials](#tutorials) - Notebooks introducing code usage and functionalities;
-* [Classroom examples](#classroom-examples) - Examples of ZPIC notebooks that can be used in a classroom to showcase some of the most fundamental plasma physics phenomena;
-* [Papers](#papers) - Notebooks reproducing and extending the work done in seminal plasma physics papers.
+If you haven't, make sure you start with the [ZPIC]({{page.nbroot}}/tutorial/ZPIC.ipynb) notebook that covers the basic usage of ZPIC in these environments.
 
 ## Tutorials
+
+Notebooks introducing code usage and functionalities:
 
 * [ZPIC]({{page.nbroot}}/tutorial/ZPIC.ipynb) - Main tutorial file, **be sure to start here**;
 * [Saving Results]({{page.nbroot}}/tutorial/Saving%20results.ipynb) - Saving simulation results to disk;
@@ -24,9 +30,11 @@ ZPIC includes a comprehensive set of example Jupyter notebooks. If you haven't, 
 * [Thermal distribution]({{page.nbroot}}/tutorial/Thermal%20Distribution.ipynb) - Setting the thermal distribution of particle species;
 * [Cathode]({{page.nbroot}}/tutorial/Cathode.ipynb) - Implementing a cathode (particle injection from simulation wall);
 * [Custom velocity distribution]({{page.nbroot}}/tutorial/Custom%20velocity%20distribution.ipynb) - Implementing custom (arbitrary) intial velocity distributions;
-* [Laser Pulses]({{page.nbroot}}/tutorial/Laser%20Pulses.ipynb) - Launching laser pulses ini ZPIC simulations.
+* [Laser Pulses]({{page.nbroot}}/tutorial/Laser%20Pulses.ipynb) - Launching laser pulses in ZPIC simulations.
 
 ## Classroom examples
+
+Examples of ZPIC notebooks that can be used in a classroom to showcase some of the most fundamental plasma physics phenomena:
 
 * [Field solver dispersion]({{page.nbroot}}/classroom/Field%20solver%20dispersion.ipynb) - Analyses the different dispersion properties of the field solvers used in finite difference and spectral codes;
 * [Electron Plasma Waves]({{page.nbroot}}/classroom/Electron%20Plasma%20Waves.ipynb) - Focuses on electrostatic and electromagnetic plasma waves in unmagnetized plasmas;
@@ -47,6 +55,8 @@ ZPIC includes a comprehensive set of example Jupyter notebooks. If you haven't, 
 * [Magnetic Bottle]({{page.nbroot}}/classroom/Magnetic%20Bottle.ipynb) - Numerical studies of the magnetic bottle confinement scheme;
 
 ## Landmark papers
+
+Notebooks reproducing and extending the work done in seminal plasma physics papers:
 
 * [Tajima and Dawson (1979)]({{page.nbroot}}/papers/Tajima%20and%20Dawson%201979.ipynb) - Laser Electron Accelerator, Physical Review Letters, Volume 43, Number 4, July 1979, [DOI: 10.1103/PhysRevLett.43.267](https://doi.org/10.1103/PhysRevLett.43.267);
 * [Morse and Nielsen (1971)]({{page.nbroot}}/papers/Morse%20and%20Nielsen%201971.ipynb) - Numerical Simulation of the Weibel Instability in One and Two Dimensions, The Physics of Fluids, Volume 14, Number 4, April 1971, [DOI: 10.1063/1.1693518](https://doi.org/10.1063/1.1693518).
