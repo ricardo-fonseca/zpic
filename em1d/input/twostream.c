@@ -32,8 +32,8 @@ void sim_init( t_simulation* sim ){
 
 
 	// Initial fluid and thermal velocities
-	t_part_data ufl[] = { 0.2 , 0.0 , 0.0 };
-	t_part_data uth[] = { 0.001 , 0.001 , 0.001 };
+	float ufl[] = { 0.2 , 0.0 , 0.0 };
+	float uth[] = { 0.001 , 0.001 , 0.001 };
 
 
 	spec_new( &species[0], "right", -1.0, ppc,
@@ -51,11 +51,20 @@ void sim_init( t_simulation* sim ){
 
 void sim_report( t_simulation* sim ){
 
-
 	spec_report( &sim->species[0], PARTICLES, NULL, NULL );
 	spec_report( &sim->species[1], PARTICLES, NULL, NULL );
 
     // x1 electric field component
 	emf_report( &sim->emf, EFLD, 0 );
+
+	current_report( &sim->current, 0 );
+
+    // x1u1 phasespace
+	const int pha_nx[] = {120,256};
+	const float pha_range[][2] = {{0.0,4*M_PI}, {-1.0,+1.0}};
+	spec_report(&sim->species[0], PHASESPACE(X1,U1), pha_nx, pha_range);
+
+		// Charge density
+	spec_report( &sim->species[0], CHARGE, NULL, NULL );
 
 }

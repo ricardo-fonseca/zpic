@@ -713,8 +713,7 @@ void interpolate_fld( t_vfld_grid2d * E, t_vfld_grid2d * B,
 
 void spec_advance( t_species* spec, t_emf* emf, t_charge* charge, t_current* current )
 {
-    int i;
-    
+   
     uint64_t t0;
     t0 = timer_ticks();
     
@@ -728,7 +727,7 @@ void spec_advance( t_species* spec, t_emf* emf, t_charge* charge, t_current* cur
     double energy = 0;
 
     // Advance particles
-    for (i=0; i<spec->np; i++) {
+    for (int i=0; i<spec->np; i++) {
                 
         t_vfld Ep, Bp;
         float utx, uty, utz;
@@ -835,7 +834,7 @@ void spec_advance( t_species* spec, t_emf* emf, t_charge* charge, t_current* cur
     spec -> iter += 1;
 
     // Use periodic boundaries in both directions
-    for (i=0; i<spec->np; i++) {
+    for (int i=0; i<spec->np; i++) {
         spec -> part[i].ix += (( spec -> part[i].ix < 0 ) ? nx0 : 0 ) - (( spec -> part[i].ix >= nx0 ) ? nx0 : 0);
         spec -> part[i].iy += (( spec -> part[i].iy < 0 ) ? nx1 : 0 ) - (( spec -> part[i].iy >= nx1 ) ? nx1 : 0);
     }

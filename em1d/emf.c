@@ -1,10 +1,12 @@
-/*
- *  emf.c
- *  zpic
- *
- *  Created by Ricardo Fonseca on 10/8/10.
- *  Copyright 2010 Centro de Física dos Plasmas. All rights reserved.
- *
+/**
+ * @file emf.c
+ * @author Ricardo Fonseca
+ * @brief EM fields
+ * @version 0.2
+ * @date 2022-02-04
+ * 
+ * @copyright Copyright (c) 2022
+ * 
  */
 
 #include <stdio.h>
@@ -17,8 +19,18 @@
 #include "zdf.h"
 #include "timer.h"
 
+void emf_move_window( t_emf *emf );
+void emf_update_part_fld( t_emf *emf );
+void emf_update_gc( t_emf *emf );
+
+// Time spent advancing the EM fields
 static double _emf_time = 0.0;
 
+/**
+ * @brief Time spent advancing the EM fields
+ * 
+ * @return emf_time 	Time spent in seconds
+ */
 double emf_time( void )
 {
 	return _emf_time;
@@ -30,14 +42,25 @@ double emf_time( void )
 
  *********************************************************************************************/
 
-void emf_new( t_emf *emf, int nx, t_fld box, const float dt )
+/**
+ * @brief Initalized EM fields object
+ * 
+ * Fields are initialized with 0 values, if you require other initial
+ * values use the `init_fld()` function.
+ * 
+ * @param emf 	EM fields
+ * @param nx 	Number of grid cells
+ * @param box 	Physical box size
+ * @param dt 	Simulation time step
+ */
+void emf_new( t_emf *emf, int nx, float box, const float dt )
 {
 
 	// Number of guard cells for linear interpolation
 	int gc[2] = {1,2};
 
 	// Allocate global arrays
-	size_t size = (gc[0] + nx + gc[1]) * sizeof( t_vfld ) ;
+	size_t size = (gc[0] + nx + gc[1]) * sizeof( float3 ) ;
 
 	emf->E_buf = malloc( size );
 	emf->B_buf = malloc( size );
@@ -90,6 +113,14 @@ void emf_new( t_emf *emf, int nx, t_fld box, const float dt )
 	emf -> B_part = emf->B;
 }
 
+/**
+ * @brief Frees dynamic memory from EM fields.
+ * 
+ * If external fields are in use, the dynamic memory associated with these
+ * will also be freed.
+ * 
+ * @param emf 	EM fields
+ */
 void emf_delete( t_emf *emf )
 {
 	free( emf->E_buf );
@@ -108,7 +139,6 @@ void emf_delete( t_emf *emf )
 
 	emf->E_part = NULL;
 	emf->B_part = NULL;
-
 }
 
 /*********************************************************************************************
@@ -117,7 +147,14 @@ void emf_delete( t_emf *emf )
 
 *********************************************************************************************/
 
-t_fld lon_env( const t_emf_laser* const laser, const t_fld z )
+/**
+ * @brief Determines longitudinal envelope value of laser pulse
+ * 
+ * @param laser 	Laser pulse parameters
+ * @param z 		Longitudinal position
+ * @return lon_env	Envelope value
+ */
+float lon_env( const t_emf_laser* const laser, const float z )
 {
 
 	if ( z > laser -> start ) {
@@ -125,16 +162,16 @@ t_fld lon_env( const t_emf_laser* const laser, const t_fld z )
 		return 0.0;
 	} else if ( z > laser -> start - laser -> rise ) {
 		// Laser rise
-		t_fld csi = z - laser -> start;
-		t_fld e = sin( M_PI_2 * csi / laser->rise );
+		float csi = z - laser -> start;
+		float e = sin( M_PI_2 * csi / laser->rise );
 		return e*e;
 	} else if ( z > laser -> start - (laser -> rise + laser -> flat) ) {
 		// Flat-top
 		return 1.0;
 	} else if ( z > laser -> start - (laser -> rise + laser -> flat + laser -> fall) ) {
 		// Laser fall
-		t_fld csi = z - (laser -> start - laser -> rise - laser -> flat - laser -> fall);
-		t_fld e = sin( M_PI_2 * csi / laser->fall );
+		float csi = z - (laser -> start - laser -> rise - laser -> flat - laser -> fall);
+		float e = sin( M_PI_2 * csi / laser->fall );
 		return e*e;
 	}
 
@@ -142,6 +179,15 @@ t_fld lon_env( const t_emf_laser* const laser, const t_fld z )
 	return 0.0;
 }
 
+/**
+ * @brief Add laser pulse to simulation.
+ * 
+ * Laser pulses are superimposed on top of existing E and B fields. 
+ * Multiple lasers can be added.
+ * 
+ * @param emf 		EM fields
+ * @param laser 	Laser pulse parameters
+ */
 void emf_add_laser( t_emf* const emf, t_emf_laser* laser )
 {
 	// Validate laser parameters
@@ -174,13 +220,13 @@ void emf_add_laser( t_emf* const emf, t_emf_laser* laser )
 
 	// Launch laser
 
-	t_fld z, z_2;
-	t_fld amp, lenv, lenv_2, k;
-	t_fld dx;
-	t_fld cos_pol, sin_pol;
+	float z, z_2;
+	float amp, lenv, lenv_2, k;
+	float dx;
+	float cos_pol, sin_pol;
 
-	t_vfld* restrict E = emf -> E;
-	t_vfld* restrict B = emf -> B;
+	float3* restrict E = emf -> E;
+	float3* restrict B = emf -> B;
 
 	dx = emf -> dx;
 
@@ -219,29 +265,50 @@ void emf_add_laser( t_emf* const emf, t_emf_laser* laser )
 
  *********************************************************************************************/
 
-void emf_report( const t_emf *emf, const char field, const char fc )
+/**
+ * @brief Saves EM fields diagnostic information to disk
+ * 
+ * Saves the selected type / density component to disk in directory
+ * "EMF". Guard cell values are discarded.
+ *
+ * @param emf 		EM Fields
+ * @param field 	Which field to save (E, B, Epart, Bpart)
+ * @param fc 		Field component to save, must be one of {0,1,2}
+ */
+void emf_report( const t_emf *emf, const char field, const int fc )
 {
-	int i;
-	char vfname[16];
+	char vfname[16];	// Dataset name
+	char vflabel[16];	// Dataset label (for plots)
+
+	char comp[] = {'x','y','z'};
+
+	if ( fc < 0 || fc > 2 ) {
+		fprintf(stderr, "(*error*) Invalid field component (fc) selected, returning\n");
+		return;
+	}
 
 	// Choose field to save
-	t_vfld * restrict f;
+	float3 * restrict f;
 	switch (field) {
 		case EFLD:
 			f = emf->E;
             snprintf(vfname,16,"E%1d",fc);
+            snprintf(vflabel,16,"E_%c",comp[fc]);
 			break;
 		case BFLD:
 			f = emf->B;
             snprintf(vfname,16,"B%1d",fc);
+            snprintf(vflabel,16,"B_%c",comp[fc]);
 			break;
 		case EPART:
 			f = emf->E_part;
             snprintf(vfname,16,"E%1d-part",fc);
+            snprintf(vflabel,16,"E_{%cp}",comp[fc]);
 			break;
 		case BPART:
 			f = emf->B_part;
             snprintf(vfname,16,"B%1d-part",fc);
+            snprintf(vflabel,16,"B_{%cp}",comp[fc]);
 			break;
 		default:
 			fprintf(stderr, "Invalid field type selected, returning\n");
@@ -252,17 +319,17 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 	float buf[ emf->nx ];
 	switch (fc) {
 		case 0:
-			for ( i = 0; i < emf->nx; i++ ) {
+			for ( int i = 0; i < emf->nx; i++ ) {
 				buf[i] = f[i].x;
 			}
 			break;
 		case 1:
-			for ( i = 0; i < emf->nx; i++ ) {
+			for ( int i = 0; i < emf->nx; i++ ) {
 				buf[i] = f[i].y;
 			}
 			break;
 		case 2:
-			for ( i = 0; i < emf->nx; i++ ) {
+			for ( int i = 0; i < emf->nx; i++ ) {
 				buf[i] = f[i].z;
 			}
 			break;
@@ -272,27 +339,29 @@ void emf_report( const t_emf *emf, const char field, const char fc )
     axis[0] = (t_zdf_grid_axis) {
     	.min = 0.0 + emf->n_move * emf->dx,
     	.max = emf->box + emf->n_move * emf->dx,
-    	.label = "x_1",
+		.name = "x",
+    	.label = "x",
     	.units = "c/\\omega_p"
     };
 
     t_zdf_grid_info info = {
     	.ndims = 1,
-    	.label = vfname,
+		.name = vfname,
+    	.label = vflabel,
     	.units = "m_e c \\omega_p e^{-1}",
     	.axis = axis
     };
 
-    info.nx[0] = emf->nx;
+    info.count[0] = emf->nx;
 
     t_zdf_iteration iter = {
+        .name = "ITERATION",
     	.n = emf->iter,
     	.t = emf -> iter * emf -> dt,
     	.time_units = "1/\\omega_p"
     };
 
-	zdf_save_grid( buf, &info, &iter, "EMF" );
-
+	zdf_save_grid( (float *) buf, zdf_float32, &info, &iter, "EMF" );
 }
 
 /*********************************************************************************************
@@ -302,6 +371,11 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 
  *********************************************************************************************/
 
+/**
+ * @brief Applies 1st order MUR absorbing boundary conditions
+ * 
+ * @param emf 	EM Fields
+ */
 void mur_abc( t_emf *emf ) {
 
     const int nx = emf->nx;
@@ -339,67 +413,71 @@ void mur_abc( t_emf *emf ) {
 
  *********************************************************************************************/
 
+/**
+ * @brief Advance magnetic field using Yee scheme
+ * 
+ * @param emf 	EM fields
+ * @param dt 	Time step
+ */
 void yee_b( t_emf *emf, const float dt )
 {
-	// this must not be unsigned because we access negative cell indexes
-	int i;
-	t_fld dt_dx;
+    float3* const restrict B = emf -> B;
+    const float3* const restrict E = emf -> E;
 
-    t_vfld* const restrict B = emf -> B;
-    const t_vfld* const restrict E = emf -> E;
-
-	dt_dx = dt / emf->dx;
+	float dt_dx = dt / emf->dx;
 
 	// Canonical implementation
-	for (i=-1; i<=emf->nx; i++) {
+	for (int i=-1; i<=emf->nx; i++) {
 		// B[ i ].x += 0;  // Bx does not evolve in 1D
 		B[ i ].y += (   dt_dx * ( E[i+1].z - E[ i ].z) );
-
 		B[ i ].z += ( - dt_dx * ( E[i+1].y - E[ i ].y) );
-
 	}
 }
 
+/**
+ * @brief Advance Electric field using Yee scheme
+ * 
+ * @param emf 		EM fields
+ * @param current 	Electric current density
+ * @param dt 		Time step
+ */
 void yee_e( t_emf *emf, const t_current *current, const float dt )
 {
-	// this must not be unsigned because we access negative cell indexes
-	int i;
-	t_fld dt_dx;
+	float dt_dx = dt / emf->dx;
 
-	dt_dx = dt / emf->dx;
-
-    t_vfld* const restrict E = emf -> E;
-    const t_vfld* const restrict B = emf -> B;
-    const t_vfld* const restrict J = current -> J;
+    float3* const restrict E = emf -> E;
+    const float3* const restrict B = emf -> B;
+    const float3* const restrict J = current -> J;
     const int nx = emf->nx;
 
 	// Canonical implementation
-
-	for (i=0; i<=nx+1; i++) {
+	for (int i = 0; i <= nx+1; i++) {
 		E[i].x += (                                - dt * J[i].x );
-
 		E[i].y += ( - dt_dx * ( B[i].z - B[i-1].z) - dt * J[i].y );
-
 		E[i].z += ( + dt_dx * ( B[i].y - B[i-1].y) - dt * J[i].z );
-
 	}
 
 }
 
-// This code operates with periodic boundaries
+/**
+ * @brief Updates guard cell values.
+ * 
+ * When using periodic boundaries copies the lower cells to the upper guard
+ * cells and vice-versa.
+ * 
+ * @param emf 	EM fields
+ */
 void emf_update_gc( t_emf *emf )
 {
-	int i;
-
-    t_vfld* const restrict E = emf -> E;
-    t_vfld* const restrict B = emf -> B;
+    float3* const restrict E = emf -> E;
+    float3* const restrict B = emf -> B;
     const int nx = emf->nx;
 
 	if ( emf -> bc_type == EMF_BC_PERIODIC ) {
 		// x
 
 		// lower
-		for (i=-emf->gc[0]; i<0; i++) {
+		for (int i=-emf->gc[0]; i<0; i++) {
 			E[ i ].x = E[ nx + i ].x;
 			E[ i ].y = E[ nx + i ].y;
 			E[ i ].z = E[ nx + i ].z;
@@ -410,7 +488,7 @@ void emf_update_gc( t_emf *emf )
 		}
 
 		// upper
-		for (i=0; i<emf->gc[0]; i++) {
+		for (int i=0; i<emf->gc[0]; i++) {
 			E[ nx + i ].x = E[ i ].x;
 			E[ nx + i ].y = E[ i ].y;
 			E[ nx + i ].z = E[ i ].z;
@@ -423,35 +501,50 @@ void emf_update_gc( t_emf *emf )
 
 }
 
+/**
+ * @brief Move simulation window
+ * 
+ * When using a moving simulation window checks if a window move is due
+ * at the current iteration and if so shifts left the data and zeroes
+ * rightmost cells.
+ * 
+ * @param emf 
+ */
 void emf_move_window( t_emf *emf ){
-
 	if ( ( emf -> iter * emf -> dt ) > emf->dx*( emf -> n_move + 1 ) ) {
-		int i;
 
-	    t_vfld* const restrict E = emf -> E;
-	    t_vfld* const restrict B = emf -> B;
-
-	    const t_vfld zero_fld = {0.,0.,0.};
+	    float3* const restrict E = emf -> E;
+	    float3* const restrict B = emf -> B;
 
 		// Shift data left 1 cell and zero rightmost cells
 
-		for (i = -emf->gc[0]; i < emf->nx+emf->gc[1] - 1; i++) {
+		for (int i = -emf->gc[0]; i < emf->nx+emf->gc[1] - 1; i++) {
 			E[ i ] = E[ i + 1 ];
 			B[ i ] = B[ i + 1 ];
 		}
 
-		for( i = emf->nx - 1; i < emf->nx+emf->gc[1]; i ++) {
+	    const float3 zero_fld = {0.,0.,0.};
+		for(int i = emf->nx - 1; i < emf->nx+emf->gc[1]; i ++) {
 			E[ i ] = zero_fld;
 			B[ i ] = zero_fld;
 		}
 
 		// Increase moving window counter
 		emf -> n_move++;
-
 	}
-
 }
 
+/**
+ * @brief Advance EM fields 1 timestep
+ * 
+ * Fields are advanced in time using a FDTD algorith. The routine will also:
+ * 1. Update guard cell values / apply boundary conditions
+ * 2. Update "particle" fields if using external fields
+ * 3. Move simulation window 
+ * 
+ * @param emf 		EM fields
+ * @param current 	Electric current density
+ */
 void emf_advance( t_emf *emf, const t_current *current )
 {
 	uint64_t t0 = timer_ticks();
@@ -483,11 +576,22 @@ void emf_advance( t_emf *emf, const t_current *current )
 	_emf_time += timer_interval_seconds(t0, timer_ticks());
 }
 
+/**
+ * @brief Calculate total EM field energy
+ * 
+ * Energy is calculated independently for each field component and is
+ * returned as a 6 element vector for each of the E field components
+ * [0..2] and B field components [3..5]. The energy is normalized to 
+ * the cell size.
+ * 
+ * @param[in] emf EM field
+ * @param[out] energy Energy values vector
+ */
 void emf_get_energy( const t_emf *emf, double energy[] )
 {
 	int i;
-    t_vfld* const restrict E = emf -> E;
-    t_vfld* const restrict B = emf -> B;
+    float3* const restrict E = emf -> E;
+    float3* const restrict B = emf -> B;
 
 	for( i = 0; i<6; i++) energy[i] = 0;
 
@@ -511,9 +615,10 @@ External Fields
  *********************************************************************************************/
 
 /**
- * Sets the external fields to be used for the simulation
- * @param   emf     EM field object
- * @param   ext_fld External fields
+ * @brief Sets the external fields to be used for the simulation
+ * 
+ * @param emf 		EM field
+ * @param ext_fld 	External fields
  */
 void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
 
@@ -540,7 +645,7 @@ void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
 	    }
 
 		// Allocate space for additional field grids
-        size_t size = (emf->gc[0] + emf->nx + emf->gc[1]) * sizeof( t_vfld ) ;
+        size_t size = (emf->gc[0] + emf->nx + emf->gc[1]) * sizeof( float3 ) ;
 	
 		emf->ext_fld.E_part_buf = malloc( size );
         emf->E_part = emf->ext_fld.E_part_buf + emf->gc[0];
@@ -569,7 +674,7 @@ void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
 	    }
 
 		// Allocate space for additional field grids
-        size_t size = (emf->gc[0] + emf->nx + emf->gc[1]) * sizeof( t_vfld ) ;
+        size_t size = (emf->gc[0] + emf->nx + emf->gc[1]) * sizeof( float3 ) ;
 	
 		emf->ext_fld.B_part_buf = malloc( size );
         emf->B_part = emf->ext_fld.B_part_buf + emf->gc[0];
@@ -581,19 +686,20 @@ void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
 }
 
 /**
- * Updates field values seen by particles with externally imposed fields
- * @param emf EMF object holding field data
+ * @brief Updates field values seen by particles with externally imposed fields
+ * 
+ * @param emf 	EM fields
  */
 void emf_update_part_fld( t_emf* const emf ) {
 
     // Restrict pointers to E_part
-    t_vfld* const restrict E_part = emf->E_part;
+    float3* const restrict E_part = emf->E_part;
 
     switch (emf->ext_fld.E_type)
     {
     case EMF_FLD_TYPE_UNIFORM: {
         for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
-            t_vfld e = emf -> E[i];
+            float3 e = emf -> E[i];
             e.x += emf->ext_fld.E_0.x;
             e.y += emf->ext_fld.E_0.y;
             e.z += emf->ext_fld.E_0.z;
@@ -602,9 +708,9 @@ void emf_update_part_fld( t_emf* const emf ) {
         break; }
     case EMF_FLD_TYPE_CUSTOM: {
         for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
-            t_vfld ext_E = (*emf->ext_fld.E_custom)(i,emf->dx,emf->ext_fld.E_custom_data);
+            float3 ext_E = (*emf->ext_fld.E_custom)(i,emf->dx,emf->ext_fld.E_custom_data);
 
-            t_vfld e = emf -> E[i];
+            float3 e = emf -> E[i];
             e.x += ext_E.x;
             e.y += ext_E.y;
             e.z += ext_E.z;
@@ -616,13 +722,13 @@ void emf_update_part_fld( t_emf* const emf ) {
     }
 
     // Restrict pointers to B_part
-    t_vfld* const restrict B_part = emf->B_part;
+    float3* const restrict B_part = emf->B_part;
 
     switch (emf->ext_fld.B_type)
     {
     case EMF_FLD_TYPE_UNIFORM: {
         for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
-            t_vfld b = emf -> B[i];
+            float3 b = emf -> B[i];
             b.x += emf->ext_fld.B_0.x;
             b.y += emf->ext_fld.B_0.y;
             b.z += emf->ext_fld.B_0.z;
@@ -633,9 +739,9 @@ void emf_update_part_fld( t_emf* const emf ) {
         break; 
     case EMF_FLD_TYPE_CUSTOM: {
         for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
-            t_vfld ext_B = (*emf->ext_fld.B_custom)(i,emf->dx,emf->ext_fld.B_custom_data);
+            float3 ext_B = (*emf->ext_fld.B_custom)(i,emf->dx,emf->ext_fld.B_custom_data);
 
-            t_vfld b = emf -> B[i];
+            float3 b = emf -> B[i];
             b.x += ext_B.x;
             b.y += ext_B.y;
             b.z += ext_B.z;
@@ -650,22 +756,22 @@ void emf_update_part_fld( t_emf* const emf ) {
 }
 
 /**
- * Initialize EMF field values
+ * @brief Initialize EMF field values
+ * 
  * @param emf       EM field object
  * @param init_fld  Initial field parameters
  */
 void emf_init_fld( t_emf* const emf, t_emf_init_fld* init_fld )
 {
     if ( emf -> iter != 0 ) {
-        fprintf(stderr, "emf_init_fld should only be called at initialization, aborting...\n" );
+        fprintf(stderr, "emf_inifloat should only be called at initialization, aborting...\n" );
         exit(-1);
     }
 
-    t_vfld* const restrict E = emf->E;
-    t_vfld* const restrict B = emf->B;
+    float3* const restrict E = emf->E;
+    float3* const restrict B = emf->B;
 
-    switch ( init_fld -> E_type )
-    {
+    switch ( init_fld -> E_type ) {
     case EMF_FLD_TYPE_NONE:
         break;
 
@@ -677,15 +783,14 @@ void emf_init_fld( t_emf* const emf, t_emf_init_fld* init_fld )
 
     case EMF_FLD_TYPE_CUSTOM:
         for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
-            t_vfld init_E = (init_fld->E_custom)
+            float3 init_E = (init_fld->E_custom)
                 (i,emf->dx, init_fld->E_custom_data);
             E[ i ] = init_E;
         }
         break;
     }    
 
-    switch ( init_fld -> B_type )
-    {
+    switch ( init_fld -> B_type ) {
     case EMF_FLD_TYPE_NONE:
         break;
 
@@ -697,7 +802,7 @@ void emf_init_fld( t_emf* const emf, t_emf_init_fld* init_fld )
 
     case EMF_FLD_TYPE_CUSTOM:
         for (int i=-emf->gc[0]; i<emf->nx+emf->gc[1]; i++) {
-            t_vfld init_B = (init_fld->B_custom)
+            float3 init_B = (init_fld->B_custom)
                 (i,emf->dx, init_fld->B_custom_data);
             B[ i ] = init_B;
         }
@@ -705,4 +810,3 @@ void emf_init_fld( t_emf* const emf, t_emf_init_fld* init_fld )
     }    
 
 }
-

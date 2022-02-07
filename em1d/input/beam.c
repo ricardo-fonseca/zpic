@@ -27,8 +27,8 @@ void sim_init( t_simulation* sim ){
 	int ppc = 128;
 
 	// Initial fluid and thermal velocities
-	t_part_data ufl[] = { 0.2, 0.0, 0.0 };
-	t_part_data uth[] = { 0.0, 0.0, 0.0 };
+	float ufl[] = { 0.2, 0.0, 0.0 };
+	float uth[] = { 0.0, 0.0, 0.0 };
 
 
 

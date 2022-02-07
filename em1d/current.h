@@ -12,49 +12,99 @@
 
 #include "zpic.h"
 
-enum smooth_type { NONE, BINOMIAL, COMPENSATED };
-enum current_boundary{ CURRENT_BC_NONE, CURRENT_BC_PERIODIC };
+/**
+ * @brief Types of digital filtering
+ * 
+ */
+enum smooth_type { 
+	NONE,		///< No filtering 
+	BINOMIAL,	///< Binomial filtering
+	COMPENSATED	///< Compensated binomial filtering
+};
 
-typedef struct {
-	enum smooth_type xtype;
-	int xlevel;
+/**
+ * @brief Types of boundary conditions
+ * 
+ */
+enum current_boundary{ 
+	CURRENT_BC_NONE,		///< No boundary conditions
+	CURRENT_BC_PERIODIC		///< Periodic boundary conditions
+};
+
+/**
+ * @brief Digital filtering parameters
+ * 
+ * Stores digital filtering parameters
+ */
+typedef struct Smooth {
+	enum smooth_type xtype;	///< Type of digital filtering
+	int xlevel;				///< Number of filter passes
 } t_smooth;
 
-typedef struct {
+/**
+ * @brief Current density object
+ * 
+ */
+typedef struct Current {
 	
-	t_vfld *J;
+	float3 *J;		///< Pointer to grid cell 0
 	
-	t_vfld *J_buf;
+	float3 *J_buf;	///< Current density buffer (includes guard cells)
 	
-	// Grid parameters
-	int nx;
-	int gc[2];
+	int nx;			///< Number of grid points (excluding guard cells)
+	int gc[2];		///< Number of guard cells (lower/upper)
 	
-	// Box size
-	t_fld box;
+	float box;		///< Physics size of simulation box
 	
-	// Cell size
-	t_fld dx;
+	float dx;		///< Grid cell size
 
-	// Current smoothing
-	t_smooth smooth;
+	t_smooth smooth;	///< Digital filtering parameters
 
-	// Time step
-	float dt;
+	float dt;			///< Time step
 
-	// Iteration number
-	int iter;
+	int iter;			///< Current iteration number
 
-	// Boundary conditions
-	int bc_type;
+	enum current_boundary bc_type;	///< Type of boundary condition
 	
 } t_current;
 
-void current_new( t_current *current, int nx, t_fld box, float dt );
+/**
+ * @brief Initializes Electric current density object
+ * 
+ * @param current Electric current density
+ * @param nx Number of cells
+ * @param box Physical box size
+ * @param dt Simulation time step
+  */
+void current_new( t_current *current, int nx, float box, float dt );
+
+/**
+ * @brief Frees dynamic memory from electric current density
+ * 
+ * @param current Electric current density object
+ */
 void current_delete( t_current *current );
+
+/**
+ * @brief Sets all electric current density values to zero
+ * 
+ * @param current Electric current density object
+ */
 void current_zero( t_current *current );
+
+/**
+ * @brief Advances electric current density 1 time step
+ * 
+ * @param current Electric current density object
+ */
 void current_update( t_current *current );
-void current_report( const t_current *current, const char jc );
-void current_smooth( t_current* const current );
+
+/**
+ * @brief Saves electric current density diagnostic information to disk
+ * 
+ * @param current Electric current density object
+ * @param jc Current component to save, must be one of {0,1,2}
+ */
+void current_report( const t_current *current, const int jc );
 
 #endif

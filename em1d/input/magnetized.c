@@ -30,10 +30,9 @@ void sim_init( t_simulation* sim ){
 
 	t_species* species = (t_species *) malloc( n_species * sizeof( t_species ));
 
-
 	// Initial fluid and thermal velocities
-	t_part_data ufl[] = { 0.2 , 0.0 , 0.0 };
-	t_part_data uth[] = { 0.001 , 0.001 , 0.001 };
+	float ufl[] = { 0.2 , 0.0 , 0.0 };
+	float uth[] = { 0.001 , 0.001 , 0.001 };
 
 
 	spec_new( &species[0], "right", -1.0, ppc,
@@ -47,8 +46,8 @@ void sim_init( t_simulation* sim ){
 	sim_new( sim, nx, box, dt, tmax, ndump, species, n_species );
 
 	t_emf_ext_fld ext_fld = {
-		.Bst = { 1.0, 0.0, 0.0 },
-		.type = EMF_EXT_FLD_UNIFORM
+		.B_0 = { 1.0, 0.0, 0.0 },
+		.B_type = EMF_FLD_TYPE_UNIFORM
 	};
 	sim_set_ext_fld( sim, &ext_fld );
 

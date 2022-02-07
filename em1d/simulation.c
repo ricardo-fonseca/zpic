@@ -1,9 +1,27 @@
+/**
+ * @file simulation.c
+ * @author Ricardo Fonseca
+ * @brief EM1D Simulation
+ * @version 0.2
+ * @date 2022-02-04
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "simulation.h"
 #include "timer.h"
 
+/**
+ * @brief Checks if the `report` function should be called 
+ * 
+ * @param n 		Current iteration
+ * @param ndump 	Diagnostic frequency (number of iterations between diagnostic dumps)
+ * @return 			1 if `report` function should be called, 0 otherwise
+ */
 int report( int n, int ndump )
 {
 	if (ndump > 0) {
@@ -13,6 +31,17 @@ int report( int n, int ndump )
 	}
 }
 
+/**
+ * @brief Advance simulation 1 iteration
+ * 
+ * A complete iteration consists of:
+ * 1. Zeroing current density
+ * 2. Advancing particle species and depositing electric current
+ * 3. Updating electric current boundary
+ * 4. Advancing the EM fields
+ * 
+ * @param sim 	EM1D Simulation
+ */
 void sim_iter( t_simulation* sim ) {
 	// Advance particles and deposit current
 	current_zero( &sim -> current );
@@ -26,7 +55,13 @@ void sim_iter( t_simulation* sim ) {
 	emf_advance( &sim -> emf, &sim -> current );
 }
 
-
+/**
+ * @brief Prints out report on simulation timings
+ * 
+ * @param sim 	EM1D Simulaiton
+ * @param t0 	Simulation start time (ticks)
+ * @param t1 	Simulation end time (ticks)
+ */
 void sim_timings( t_simulation* sim, uint64_t t0, uint64_t t1 ){
 
 	fprintf(stderr, "Time for spec. advance = %f s\n", spec_time());
@@ -41,6 +76,19 @@ void sim_timings( t_simulation* sim, uint64_t t0, uint64_t t1 ){
 	}
 }
 
+/**
+ * @brief Initialize simulation object
+ * 
+ * @param sim 			EM1D Simulation
+ * @param nx 			Number of grid points
+ * @param box 			Simulation box size in simulation units
+ * @param dt 			Simulation time step in simulation units
+ * @param tmax 			Final simulation time
+ * @param ndump 		Diagnostic frequency (`report` function will be called every ndump iterations)
+ * 						set to 0 to disable diagnostic reports
+ * @param species 		Array of particle species, may be NULL (no particles)
+ * @param n_species 	Number of particle specis
+ */
 void sim_new( t_simulation* sim, int nx, float box, float dt, float tmax, int ndump, t_species* species, int n_species ){
 
 	sim -> dt = dt;
@@ -62,15 +110,38 @@ void sim_new( t_simulation* sim, int nx, float box, float dt, float tmax, int nd
 
 }
 
+/**
+ * @brief Adds laser pulse to simulation
+ * 
+ * This routine is just used to avoid users accessing the simulation.emf object directly,
+ * see `emf_add_laser()` for details.
+ * 
+ * @param sim 		EM1D simulation
+ * @param laser 	Laser parameters
+ */
 void sim_add_laser( t_simulation* sim,  t_emf_laser* laser ){
 	emf_add_laser( &sim->emf, laser );
 }
 
+/**
+ * @brief Sets external EM fields for the simulation
+ * 
+ * This routine is just used to avoid users accessing the simulation.emf object directly,
+ * see `emf_set_ext_fld()` for details.
+ * 
+ * @param sim 		EM1D simulation
+ * @param ext_fld 	External EM fields parameters
+ */
 void sim_set_ext_fld( t_simulation* sim, t_emf_ext_fld* ext_fld ){
 	emf_set_ext_fld( &sim->emf, ext_fld );
 }
 
-
+/**
+ * @brief Sets electric current digital filtering (smoothing) parameters
+ * 
+ * @param sim 		EM1D Simulation
+ * @param smooth 	Digital filtering parameters
+ */
 void sim_set_smooth( t_simulation* sim,  t_smooth* smooth ){
 
     if ( (smooth -> xtype != NONE) && (smooth -> xlevel <= 0) ) {
@@ -80,6 +151,11 @@ void sim_set_smooth( t_simulation* sim,  t_smooth* smooth ){
 	sim -> current.smooth = *smooth;
 }
 
+/**
+ * @brief Sets a moving window algorithm for the simulation
+ * 
+ * @param sim 
+ */
 void sim_set_moving_window( t_simulation* sim ){
 
 	// Set moving window flag and disable boundary conditions
@@ -88,16 +164,18 @@ void sim_set_moving_window( t_simulation* sim ){
     sim -> emf.bc_type = EMF_BC_NONE;
 
 	// Disable boundary conditions for electric current
-	// No specific code for
-
 	sim -> current.bc_type = CURRENT_BC_NONE;
 
 	// Set moving window flag for all species
 	for(int i=0; i<sim -> n_species; i++)
 		sim -> species[i].moving_window = 1;
-
 }
 
+/**
+ * @brief Print report on simulation energy (fields/particles/total)
+ * 
+ * @param sim 	EM1D Simulation
+ */
 void sim_report_energy( t_simulation* sim )
 {
 	int i;
@@ -123,10 +201,14 @@ void sim_report_energy( t_simulation* sim )
 
 }
 
+/**
+ * @brief Frees dynamic memory 
+ * 
+ * @param sim 		EM1D Simulation
+ */
 void sim_delete( t_simulation* sim ) {
 
-	int i;
-	for (i = 0; i<sim->n_species; i++) spec_delete( &sim->species[i] );
+	for (int i = 0; i<sim->n_species; i++) spec_delete( &sim->species[i] );
 
 	free( sim->species );
 
