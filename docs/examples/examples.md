@@ -17,6 +17,10 @@ ZPIC makes available a set of well documented Jupyter notebooks, with example pr
 
 If you haven't, make sure you start with the [ZPIC]({{page.nbroot}}/tutorial/ZPIC.ipynb) notebook that covers the basic usage of ZPIC in these environments.
 
+## Contributing
+
+We invite contributions to the __ZPIC__ codes and repository of test problems, to be made freely available to the community. Come find us on [GitHub](https://github.com/ricardo-fonseca/zpic).
+
 ## Tutorials
 
 Notebooks introducing code usage and functionalities:

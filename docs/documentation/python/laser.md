@@ -1,6 +1,5 @@
 ---
 title: Laser Pulses
-description: Initializing laser pulses
 usemathjax: true
 permalink: /documentation/python/laser
 

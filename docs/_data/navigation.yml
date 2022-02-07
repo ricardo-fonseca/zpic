@@ -62,14 +62,6 @@ docs:
     - title: "Current smoothing"
       url: /documentation/c/smooth
 
-  - title: "Algorithm details"
-    url: /documentation/algorithm/
-    children:
-    - title: "Units"
-      url: "/documentation/algorithm/#units"
-    - title: "Time centering"
-      url: "/documentation/algorithm/#time-centering-of-quantities"
-
   - title: "Examples"
     url: /examples
     children:
@@ -79,3 +71,27 @@ docs:
       url: /examples/#classroom-examples
     - title: "Landmark papers"
       url: /examples/#landmark-papers
+
+about:
+  - title: "About"
+    url: /about
+    children:
+    - title: The PIC algorithm
+      url: /about/pic
+  - title: Implementation details
+    url: /about/implementation
+    children:
+      - title: "Particles"
+        url: /about/particles
+      - title: "Current/charge deposit"
+        url: /about/deposit
+      - title: "Fields"
+        url: /about/fields
+      - title: "Grid interpolation"
+        url: /about/interpolation
+      - title: "ZPIC Units"
+        url: /about/units
+      - title: "Data structures"
+        url: /about/data
+      - title: "Time centering"
+        url: /about/timecenter
