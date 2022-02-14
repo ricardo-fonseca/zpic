@@ -32,8 +32,8 @@ void sim_init( t_simulation* sim ){
 
 
 	// Initial fluid and thermal velocities
-	t_part_data ufl[] = { 0.2 , 0.0 , 0.0 };
-	t_part_data uth[] = { 0.001 , 0.001 , 0.001 };
+	float ufl[] = { 0.2 , 0.0 , 0.0 };
+	float uth[] = { 0.001 , 0.001 , 0.001 };
 
 
 	spec_new( &species[0], "right", -1.0, ppc,

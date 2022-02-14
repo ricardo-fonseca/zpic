@@ -17,9 +17,16 @@
 #include "zdf.h"
 #include "timer.h"
 
+void emf_update_part_fld( t_emf* const emf );
 
+/// Time spent advancing the EM fields
 static double _emf_time = 0.0;
 
+/**
+ * @brief Time spent advancing the EM fields
+ * 
+ * @return      Time spent in seconds
+ */
 double emf_time()
 {
     return _emf_time;
@@ -31,8 +38,20 @@ double emf_time()
 
  *********************************************************************************************/
 
-
-void emf_new( t_emf *emf, int nx, t_fld box, const float dt, t_fftr_cfg *fft_forward,
+/**
+ * @brief Initializes the EM field objecnt
+ * 
+ * @param emf			EM fields object
+ * @param nx			Number of cells
+ * @param box			Physical box size
+ * @param dt			Simulation time step
+ * @param fft_forward	FFT configuration for forward transforms (shared
+ * 						with other objects)
+ * @param fft_backward	FFT configuration for backward transforms (shared
+ * 						with other objects)
+ * @param filter		Spectral filtering parameters
+ */
+void emf_new( t_emf *emf, int nx, float box, const float dt, t_fftr_cfg *fft_forward,
     t_fftr_cfg *fft_backward, t_filter *filter )
 {
 
@@ -89,6 +108,14 @@ void emf_new( t_emf *emf, int nx, t_fld box, const float dt, t_fftr_cfg *fft_for
 
 }
 
+/**
+ * @brief Frees dynamic memory from EM fields.
+ * 
+ * If external fields are in use, the dynamic memory associated with these
+ * will also be freed.
+ * 
+ * @param emf 	EM fields
+ */
 void emf_delete( t_emf *emf )
 {
     vfld_grid_cleanup( &emf->E );
@@ -118,31 +145,89 @@ void emf_delete( t_emf *emf )
 *********************************************************************************************/
 
 
-t_fld lon_env( const t_emf_laser* const laser, const t_fld z )
+/**
+ * @brief Determines longitudinal envelope value of laser pulse
+ * 
+ * @param laser 	Laser pulse parameters
+ * @param z 		Longitudinal position
+ * @return lon_env	Envelope value
+ */
+float lon_env( const t_emf_laser* const laser, const float z )
 {
-    if ( z > -2*laser->fwhm && z < 2*laser->fwhm ) {
-        t_fld e = cos( M_PI_4 * z / laser->fwhm );
-        return e*e;
-    } else {
-        return 0.0;
-    }
+	if ( z > laser -> start ) {
+		// Ahead of laser
+		return 0.0;
+	} else if ( z > laser -> start - laser -> rise ) {
+		// Laser rise
+		float csi = z - laser -> start;
+		float e = sin( M_PI_2 * csi / laser->rise );
+		return e*e;
+	} else if ( z > laser -> start - (laser -> rise + laser -> flat) ) {
+		// Flat-top
+		return 1.0;
+	} else if ( z > laser -> start - (laser -> rise + laser -> flat + laser -> fall) ) {
+		// Laser fall
+		float csi = z - (laser -> start - laser -> rise - laser -> flat - laser -> fall);
+		float e = sin( M_PI_2 * csi / laser->fall );
+		return e*e;
+	}
+
+	// Before laser
+	return 0.0;
 }
 
-void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
+/**
+ * @brief Add laser pulse to simulation.
+ * 
+ * Laser pulses are superimposed on top of existing E and B fields. 
+ * Multiple lasers can be added.
+ * 
+ * @param emf 		EM fields
+ * @param laser 	Laser pulse parameters
+ */
+void emf_add_laser( t_emf* const emf, t_emf_laser* const laser )
 {
-    int i;
 
-    t_fld z_center, z;
-    t_fld amp, lenv, k;
-    t_fld dx;
-    t_fld cos_pol, sin_pol;
+	// Validate laser parameters
+	if ( laser -> fwhm != 0 ) {
+		if ( laser -> fwhm <= 0 ) {
+			fprintf(stderr, "Invalid laser FWHM, must be > 0, aborting.\n" );
+			exit(-1);
+		}
+
+		// The fwhm parameter overrides the rise/flat/fall parameters
+		laser -> rise = laser -> fwhm;
+		laser -> fall = laser -> fwhm;
+		laser -> flat = 0.;
+	}
+
+	if ( laser -> rise <= 0 ) {
+		fprintf(stderr, "Invalid laser RISE, must be > 0, aborting.\n" );
+		exit(-1);
+	}
+
+	if ( laser -> flat < 0 ) {
+		fprintf(stderr, "Invalid laser FLAT, must be >= 0, aborting.\n" );
+		exit(-1);
+	}
+
+	if ( laser -> fall <= 0 ) {
+		fprintf(stderr, "Invalid laser FALL, must be > 0, aborting.\n" );
+		exit(-1);
+	}
+
+	// Launch laser
+    float z_center, z;
+    float amp, lenv, k;
+    float dx;
+    float cos_pol, sin_pol;
 
     float* Ey = (float *) malloc( emf->E.nx * sizeof(float));
     float* Ez = (float *) malloc( emf->E.nx * sizeof(float));
     float* By = (float *) malloc( emf->E.nx * sizeof(float));
     float* Bz = (float *) malloc( emf->E.nx * sizeof(float));
 
-  float complex *buffer = (float complex *) malloc( emf->fEt.nx * sizeof(float complex));
+    float complex *buffer = (float complex *) malloc( emf->fEt.nx * sizeof(float complex));
 
     dx = emf -> dx;
 
@@ -154,7 +239,7 @@ void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
 
     k = laser -> omega0;
 
-    for (i = 0; i < emf->E.nx; i++) {
+    for (int i = 0; i < emf->E.nx; i++) {
 
         z = i * dx - z_center;
 
@@ -179,19 +264,19 @@ void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
     // half the Nyquist limit
 
     fftr_r2c( emf->fft_forward, Ey, buffer );
-    for( i = 1; i < emf->fEt.nx/2; i++)
+    for( int i = 1; i < emf->fEt.nx/2; i++)
         emf->fEt.y[i] += buffer[i];
 
     fftr_r2c( emf->fft_forward, Ez, buffer );
-    for( i = 1; i < emf->fEt.nx/2; i++)
+    for( int i = 1; i < emf->fEt.nx/2; i++)
         emf->fEt.z[i] += buffer[i];
 
     fftr_r2c( emf->fft_forward, By, buffer );
-    for( i = 1; i < emf->fEt.nx/2; i++)
+    for( int i = 1; i < emf->fEt.nx/2; i++)
         emf->fB.y[i] += buffer[i];
 
     fftr_r2c( emf->fft_forward, Bz, buffer );
-    for( i = 1; i < emf->fEt.nx/2; i++)
+    for( int i = 1; i < emf->fEt.nx/2; i++)
         emf->fB.z[i] += buffer[i];
 
     free( buffer );
@@ -208,70 +293,97 @@ void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
 
  *********************************************************************************************/
 
-
+/**
+ * @brief Saves EM fields diagnostic information to disk
+ * 
+ * Saves the selected type / density component to disk in directory
+ * "EMF". Guard cell values are discarded.
+ *
+ * @param emf 		EM Fields
+ * @param field 	Which field to save (E, B, Epart, Bpart)
+ * @param fc 		Field component to save, must be one of {0,1,2}
+ */
 void emf_report( const t_emf *emf, const char field, const char fc )
 {
-    char vfname[3];
+	char vfname[16];	// Dataset name
+	char vflabel[16];	// Dataset label (for plots)
+
+	char comp[] = {'x','y','z'};
+
+	if ( fc < 0 || fc > 2 ) {
+		fprintf(stderr, "(*error*) Invalid field component (fc) selected, returning\n");
+		return;
+	}
 
     // Choose field to save
-    const t_vfld_grid * f;
+    t_float3_grid * f;
     switch (field) {
         case EFLD:
-            f = &emf->E;
-            vfname[0] = 'E';
+            f = (t_float3_grid *) &emf->E;
+            snprintf(vfname,16,"E%1d",fc);
+            snprintf(vflabel,16,"E_%c",comp[fc]);
             break;
         case BFLD:
-            f = &emf->B;
-            vfname[0] = 'B';
+            f = (t_float3_grid *) &emf->B;
+            snprintf(vfname,16,"E%1d",fc);
+            snprintf(vflabel,16,"E_%c",comp[fc]);
             break;
+		case EPART:
+			f = (t_float3_grid *) &emf->E_part;
+            snprintf(vfname,16,"E%1d-part",fc);
+            snprintf(vflabel,16,"E_{%cp}",comp[fc]);
+			break;
+		case BPART:
+			f = (t_float3_grid *) &emf->B_part;
+            snprintf(vfname,16,"B%1d-part",fc);
+            snprintf(vflabel,16,"B_{%cp}",comp[fc]);
+			break;
         default:
             printf("Invalid field type selected, returning\n");
             return;
     }
 
-    // Pack the information
+    // Choose the field component
     float * buf = NULL;
     switch (fc) {
         case 0:
             buf = f->x;
-            vfname[1] = '1';
             break;
         case 1:
             buf = f->y;
-            vfname[1] = '2';
             break;
         case 2:
             buf = f->z;
-            vfname[1] = '3';
             break;
     }
-    vfname[2] = 0;
 
     t_zdf_grid_axis axis[1];
     axis[0] = (t_zdf_grid_axis) {
         .min = 0.0,
         .max = emf->box,
-        .label = "x_1",
+        .name = "x",
+        .label = "x",
         .units = "c/\\omega_p"
     };
 
     t_zdf_grid_info info = {
         .ndims = 1,
-        .label = vfname,
+		.name = vfname,
+    	.label = vflabel,
         .units = "m_e c \\omega_p e^{-1}",
         .axis = axis
     };
 
-    info.nx[0] = emf->E.nx;
+    info.count[0] = emf->E.nx;
 
     t_zdf_iteration iter = {
+        .name = "ITERATION",
         .n = emf->iter,
         .t = emf -> iter * emf -> dt,
         .time_units = "1/\\omega_p"
     };
 
-    zdf_save_grid( buf, &info, &iter, "EMF" );
-
+    zdf_save_grid( (float *) buf, zdf_float32, &info, &iter, "EMF" );
 }
 
 
@@ -281,9 +393,14 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 
  *********************************************************************************************/
 
+/**
+ * @brief Advance the magnetic field using a PSTD algorithm
+ * 
+ * @param emf   EM fields
+ * @param dt    Time step
+ */
 void advance_fB( t_emf *emf, const float dt )
 {
-    int i;
 
     // float complex * const restrict fBx = emf -> fB.x;
     float complex * const restrict fBy = emf -> fB.y;
@@ -296,7 +413,7 @@ void advance_fB( t_emf *emf, const float dt )
     const float dk = fft_dk( emf->E.nx, emf->dx );
 
     // Canonical implementation
-    for (i = 0; i < emf -> fB.nx; i++) {
+    for (int i = 0; i < emf -> fB.nx; i++) {
 
         const float kx = i * dk;
 
@@ -306,6 +423,13 @@ void advance_fB( t_emf *emf, const float dt )
     }
 }
 
+/**
+ * @brief Advance the transverse component of the Electric field using a PSTD algorithm
+ * 
+ * @param emf       EM fields
+ * @param current   Electric current density
+ * @param dt        Time step
+ */
 void advance_fEt( t_emf *emf, const t_current *current, const float dt )
 {
 
@@ -348,10 +472,17 @@ void advance_fEt( t_emf *emf, const t_current *current, const float dt )
         //fEtx[i] += dt * (                  -  fJtx );
         fEty[i] += dt * ( -I * fBz[i] * kx -  fJty );
         fEtz[i] += dt * ( +I * fBy[i] * kx -  fJtz );
-
     }
 }
 
+/**
+ * @brief Update longitudinal Electric field from charge density
+ * 
+ * Note: We chose to set the k=0 components to 0
+ * 
+ * @param emf       EM Fields
+ * @param charge    Charge density
+ */
 void update_fEl( t_emf *emf, const t_charge *charge )
 {
     float complex * const restrict frho = charge -> frho.s;
@@ -361,7 +492,6 @@ void update_fEl( t_emf *emf, const t_charge *charge )
     float complex * const restrict fElz = emf -> fEl.z;
 
     const float dk = fft_dk( emf->E.nx, emf->dx );
-    int i;
 
     // kx = 0
     fElx[0] = 0;
@@ -369,7 +499,7 @@ void update_fEl( t_emf *emf, const t_charge *charge )
     fElz[0] = 0;
 
     // kx > 0
-    for( i = 1; i < emf -> fEl.nx; i++) {
+    for( int i = 1; i < emf -> fEl.nx; i++) {
         const float kx = i * dk;
         fElx[i] = - I * frho[i] / kx;
         fEly[i] = 0;
@@ -384,6 +514,13 @@ void update_fEl( t_emf *emf, const t_charge *charge )
 
  *********************************************************************************************/
 
+/**
+ * @brief Advance transverse E and B using the PSATD algorithm
+ * 
+ * @param emf       EM fields
+ * @param current   Electric current density
+ * @param dt        Time step
+ */
 void advance_psatd( t_emf *emf, const t_current *current, const float dt )
 {
 
@@ -453,12 +590,16 @@ void advance_psatd( t_emf *emf, const t_current *current, const float dt )
     }
 }
 
-
-// This code operates with periodic boundaries
+/**
+ * @brief Updates real electric and magnetic field from Fourier transforms
+ * 
+ * The routine will apply spectral filtering, if supplied, and update guard
+ * cell values. Note that this code operates with periodic boundaries.
+ * 
+ * @param emf   EM fields
+ */
 void emf_update( t_emf *emf )
 {
-    int i;
-
     // Update E field
     // To save memory we store the complete E field (longitudinal + transverse)
     // in the longitudinal E field array
@@ -466,30 +607,30 @@ void emf_update( t_emf *emf )
     if ( emf -> filter -> type > FILTER_NONE ) {
         float * const restrict Sk = emf -> filter -> Sk;
 
-        for( i = 0; i < emf -> fEl.nx; i++) {
+        for( int i = 0; i < emf -> fEl.nx; i++) {
             emf -> fEl.x[i] = Sk[i] * (emf ->fEl.x[i] + emf -> fEt.x[i]);
             emf -> fEl.y[i] = Sk[i] * (emf ->fEl.y[i] + emf -> fEt.y[i]);
             emf -> fEl.z[i] = Sk[i] * (emf ->fEl.z[i] + emf -> fEt.z[i]);
         }
     } else {
-        for( i = 0; i < emf -> fEl.nx; i++) {
+        for( int i = 0; i < emf -> fEl.nx; i++) {
             emf -> fEl.x[i] = emf ->fEl.x[i] + emf -> fEt.x[i];
             emf -> fEl.y[i] = emf ->fEl.y[i] + emf -> fEt.y[i];
             emf -> fEl.z[i] = emf ->fEl.z[i] + emf -> fEt.z[i];
         }
     }
 
-       fftr_c2r( emf -> fft_backward, emf -> fEl.x, emf ->E.x );
-       fftr_c2r( emf -> fft_backward, emf -> fEl.y, emf ->E.y );
-       fftr_c2r( emf -> fft_backward, emf -> fEl.z, emf ->E.z );
+    fftr_c2r( emf -> fft_backward, emf -> fEl.x, emf ->E.x );
+    fftr_c2r( emf -> fft_backward, emf -> fEl.y, emf ->E.y );
+    fftr_c2r( emf -> fft_backward, emf -> fEl.z, emf ->E.z );
 
-       // Update B field
-       fftr_c2r( emf -> fft_backward, emf -> fB.x, emf ->B.x );
-       fftr_c2r( emf -> fft_backward, emf -> fB.y, emf ->B.y );
-       fftr_c2r( emf -> fft_backward, emf -> fB.z, emf ->B.z );
+    // Update B field
+    fftr_c2r( emf -> fft_backward, emf -> fB.x, emf ->B.x );
+    fftr_c2r( emf -> fft_backward, emf -> fB.y, emf ->B.y );
+    fftr_c2r( emf -> fft_backward, emf -> fB.z, emf ->B.z );
 
 
-       // Update guard cells
+    // Update guard cells
     float* const restrict Ex = emf -> E.x;
     float* const restrict Ey = emf -> E.y;
     float* const restrict Ez = emf -> E.z;
@@ -503,7 +644,7 @@ void emf_update( t_emf *emf )
     const int gc1 = emf->E.gc[1];
 
     // lower
-    for (i = -gc0; i<0; i++) {
+    for (int i = -gc0; i<0; i++) {
         Ex[ i ] = Ex[ nx + i ];
         Ey[ i ] = Ey[ nx + i ];
         Ez[ i ] = Ez[ nx + i ];
@@ -514,7 +655,7 @@ void emf_update( t_emf *emf )
     }
 
     // upper
-    for (i=0; i<gc1; i++) {
+    for (int i=0; i<gc1; i++) {
         Ex[ nx + i ] = Ex[ i ];
         Ey[ nx + i ] = Ey[ i ];
         Ez[ nx + i ] = Ez[ i ];
@@ -526,6 +667,18 @@ void emf_update( t_emf *emf )
 
 }
 
+/**
+ * @brief Advance EM fields 1 timestep
+ * 
+ * Fields are advanced in time using a spectral algorithm. The routine will also:
+ * 1. Update guard cell values / apply boundary conditions
+ * 2. Apply spectral filtering, if configured
+ * 3. Update "particle" fields if using external fields
+ * 
+ * @param emf 		EM fields
+ * @param charge    Electric charge density
+ * @param current 	Electric current density
+ */
 void emf_advance( t_emf *emf, const t_charge *charge, const t_current *current )
 {
     uint64_t t0 = timer_ticks();
@@ -559,6 +712,12 @@ void emf_advance( t_emf *emf, const t_charge *charge, const t_current *current )
     _emf_time += timer_interval_seconds(t0, timer_ticks());
 }
 
+/**
+ * @brief Calculate total EM field energy
+ *
+ * @param[in] emf EM field
+ * @param[out] energy Energy values vector
+ */
 void emf_get_energy( const t_emf *emf, double energy[] )
 {
     int i;
@@ -594,7 +753,6 @@ void emf_get_energy( const t_emf *emf, double energy[] )
  * @param   emf     EM field object
  * @param   ext_fld External fields
  */
-
 void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
 
     emf -> ext_fld.E_type = ext_fld -> E_type;
@@ -656,8 +814,9 @@ void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
 
 
 /**
- * Updates field values seen by particles with externally imposed fields
- * @param emf EMF object holding field data
+ * @brief Updates field values seen by particles with externally imposed fields
+ * 
+ * @param emf   EM field object
  */
 void emf_update_part_fld( t_emf* const emf ) {
 
@@ -676,7 +835,7 @@ void emf_update_part_fld( t_emf* const emf ) {
         break; }
     case EMF_FLD_TYPE_CUSTOM: {
         for (int i=-emf->E.gc[0]; i<emf->E.nx+emf->E.gc[1]; i++) {
-            t_vfld ext_E = (*emf->ext_fld.E_custom)(i,emf->dx,emf->ext_fld.E_custom_data);
+            float3 ext_E = (*emf->ext_fld.E_custom)(i,emf->dx,emf->ext_fld.E_custom_data);
 
             E_part_x[i] = emf -> E.x[i] + ext_E.x;
             E_part_y[i] = emf -> E.y[i] + ext_E.y;
@@ -702,7 +861,7 @@ void emf_update_part_fld( t_emf* const emf ) {
         break; }
     case EMF_FLD_TYPE_CUSTOM: {
         for (int i=-emf->B.gc[0]; i<emf->B.nx+emf->B.gc[1]; i++) {
-            t_vfld ext_B = (*emf->ext_fld.B_custom)(i,emf->dx,emf->ext_fld.B_custom_data);
+            float3 ext_B = (*emf->ext_fld.B_custom)(i,emf->dx,emf->ext_fld.B_custom_data);
 
             B_part_x[i] = emf -> B.x[i] + ext_B.x;
             B_part_y[i] = emf -> B.y[i] + ext_B.y;
@@ -754,7 +913,7 @@ void emf_init_fld( t_emf* const emf, t_emf_init_fld* init_fld )
 
     case EMF_FLD_TYPE_CUSTOM:
         for (int i=-emf->E.gc[0]; i<emf->E.nx+emf->E.gc[1]; i++) {
-            t_vfld init_E = (init_fld->E_custom)
+            float3 init_E = (init_fld->E_custom)
                 (i,emf->dx, init_fld->E_custom_data);
             Ex[ i ] = init_E.x;
             Ey[ i ] = init_E.y;
@@ -787,7 +946,7 @@ void emf_init_fld( t_emf* const emf, t_emf_init_fld* init_fld )
 
     case EMF_FLD_TYPE_CUSTOM:
         for (int i=-emf->B.gc[0]; i<emf->B.nx+emf->B.gc[1]; i++) {
-            t_vfld init_B = (init_fld->B_custom)
+            float3 init_B = (init_fld->B_custom)
                 (i,emf->dx, init_fld->B_custom_data);
             Bx[ i ] = init_B.x;
             By[ i ] = init_B.y;

@@ -15,46 +15,91 @@
 #include "fft.h"
 #include "filter.h"
 
-typedef struct {
+typedef struct Charge {
 	
-	// Global charge density
+	/// Global charge density
 	t_scalar_grid rho;
 
-	// Neutralizing background
+	/// Neutralizing background
 	t_scalar_grid neutral;
 	
-	// Fourier transform of rho
+	/// Fourier transform of rho
 	t_cscalar_grid frho;
 
-	// Box size
-	t_fld box;
+	/// Box size
+	float box;
 	
-	// Cell size
-	t_fld dx;
+	/// Cell size
+	float dx;
 
-	// Time step
+	/// Time step
 	float dt;
 
-	// Iteration number
+	/// Iteration number
 	int iter;
 
-	// FFT configuration
+	/// FFT configuration
 	t_fftr_cfg *fft_forward;
 
-	// Spectral filtering
+	/// Spectral filtering
 	t_filter *filter;
 
 } t_charge;
 
-
-void charge_new( t_charge *charge, int nx, t_fld box, float dt, t_fftr_cfg *fft_forward,
+/**
+ * @brief Initializes Electric charge density object
+ * 
+ * @param charge 		Electric charge density
+ * @param nx 			Number of cells
+ * @param box 			Physical box size
+ * @param dt 			Simulation time step
+ * @param fft_forward 	FFT configuration for transforming rho to frho
+ * 						(shared with other objects)
+ * @param filter 		Spectral filtering parameters
+ */
+void charge_new( t_charge *charge, int nx, float box, float dt, t_fftr_cfg *fft_forward,
                  t_filter *filter );
+
+/**
+ * @brief Frees dynamic memory from electric charge density
+ * 
+ * @param charge 	Electric charge density
+ */
 void charge_delete( t_charge *charge );
+
+/**
+ * @brief Sets all electric charge density values to zero
+ * 
+ * @param charge 	Electric charge density
+ */
 void charge_zero( t_charge *charge );
+
+/**
+ * @brief Advances electric charge density 1 time step
+ * 
+ * @param charge 	Electric charge density
+ */
 void charge_update( t_charge *charge );
+
+/**
+ * @brief Saves electric charge density diagnostic information to disk
+ * 
+ * @param charge 	Electric charge density
+ */
 void charge_report( const t_charge *charge );
 
+/**
+ * @brief Initializes neutralizing background structures
+ * 
+ * @param charge 	Electric charge density
+ */
 void charge_init_neutral_bkg( t_charge *charge );
+
+/**
+ * @brief Updates neutralizing background values
+ * 
+ * @param charge 	Electric charge density
+ */
 void charge_update_neutral_bkg( t_charge *charge );
 
 

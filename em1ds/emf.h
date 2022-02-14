@@ -21,141 +21,231 @@
  * External fields
  **/
 
-enum emf_fld_type { EMF_FLD_TYPE_NONE, EMF_FLD_TYPE_UNIFORM, EMF_FLD_TYPE_CUSTOM };
+/**
+ * @brief External/initial EM field types
+ * 
+ */
+enum emf_fld_type { 
+	EMF_FLD_TYPE_NONE,		///< None
+	EMF_FLD_TYPE_UNIFORM,	///< Uniform
+	EMF_FLD_TYPE_CUSTOM		///< Defined from an external function
+};
 
-typedef struct {
-	// Type of external field
-    enum emf_fld_type E_type;
-    enum emf_fld_type B_type;
+/**
+ * @brief EM external field parameters
+ * 
+ */
+typedef struct EMF_ExternalField {
+    enum emf_fld_type E_type;	///< Type of external E field
+    enum emf_fld_type B_type;	///< Type of external B field
 	
-    // Uniform external fields
-    t_vfld E_0;
-	t_vfld B_0;
+    float3 E_0;	///< Value of uniform external E field
+	float3 B_0;	///< Value of uniform external B field
 
-    // Pointer to custom external E-field function
-    t_vfld (*E_custom)(int, float, void*); 
-    t_vfld (*B_custom)(int, float, void*); 
+    float3 (*E_custom)(int, float, void*);	///< Custom external E-field function
+    float3 (*B_custom)(int, float, void*);	///< Custom external B-field function
 
-    // Pointer to additional data to be passed to the 
-    // E_custom and B_custom functions
-	void *E_custom_data;
-	void *B_custom_data;
+	void *E_custom_data;	///< Additional data to be passed to the E_custom function
+	void *B_custom_data;	///< Additional data to be passed to the B_custom function
 
-	// Fields seen by particules
-	t_vfld_grid E_part_buf;
-	t_vfld_grid B_part_buf;
+	t_float3_grid E_part_buf;	///< E field seen by particles
+	t_float3_grid B_part_buf;	///< B field seen by particles
 } t_emf_ext_fld;
 
 /**
- * Initial fields
- **/
+ * @brief EM initial field parameters
+ * 
+ */
+typedef struct EMF_InitialField {
 
-enum emf_init_fld { EMF_INIT_FLD_NONE, EMF_INIT_FLD_UNIFORM, EMF_INIT_FLD_CUSTOM };
-
-typedef struct {
-	// Type of external field
-    enum emf_fld_type E_type;
-    enum emf_fld_type B_type;
+    enum emf_fld_type E_type;	///< Type of initial E field
+    enum emf_fld_type B_type;	///< Type of initial B field
 	
-    // Uniform external fields
-    t_vfld E_0;
-	t_vfld B_0;
+    float3 E_0;	///< Value for uniform initial E field
+	float3 B_0;	///< Value for uniform initial B field
 
-    // Pointer to custom external E-field function
-    t_vfld (*E_custom)(int, float, void*); 
-    t_vfld (*B_custom)(int, float, void*); 
+    float3 (*E_custom)(int, float, void*);	///< Custom initial E-field function
+    float3 (*B_custom)(int, float, void*);	///< Custom initial B-field function
 
-    // Pointer to additional data to be passed to the 
-    // E_custom and B_custom functions
-	void *E_custom_data;
-	void *B_custom_data;
+	void *E_custom_data;	///< Additional data to be passed to the E_custom function
+	void *B_custom_data;	///< Additional data to be passed to the B_custom function
 
 } t_emf_init_fld;
 
-enum emf_diag { EFLD, BFLD };
-enum emf_solver { EMF_SOLVER_PSTD, EMF_SOLVER_PSATD };
+/**
+ * @brief Types of EM field diagnostics
+ * 
+ */
+enum emf_diag { 
+    EFLD,   ///< Electric field
+    BFLD,   ///< Magnetic field
+    EPART,  ///< Electric field as seen by the particles
+    BPART   ///< Magnetic field as seen by the particles
+};
 
-typedef struct {
+/**
+ * @brief Types of EM field solvers
+ * 
+ */
+enum emf_solver {
+	EMF_SOLVER_PSTD,	///< Pseudo-spectral time domain
+	EMF_SOLVER_PSATD	///< Pseudo-spectral analytic time domain
+};
 
-	// E and B fields
-	t_vfld_grid E;
-	t_vfld_grid B;
+/**
+ * @brief Electro-Magnetic fields
+ * 
+ */
+typedef struct EMF {
 
-	// Fourier transform of El, Et and B
-	t_cvfld_grid fEl;
-	t_cvfld_grid fEt;
-	t_cvfld_grid fB;
+	t_float3_grid E;	///< Electric field grid
+	t_float3_grid B;	///< Magnetic field grid
+
+	t_cfloat3_grid fEl;	///< Fourier transform of longitudinal Electric field
+	t_cfloat3_grid fEt;	///< Fourier transform of transverse Electric field
+	t_cfloat3_grid fB;	///< Fourier transform of Magnetic field
 
 	// Simulation box info
-	t_fld box;
-	t_fld dx;
+	float box;	///< Physical size of simulation box
+	float dx;	///< Grid cell size
 
-	// Time step
-	float dt;
+	float dt;	///< Time step
+	int iter;	///< Current iteration number
 
-	// Iteration number
-	int iter;
+	// FFT configurations
+	t_fftr_cfg *fft_forward;	///< FFT configuration for forward transformation
+	t_fftr_cfg *fft_backward;	///< FFT configuration for backward transformation
 
-	// FFT configuration
-	t_fftr_cfg *fft_forward, *fft_backward;
-
-	// Spectral filtering
+	/// Spectral filtering parameters
 	t_filter *filter;
 
 	// Fields seen by particles
 	// When using external fields these will be a combination of the simulation
 	// fields and the externally imposed ones. When external fields are off
 	// these just point to E and B.
-	t_vfld_grid *E_part;
-	t_vfld_grid *B_part;
+	
+	t_float3_grid *E_part;	///< Electric field as seen by particles
+	t_float3_grid *B_part;	///< Magnetic field as seen by particles
 
-	// External fields
+	/// External fields configuration
 	t_emf_ext_fld ext_fld;
 
-	// solver type
+	/// EM solver type
 	enum emf_solver solver_type;
 
 } t_emf;
 
 
-// In 1D we only have plane waves
-typedef struct {
+/**
+ * @brief Laser Pulse parameters
+ * 
+ */
+typedef struct EMF_Laser {
 
-	float start;	// Front edge of the laser pulse, in simulation units
-	float fwhm;		// FWHM of the laser pulse duration, in simulation units
-	float rise, flat, fall; // Rise, flat and fall time of the laser pulse, in simulation units
+	float start;	///< Front edge of the laser pulse, in simulation units
+	float fwhm;		///< FWHM of the laser pulse duration, in simulation units
+	float rise;		///< Rise time of the laser pulse, in simulation units
+	float flat;		///< Flat time of the laser pulse, in simulation units
+	float fall; 	///< Fall time of the laser pulse, in simulation units
 
-	float a0;		// Normalized peak vector potential of the pulse
-	float omega0;	// Laser frequency, normalized to the plasma frequency
+	float a0;		///< Normalized peak vector potential of the pulse
+	float omega0;	///< Laser frequency, normalized to the plasma frequency
 
-	float polarization;
+	float polarization; ///< Polarization angle in radians
 
 } t_emf_laser;
 
-
-void emf_new( t_emf *emf, int nx, t_fld box, const float dt, t_fftr_cfg *fft_forward,
+/**
+ * @brief Initializes the EM field objecnt
+ * 
+ * @param emf			EM fields object
+ * @param nx			Number of cells
+ * @param box			Physical box size
+ * @param dt			Simulation time step
+ * @param fft_forward	FFT configuration for forward transforms (shared
+ * 						with other objects)
+ * @param fft_backward	FFT configuration for backward transforms (shared
+ * 						with other objects)
+ * @param filter		Spectral filtering parameters
+ */
+void emf_new( t_emf *emf, int nx, float box, const float dt, t_fftr_cfg *fft_forward,
 	t_fftr_cfg *fft_backward, t_filter *filter );
 
+/**
+ * @brief Frees dynamic memory from EM fields.
+ * 
+ * If external fields are in use, the dynamic memory associated with these
+ * will also be freed.
+ * 
+ * @param emf 	EM fields
+ */
 void emf_delete( t_emf *emf );
 
+/**
+ * @brief Saves EM fields diagnostic information to disk
+ * 
+ * Saves the selected type / density component to disk in directory
+ * "EMF". Guard cell values are discarded.
+ *
+ * @param emf 		EM Fields
+ * @param field 	Which field to save (E, B, Epart, Bpart)
+ * @param fc 		Field component to save, must be one of {0,1,2}
+ */
 void emf_report( const t_emf *emf, const char field, const char fc );
 
-void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser );
+/**
+ * @brief Add laser pulse to simulation.
+ * 
+ * Laser pulses are superimposed on top of existing E and B fields. 
+ * Multiple lasers can be added.
+ * 
+ * @param emf 		EM fields
+ * @param laser 	Laser pulse parameters
+ */
+void emf_add_laser( t_emf* const emf, t_emf_laser* const laser );
 
+/**
+ * @brief Advance EM fields 1 timestep
+ * 
+ * Fields are advanced in time using a spectral algorithm. The routine will also:
+ * 1. Update guard cell values / apply boundary conditions
+ * 2. Apply spectral filtering, if configured
+ * 3. Update "particle" fields if using external fields
+ * 
+ * @param emf 		EM fields
+ * @param current 	Electric current density
+ */
 void emf_advance( t_emf *emf, const t_charge *charge, const t_current *current );
 
-void emf_update_part_fld( t_emf *emf );
-
-void emf_move_window( t_emf *emf );
-
-void emf_update_gc( t_emf *emf );
-
+/**
+ * @brief Time spent advancing the EM fields
+ * 
+ * @return 		Time spent in seconds
+ */
 double emf_time( void );
 
+/**
+ * @brief Calculate total EM field energy
+ *
+ * @param[in] emf EM field
+ * @param[out] energy Energy values vector
+ */
 void emf_get_energy( const t_emf *emf, double energy[] );
 
+/**
+ * @brief Sets the external fields to be used for the simulation
+ * 
+ * @param emf 		EM field
+ * @param exfloat 	External fields
+ */
 void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld );
 
+/**
+ * @brief Initialize EMF field values
+ * 
+ * @param emf       EM field object
+ * @param inifloat  Initial field parameters
+ */
 void emf_init_fld( t_emf* const emf, t_emf_init_fld* init_fld );
 
 #endif

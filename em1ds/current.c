@@ -16,10 +16,20 @@
 
 #include "zdf.h"
 
-void current_new( t_current *current, int nx, t_fld box, float dt, t_fftr_cfg *fft_forward,
-                  t_filter *filter )
+/**
+ * @brief Initializes Electric current density object
+ * 
+ * @param current 		Electric current density
+ * @param nx 			Number of cells
+ * @param box 			Physical box size
+ * @param dt 			Simulation time step
+ * @param fft_forward 	FFT configuration for transforming J to fJ
+ * 						(shared with other objects)
+ * @param filter 		Spectral filtering parameters
+ */
+void current_new( t_current *current, int nx, float box, float dt, 
+	t_fftr_cfg *fft_forward, t_filter *filter )
 {
-
 	if ( nx % 2 ) {
 		fprintf(stderr,"(*error*) Only even grid sizes are supported.");
 		exit(-1);
@@ -53,25 +63,42 @@ void current_new( t_current *current, int nx, t_fld box, float dt, t_fftr_cfg *f
 
 	// This avoids setting the fJ.x to zero in current update
 	cvfld_grid_zero( &current -> fJ );
-
 }
 
+/**
+ * @brief Frees dynamic memory from electric current density
+ * 
+ * @param current Electric current density object
+ */
 void current_delete( t_current *current )
 {
 	vfld_grid_cleanup( &current -> J );
 	cvfld_grid_cleanup( &current -> fJ );
-
 }
 
+/**
+ * @brief Sets all electric current density values to zero
+ * 
+ * @param current Electric current density object
+ */
 void current_zero( t_current *current )
 {
 	vfld_grid_zero( &current -> J );
 }
 
+/**
+ * @brief Advances electric current density 1 time step
+ * 
+ * The routine will:
+ * 1. Update the guard cells
+ * 2. Calculate the transverse component of J (not needed in 1D)
+ * 3. Get the Fourier transform of the current
+ * 4. Apply spectral filtering (if configured)
+ * 
+ * @param current Electric current density object
+ */
 void current_update( t_current *current )
 {
-	int i;
-
 	float* restrict const Jx = current -> J.x;
 	float* restrict const Jy = current -> J.y;
 	float* restrict const Jz = current -> J.z;
@@ -83,14 +110,14 @@ void current_update( t_current *current )
 	// x
 
 	// lower - add the values from upper boundary ( both gc and inside box )
-	for (i=-gc0; i<gc1; i++) {
+	for (int i=-gc0; i<gc1; i++) {
 		Jx[ i ] += Jx[ nx + i ];
 		Jy[ i ] += Jy[ nx + i ];
 		Jz[ i ] += Jz[ nx + i ];
 	}
 
 	// upper - just copy the values from the lower boundary
-	for (i=-gc0; i<gc1; i++) {
+	for (int i=-gc0; i<gc1; i++) {
 		Jx[ nx + i ] = Jx[ i ];
 		Jy[ nx + i ] = Jy[ i ];
 		Jz[ nx + i ] = Jz[ i ];
@@ -114,7 +141,7 @@ void current_update( t_current *current )
 	    complex float * const restrict fJty = current -> fJ.y;
 	    complex float * const restrict fJtz = current -> fJ.z;
 
-		for ( i = 0; i < current -> fJ.nx; i++) {
+		for ( int i = 0; i < current -> fJ.nx; i++) {
 			fJtx[i] *= Sk[i];
 			fJty[i] *= Sk[i];
 			fJtz[i] *= Sk[i];
@@ -122,57 +149,66 @@ void current_update( t_current *current )
 	}
 
 	current -> iter++;
-
 }
 
+/**
+ * @brief Saves electric current density diagnostic information to disk
+ * 
+ * Saves the selected current density component to disk in directory
+ * "CURRENT". Guard cell values are discarded.
+ * 
+ * @param current Electric current object
+ * @param jc Current component to save, must be one of {0,1,2}
+ */
 void current_report( const t_current *current, const char jc )
 {
-	char vfname[3];
-		
 	float *buf = NULL;
-
-	vfname[0] = 'J';
 	
 	switch (jc) {
 		case 0:
 			buf = current -> J.x;
-			vfname[1] = '1';
 			break;
 		case 1:
 			buf = current -> J.y;
-			vfname[1] = '2';
 			break;
 		case 2:
 			buf = current -> J.y;
-			vfname[1] = '3';
 			break;
 	}
-	vfname[2] = 0;
+
+	char vfname[16];	// Dataset name
+	char vflabel[16];	// Dataset label (for plots)
+
+    snprintf( vfname, 3, "J%1d", jc );
+	char comp[] = {'x','y','z'};
+    snprintf(vflabel,4,"J_%c",comp[jc]);
 	
     t_zdf_grid_axis axis[1];
     axis[0] = (t_zdf_grid_axis) {
     	.min = 0.0,
     	.max = current->box,
-    	.label = "x_1",
+		.name = "x",
+    	.label = "x",
     	.units = "c/\\omega_p"
     };
 
     t_zdf_grid_info info = {
     	.ndims = 1,
-    	.label = vfname,
+        .name = vfname,
+        .label = vflabel,
     	.units = "e \\omega_p^2 / c",
     	.axis = axis
     };
 
-    info.nx[0] = current->J.nx;
+    info.count[0] = current->J.nx;
 
     t_zdf_iteration iter = {
+        .name = "ITERATION",
     	.n = current->iter,
     	.t = current -> iter * current -> dt,
     	.time_units = "1/\\omega_p"
     };
 
-	zdf_save_grid( buf, &info, &iter, "CURRENT" );
-		
+    zdf_save_grid( (void *) buf, zdf_float32, &info, &iter, "CURRENT" );
 }
 

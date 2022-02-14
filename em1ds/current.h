@@ -15,39 +15,79 @@
 #include "fft.h"
 #include "filter.h"
 
+/**
+ * @brief Current density object
+ * 
+ */
+typedef struct Current {
 
-typedef struct {
+	/// Current density grid
+	t_float3_grid J;
 
-	t_vfld_grid J;
+	/// Fourier transform of J
+	t_cfloat3_grid fJ;
 
-	// Fourier transform of J
-	t_cvfld_grid fJ;
+	/// Box size
+	float box;
 
-	// Box size
-	t_fld box;
+	/// Cell size
+	float dx;
 
-	// Cell size
-	t_fld dx;
-
-	// Time step
+	/// Time step
 	float dt;
 
-	// Iteration number
+	/// Iteration number
 	int iter;
 
-	// FFT configuration
+	/// FFT configuration
 	t_fftr_cfg *fft_forward;
 
-	// Spectral filtering
+	/// Spectral filtering
 	t_filter *filter;
 
 } t_current;
 
-void current_new( t_current *current, int nx, t_fld box, float dt, t_fftr_cfg *fft_forward,
+/**
+ * @brief Initializes Electric current density object
+ * 
+ * @param current 		Electric current density
+ * @param nx 			Number of cells
+ * @param box 			Physical box size
+ * @param dt 			Simulation time step
+ * @param fft_forward 	FFT configuration for transforming J to fJ
+ * 						(shared with other objects)
+ * @param filter 		Spectral filtering parameters
+ */
+void current_new( t_current *current, int nx, float box, float dt, t_fftr_cfg *fft_forward,
 	              t_filter *filter );
+
+/**
+ * @brief Frees dynamic memory from electric current density
+ * 
+ * @param current Electric current density object
+ */
 void current_delete( t_current *current );
+
+/**
+ * @brief Sets all electric current density values to zero
+ * 
+ * @param current Electric current density object
+ */
 void current_zero( t_current *current );
+
+/**
+ * @brief Advances electric current density 1 time step
+ * 
+ * @param current Electric current density object
+ */
 void current_update( t_current *current );
+
+/**
+ * @brief Saves electric current density diagnostic information to disk
+ * 
+ * @param current Electric current density object
+ * @param jc Current component to save, must be one of {0,1,2}
+ */
 void current_report( const t_current *current, const char jc );
 
 #endif

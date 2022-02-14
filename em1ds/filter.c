@@ -15,10 +15,12 @@
 #endif
 
 /**
- * Updates filter values for the specified parameters
- * @param filter Filter object
- * @param type   Type of filter to use
- * @param ck     Cutoff wavenumber for the filter (filter response = 1/2)
+ * @brief Updates filter values for the specified parameters
+ * 
+ * @param filter 	Filter object
+ * @param type   	Type of filter to use
+ * @param ck     	Cutoff wavenumber for the filter (filter response = 1/2)
+ * @return			0 on success, -1 on error
  */
 int filter_set( t_filter* const filter, enum filter_type const type, float const ck )
 {
@@ -64,7 +66,8 @@ int filter_set( t_filter* const filter, enum filter_type const type, float const
 
 
 /**
- * Initializes filter object
+ * @brief Initializes filter object
+ * 
  * @param filter Filter object
  * @param nk     Number of k-space points (assumes k at nk-1 is Nyquist wavenumber)
  */
@@ -75,6 +78,11 @@ void filter_new( t_filter *filter, int nk ) {
 	filter_set( filter, FILTER_NONE, 0.0 );
 }
 
+/**
+ * @brief Cleanup filter object
+ * 
+ * @param filter Filter object
+ */
 void filter_delete( t_filter *filter ) {
 	filter -> type = FILTER_NONE;
 	free( filter -> Sk );

@@ -1,3 +1,14 @@
+/**
+ * @file simulation.c
+ * @author Ricardo Fonseca
+ * @brief EM1DS Simulation
+ * @version 0.2
+ * @date 2022-02-04
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,6 +16,13 @@
 #include "timer.h"
 
 
+/**
+ * @brief Checks if the `sim_report()` function should be called 
+ * 
+ * @param n 		Current iteration
+ * @param ndump 	Diagnostic frequency (number of iterations between diagnostic dumps)
+ * @return 			1 if `sim_report()` function should be called, 0 otherwise
+ */
 int report( int n, int ndump )
 {
 	if (ndump > 0) {
@@ -14,6 +32,17 @@ int report( int n, int ndump )
 	}
 }
 
+/**
+ * @brief Advance simulation 1 iteration
+ * 
+ * A complete iteration consists of:
+ * 1. Zeroing current/charge density
+ * 2. Advancing particle species and depositing electric current/charge
+ * 3. Updating electric current/charge boundary
+ * 4. Advancing the EM fields
+ * 
+ * @param sim 	EM1DS Simulation
+ */
 void sim_iter( t_simulation* sim ) {
 
 	// Advance particles and deposit charge and current
@@ -31,6 +60,13 @@ void sim_iter( t_simulation* sim ) {
 
 }
 
+/**
+ * @brief Prints out report on simulation timings
+ * 
+ * @param sim 	EM1DS Simulaiton
+ * @param t0 	Simulation start time (ticks)
+ * @param t1 	Simulation end time (ticks)
+ */
 void sim_timings( t_simulation* sim, uint64_t t0, uint64_t t1 ){
 
 	fprintf(stderr, "Time for spec. advance = %f s\n", spec_time());
@@ -45,15 +81,28 @@ void sim_timings( t_simulation* sim, uint64_t t0, uint64_t t1 ){
 	}
 }
 
+/**
+ * @brief Initialize simulation object
+ * 
+ * @param sim 			EM1DS Simulation
+ * @param nx 			Number of grid points
+ * @param box 			Simulation box size in simulation units
+ * @param dt 			Simulation time step in simulation units
+ * @param tmax 			Final simulation time
+ * @param ndump 		Diagnostic frequency (`report` function will be called every ndump iterations)
+ * 						set to 0 to disable diagnostic reports
+ * @param species 		Array of particle species, may be NULL (no particles)
+ * @param n_species 	Number of particle specis
+ */
 void sim_new( t_simulation* sim, int nx, float box, float dt, float tmax, int ndump, t_species* species, int n_species ){
 
 	sim -> dt = dt;
 	sim -> tmax = tmax;
 	sim -> ndump = ndump;
 
-	// Initialize FFT configurations
-	fftr_init_cfg( &sim -> fft_forward, nx, FFT_FORWARD, FFTR_CCS);
-	fftr_init_cfg( &sim -> fft_backward, nx, FFT_BACKWARD, FFTR_CCS);
+	// Initialize Real FFT configurations
+	fftr_init_cfg( &sim -> fft_forward, nx, FFT_FORWARD );
+	fftr_init_cfg( &sim -> fft_backward, nx, FFT_BACKWARD );
 
 	// Initialize filtering
 	filter_new( &sim -> filter, nx/2 + 1 );
@@ -75,6 +124,14 @@ void sim_new( t_simulation* sim, int nx, float box, float dt, float tmax, int nd
 
 }
 
+/**
+ * @brief Sets filtering parameters for the simulation
+ * 
+ * @param sim 		EM1DS Simulartion
+ * @param type 		Filter type {FILTER_NONE, FILTER_GAUSS, FILTER_SHARP}
+ * @param ck 		Cutoff wavenumber for the filter (filter response = 1/2)
+ * @return 			0 on success, -1 on error
+ */
 int sim_filter_set( t_simulation* const sim, enum filter_type const type, float const ck ){
 	if ( filter_set( &sim -> filter, type, ck ) ){
 		fprintf(stderr,"Unable to set filter\n" );
@@ -83,11 +140,28 @@ int sim_filter_set( t_simulation* const sim, enum filter_type const type, float 
 	return 0;
 }
 
+/**
+ * @brief Adds laser pulse to simulation
+ * 
+ * This routine is just used to avoid users accessing the simulation.emf object directly,
+ * see `emf_add_laser()` for details.
+ * 
+ * @param sim 		EM1DS simulation
+ * @param laser 	Laser parameters
+ */
 void sim_add_laser( t_simulation* sim,  t_emf_laser* laser ){
 
 	emf_add_laser( &sim->emf, laser );
 }
 
+/**
+ * @brief Adds neutralizing background to the simulation
+ * 
+ * The neutralizing background is calculated by depositing the charge from
+ * all particle species
+ * 
+ * @param sim 	EM1DS Simulation
+ */
 void sim_add_neutral_bkg( t_simulation* sim ){
 
 	charge_init_neutral_bkg( &sim -> charge );
@@ -99,7 +173,40 @@ void sim_add_neutral_bkg( t_simulation* sim ){
 
 }
 
+/**
+ * @brief Print report on simulation energy (fields/particles/total)
+ * 
+ * @param sim 	EM1DS Simulation
+ */
+void sim_report_energy( t_simulation* sim )
+{
+	int i;
 
+	double emf_energy[6];
+	double part_energy[ sim -> n_species ];
+
+	emf_get_energy( &sim -> emf, emf_energy );
+	double tot_emf = emf_energy[0];
+	for( i = 0; i < 6; i++ ){
+		tot_emf += emf_energy[i];
+	}
+
+	double tot_part = 0;
+	for( i = 0; i < sim -> n_species; i++ ){
+		part_energy[i] = sim -> species[i].energy;
+		tot_part += part_energy[i];
+	}
+
+	printf("Energy (fields | particles | total) = %e %e %e\n",
+		tot_emf, tot_part, tot_emf+tot_part);
+
+}
+
+/**
+ * @brief Frees dynamic memory 
+ * 
+ * @param sim 		EM1DS Simulation
+ */
 void sim_delete( t_simulation* sim ) {
 
 	for (int i = 0; i<sim->n_species; i++)
@@ -115,7 +222,5 @@ void sim_delete( t_simulation* sim ) {
 
 	fftr_cleanup_cfg( &sim -> fft_backward );
 	fftr_cleanup_cfg( &sim -> fft_forward );
-
-
 }
 
