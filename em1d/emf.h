@@ -138,7 +138,7 @@ typedef struct EMF {
  * @brief Laser Pulse parameters
  * 
  */
-typedef struct EMF_Laser{
+typedef struct EMF_Laser {
     
     float start; ///< Front edge of the laser pulse, in simulation units
     

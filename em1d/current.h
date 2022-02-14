@@ -71,10 +71,10 @@ typedef struct Current {
 /**
  * @brief Initializes Electric current density object
  * 
- * @param current Electric current density
- * @param nx Number of cells
- * @param box Physical box size
- * @param dt Simulation time step
+ * @param current 	Electric current density
+ * @param nx 		Number of cells
+ * @param box 		Physical box size
+ * @param dt 		Simulation time step
   */
 void current_new( t_current *current, int nx, float box, float dt );
 

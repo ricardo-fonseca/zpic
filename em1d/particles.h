@@ -16,6 +16,10 @@
 
 #include <stdint.h>
 
+/**
+ * @brief Maximum species name length
+ * 
+ */
 #define MAX_SPNAME_LEN 32
 
 /**

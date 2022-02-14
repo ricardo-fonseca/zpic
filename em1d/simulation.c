@@ -16,11 +16,11 @@
 #include "timer.h"
 
 /**
- * @brief Checks if the `report` function should be called 
+ * @brief Checks if there should be a report at this timestep
  * 
  * @param n 		Current iteration
  * @param ndump 	Diagnostic frequency (number of iterations between diagnostic dumps)
- * @return 			1 if `report` function should be called, 0 otherwise
+ * @return 			1 if it is time to write a report, 0 otherwise
  */
 int report( int n, int ndump )
 {
@@ -196,7 +196,6 @@ void sim_report_energy( t_simulation* sim )
 	}
 
 	printf("Energy (fields | particles | total) = %e %e %e\n",
-
 		tot_emf, tot_part, tot_emf+tot_part);
 
 }

@@ -32,6 +32,7 @@ void spec_move_window( t_species *spec );
 
 /**
  * @brief Returns the total time spent pushing particles (includes boundaries and moving window)
+ * 
  * @return  Total time in seconds
  */
 double spec_time( void )
@@ -62,7 +63,8 @@ double spec_perf( void )
  *********************************************************************************************/
 
 /**
- * Sets the momentum of the range of particles supplieds using a thermal distribution
+ * @brief Sets the momentum of the range of particles supplieds using a thermal distribution
+ * 
  * @param spec  Particle species
  * @param start Index of the first particle to set the momentum
  * @param end   Index of the last particle to set the momentum
@@ -141,7 +143,7 @@ void spec_set_u( t_species* spec, const int start, const int end )
  *
  * @param spec      Particle species
  * @param range     Range of cells in which to inject
- * @return Number of particles to be injected
+ * @return          Number of particles to be injected
  */
 int spec_np_inj( t_species* spec, const int range[] )
 {
@@ -1116,7 +1118,7 @@ void spec_deposit_charge( const t_species* spec, float* charge )
  * 
  * Saves all particle positions and momenta. Positions are converted to
  * distance from simulation box corner before saving. Data is saved in the
- * "PARTICLES" directory.
+ * "PARTICLES/sp_name" directory.
  *
  * @param spec 		Particle species
  */

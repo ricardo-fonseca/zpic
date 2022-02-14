@@ -32,22 +32,22 @@ typedef struct Simulation {
 /**
  * @brief Initializes simulation parameters
  * 
- * This routine MUST be supplied by the user, see the `input` directory
+ * This routine __MUST__ be supplied by the user, see the `input` directory
  * for examples
  * 
- * @param sim	EM1D simulation 
+ * @param sim	EM1DS simulation 
  */
 void sim_init( t_simulation* sim );
 
 /**
  * @brief Saves diagnostic information
  *
- * This routine MUST be supplied by the user, see the `input` directory
+ * This routine __MUST__ be supplied by the user, see the `input` directory
  * for examples
  * 
  * This routine will be called every `ndump` iterations
  * 
- * @param sim 	EM1Dsimulation
+ * @param sim 	EM1DS simulation
  */
 void sim_report( t_simulation* sim );
 
@@ -79,7 +79,6 @@ void sim_report_energy( t_simulation* sim );
  * @param n_species 	Number of particle specis
  */
 void sim_new( t_simulation* sim, int nx, float box, float dt, float tmax, int ndump, t_species* species, int n_species );
-int report( int n, int ndump );
 
 /**
  * @brief Prints out report on simulation timings
