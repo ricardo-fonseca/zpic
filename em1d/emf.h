@@ -10,9 +10,7 @@
 #ifndef __EMF__
 #define __EMF__
 
-
 #include "zpic.h"
-
 #include "current.h"
 
 /**

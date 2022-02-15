@@ -166,8 +166,6 @@ void current_update( t_current *current )
  */
 void current_report( const t_current *current, const int jc )
 {
-
-
 	if ( jc < 0 || jc > 2 ) {
 		fprintf(stderr, "(*error*) Invalid current component (jc) selected, returning\n");
 		return;
@@ -266,14 +264,12 @@ void get_smooth_comp( int n, float* sa, float* sb) {
  */
 void kernel_x( t_current* const current, const float sa, const float sb ){
 
-    int i;
     float3* restrict const J = current -> J;
-
 
     float3 fl = J[-1];
     float3 f0 = J[ 0];
 
-    for( i = 0; i < current -> nx; i++) {
+    for( int i = 0; i < current -> nx; i++) {
 
         float3 fu = J[i + 1];
 
@@ -292,10 +288,10 @@ void kernel_x( t_current* const current, const float sa, const float sb ){
 
     // Update x boundaries for periodic boundaries
     if ( current -> bc_type == CURRENT_BC_PERIODIC ) {
-        for(i = -current->gc[0]; i<0; i++)
+        for(int i = -current->gc[0]; i<0; i++)
             J[ i ] = J[ current->nx + i ];
 
-        for (i=0; i<current->gc[1]; i++)
+        for (int i=0; i<current->gc[1]; i++)
             J[ current->nx + i ] = J[ i ];
     }
 

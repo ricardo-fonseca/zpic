@@ -35,7 +35,7 @@ typedef struct Simulation {
  * This routine __MUST__ be supplied by the user, see the `input` directory
  * for examples
  * 
- * @param sim	EM1DS simulation 
+ * @param sim	EM1D simulation 
  */
 void sim_init( t_simulation* sim );
 
@@ -47,7 +47,7 @@ void sim_init( t_simulation* sim );
  * 
  * This routine will be called every `ndump` iterations
  * 
- * @param sim 	EM1DS simulation
+ * @param sim 	EM1D simulation
  */
 void sim_report( t_simulation* sim );
 

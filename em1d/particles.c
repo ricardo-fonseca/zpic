@@ -42,6 +42,7 @@ double spec_time( void )
 
 /**
  * @brief Returns the total number of particle pushes
+ * 
  * @return  Number of particle pushes
  */
 uint64_t spec_npush( void )
@@ -51,6 +52,7 @@ uint64_t spec_npush( void )
 
 /**
  * @brief Returns the performance achieved by the code (push time)
+ * 
  * @return  Performance in seconds per particle
  */
 double spec_perf( void )
@@ -1080,8 +1082,10 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 /**
  * @brief Deposits particle species charge density
  * 
- * Deposition is done using linear interpolation. Used for diagnostics
- * purpose only.
+ * Deposition is done using linear interpolation, charge grid is expected
+ * to have 1 guard cell at the upper boundary.
+ * 
+ * Used for diagnostics purposes only.
  * 
  * @param spec      Particle species
  * @param charge    Electric charge density

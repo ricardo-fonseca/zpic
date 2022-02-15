@@ -23,7 +23,7 @@ void emf_move_window( t_emf *emf );
 void emf_update_part_fld( t_emf *emf );
 void emf_update_gc( t_emf *emf );
 
-// Time spent advancing the EM fields
+/// Time spent advancing the EM fields
 static double _emf_time = 0.0;
 
 /**
@@ -152,7 +152,7 @@ void emf_delete( t_emf *emf )
  * 
  * @param laser 	Laser pulse parameters
  * @param z 		Longitudinal position
- * @return lon_env	Envelope value
+ * @return 			Envelope value
  */
 float lon_env( const t_emf_laser* const laser, const float z )
 {
@@ -807,6 +807,5 @@ void emf_init_fld( t_emf* const emf, t_emf_init_fld* init_fld )
             B[ i ] = init_B;
         }
         break;
-    }    
-
+    }
 }

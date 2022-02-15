@@ -84,7 +84,7 @@ void sim_timings( t_simulation* sim, uint64_t t0, uint64_t t1 ){
  * @param box 			Simulation box size in simulation units
  * @param dt 			Simulation time step in simulation units
  * @param tmax 			Final simulation time
- * @param ndump 		Diagnostic frequency (`report` function will be called every ndump iterations)
+ * @param ndump 		Diagnostic frequency (`sim_report()` function will be called every ndump iterations)
  * 						set to 0 to disable diagnostic reports
  * @param species 		Array of particle species, may be NULL (no particles)
  * @param n_species 	Number of particle specis

@@ -54,7 +54,7 @@ typedef struct Current {
 	int nx;			///< Number of grid points (excluding guard cells)
 	int gc[2];		///< Number of guard cells (lower/upper)
 	
-	float box;		///< Physics size of simulation box
+	float box;		///< Physical size of simulation box
 	
 	float dx;		///< Grid cell size
 
