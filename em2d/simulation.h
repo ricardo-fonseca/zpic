@@ -6,28 +6,49 @@
 #include "emf.h"
 #include "current.h"
 
-typedef struct {
+/**
+ * @brief EM2D PIC Simulation
+ * 
+ */
+typedef struct Simulation {
 
-	int moving_window;
+	// Time 
+	float dt;		///< Time step
+	float tmax;		///< Final simulation time
 
-	// Time step
-	float dt;
-	float tmax;
-
-	// Diagnostic frequency
-	int ndump;
+	int ndump;		///< Diagnostic frequency
 
 	// Simulation data
-	int n_species;
-	t_species* species;
-	t_emf emf;
-	t_current current;
+	int n_species;			///< Number of particle species
+	t_species* species;		///< Particle species
+	t_emf emf;				///< EM fields
+	t_current current;		///< Electric current density
 
+	int moving_window;		///< Use moving window
 
 } t_simulation;
 
 
+/**
+ * @brief Initializes simulation parameters
+ * 
+ * This routine __MUST__ be supplied by the user, see the `input` directory
+ * for examples
+ * 
+ * @param sim	EM1DS simulation 
+ */
 void sim_init( t_simulation* sim );
+
+/**
+ * @brief Saves diagnostic information
+ *
+ * This routine __MUST__ be supplied by the user, see the `input` directory
+ * for examples
+ * 
+ * This routine will be called every `ndump` iterations
+ * 
+ * @param sim 	EM1DS simulation
+ */
 void sim_report( t_simulation* sim );
 
 void sim_iter( t_simulation* sim );

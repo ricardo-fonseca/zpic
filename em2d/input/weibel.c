@@ -28,8 +28,8 @@ void sim_init( t_simulation* sim ){
 	int ppc[] = {2,2};
 
 	// Initial fluid and thermal velocities
-	t_part_data ufl[] = { 0.0, 0.0, 0.6 };
-	t_part_data uth[] = { 0.1, 0.1, 0.1 };
+	float ufl[] = { 0.0, 0.0, 0.6 };
+	float uth[] = { 0.1, 0.1, 0.1 };
 
 	spec_new( &species[0], "electrons", -1.0, ppc, ufl, uth, nx, box, dt, NULL );
 

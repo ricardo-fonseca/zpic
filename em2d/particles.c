@@ -1,10 +1,12 @@
-/*
- *  particles.c
- *  zpic
- *
- *  Created by Ricardo Fonseca on 11/8/10.
- *  Copyright 2010 Centro de Física dos Plasmas. All rights reserved.
- *
+/**
+ * @file particles.c
+ * @author Ricardo Fonseca
+ * @brief Particle species
+ * @version 0.2
+ * @date 2022-02-04
+ * 
+ * @copyright Copyright (c) 2022
+ * 
  */
 
 #include <stdlib.h>
@@ -27,7 +29,8 @@ static uint64_t _spec_npush = 0;
 void spec_sort( t_species *spec );
 
 /**
- * Returns the total time spent pushing particles (includes boundaries and moving window)
+ * @brief Returns the total time spent pushing particles (includes boundaries and moving window)
+ * 
  * @return  Total time in seconds
  */
 double spec_time( void )
@@ -36,7 +39,8 @@ double spec_time( void )
 }
 
 /**
- * Returns the total number of particle pushes
+ * @brief Returns the total number of particle pushes
+ * 
  * @return  Number of particle pushes
  */
 uint64_t spec_npush( void )
@@ -45,7 +49,8 @@ uint64_t spec_npush( void )
 }
 
 /**
- * Returns the performance achieved by the code (push time)
+ * @brief Returns the performance achieved by the code (push time)
+ * 
  * @return  Performance in seconds per particle
  */
 double spec_perf( void )
@@ -58,8 +63,10 @@ double spec_perf( void )
  *********************************************************************************************/
 
 /**
- * Dummy custom density function that always return 1.
+ * @brief Dummy custom density function that always return 1.
+ * 
  * This is used when a custom density profile is chosen, but no function is supplied
+ * 
  * @param   x       Position
  * @param   data    Pointer to custom data (used when the custom function is defined in Python)
  * @return          Always returns 1.0
@@ -69,7 +76,8 @@ float one( float x, void *data ) {
 }
 
 /**
- * Sets the momentum of the range of particles supplieds using a thermal distribution
+ * @brief Sets the momentum of the range of particles supplieds using a thermal distribution
+ * 
  * @param spec  Particle species
  * @param start Index of the first particle to set the momentum
  * @param end   Index of the last particle to set the momentum
@@ -87,8 +95,10 @@ void spec_set_u( t_species* spec, const int start, const int end )
 }	
 
 /**
- * Injects particles inside the specified cell range according to the set density type
+ * @brief Sets initial position of particles according to density profile
+ * 
  * Note that particle momentum is not set
+ * 
  * @param spec      Particle species
  * @param range     Cell range in which to inject the particles
  */
@@ -102,10 +112,10 @@ void spec_set_x( t_species* spec, const int range[][2] )
     
     // Calculate particle positions inside the cell
     const int npc = spec->ppc[0]*spec->ppc[1];
-    t_part_data const dpcx = 1.0f/spec->ppc[0];
-    t_part_data const dpcy = 1.0f/spec->ppc[1];
+    float const dpcx = 1.0f/spec->ppc[0];
+    float const dpcy = 1.0f/spec->ppc[1];
     
-    poscell = malloc( 2 * npc * sizeof( t_part_data ) );
+    poscell = malloc( 2 * npc * sizeof( float ) );
     ip = 0;
     for (j =0; j<spec->ppc[1]; j++) {
         for (i=0; i<spec->ppc[0]; i++) {
@@ -290,14 +300,14 @@ void spec_set_x( t_species* spec, const int range[][2] )
 }
 
 /**
- * Gets number of particles to be injected.
+ * @brief Gets number of particles to be injected.
  *
  * Calculates the number of particles to be injected in the specified range according
  * to the specified density profile. The returned value is not exact but it is
  * guaranteed to be larger than the actual number of particles to be injected
  *
  * @param spec          Particle species
- * @param range[][2]    Range of cells in which to inject
+ * @param range         Range of cells in which to inject [x,y][lower,upper]
  * @return              Number of particles to be injected
  */
 int spec_np_inj( t_species* spec, const int range[][2] )
@@ -385,13 +395,14 @@ int spec_np_inj( t_species* spec, const int range[][2] )
 }
 
 /**
- * Grows particle buffer to specified size.
+ * @brief Grows particle buffer to specified size.
+ * 
  * If the new size is smaller than the previous size the buffer size is not changed
  * and the function returns silently.
  * 
  * @param   spec    Particle species
  * @param   size    New buffer size (will be rounded up to next multiple of 1024)
- **/
+ */
 void spec_grow_buffer( t_species* spec, const int size ) {
     if ( size > spec -> np_max ) {
         // Increase by chunks of 1024 particles
@@ -401,7 +412,8 @@ void spec_grow_buffer( t_species* spec, const int size ) {
 }
 
 /**
- * Inject new particles into the specified grid range.
+ * @brief Inject new particles into the specified grid range.
+ * 
  * The particle buffer will be grown if required
  * 
  * @param   spec    Particle species
@@ -426,7 +438,8 @@ void spec_inject_particles( t_species* spec, const int range[][2] )
 }
 
 /**
- * Initializes the density structure
+ * @brief Initializes the density parameters
+ * 
  * @param spec  Particle species
  */
 void spec_init_density( t_species* spec )
@@ -448,9 +461,26 @@ void spec_init_density( t_species* spec )
     }
 }
 
-void spec_new( t_species* spec, char name[], const t_part_data m_q, const int ppc[], 
-              const t_part_data *ufl, const t_part_data * uth,
-              const int nx[], t_part_data box[], const float dt, t_density* density )
+/**
+ * @brief Initialize particle Species object
+ * 
+ * This routine will also inject the initial particle distribution,
+ * setting thermal/fluid velocities.
+ *  
+ * @param spec      Particle species
+ * @param name      Name for the species (used for diagnostic output)
+ * @param m_q       Mass over charge ratio for species, in simulation units
+ * @param ppc       Reference number of particles per cell [x,y]
+ * @param ufl       Initial fluid momentum of particles, may be set to NULL 
+ * @param uth       Initial thermal momentum of particles, may be set to NULL
+ * @param nx        Number of grid points [x,y]
+ * @param box       Simulation box size [x,y] in simulation units
+ * @param dt        Simulation time step, in simulation units
+ * @param density   Density profile for particle injection, may be set to NULL
+ */
+void spec_new( t_species* spec, char name[], const float m_q, const int ppc[], 
+              const float *ufl, const float * uth,
+              const int nx[], float box[], const float dt, t_density* density )
 {
 
     int i, npc;
@@ -524,6 +554,14 @@ void spec_new( t_species* spec, char name[], const t_part_data m_q, const int pp
 
 }
 
+/**
+ * @brief Move simulation window
+ * 
+ * When using a moving simulation window checks if a window move is due
+ * at the current iteration and if so shifts left the particle cell indices
+ * 
+ * @param spec      Particle species
+ */
 void spec_move_window( t_species *spec ){
 
     if ((spec->iter * spec->dt ) > (spec->dx[0] * (spec->n_move + 1)))  {
@@ -547,6 +585,11 @@ void spec_move_window( t_species *spec ){
 
 }
 
+/**
+ * @brief Frees dynamic memory from particle species
+ * 
+ * @param spec Particle species
+ */
 void spec_delete( t_species* spec )
 {
     free(spec->part);
@@ -560,15 +603,30 @@ void spec_delete( t_species* spec )
  
  *********************************************************************************************/
 
+/**
+ * @brief Deposit single particle current using Esirkepov method
+ * 
+ * @param ix0       Initial x cell index of particle
+ * @param iy0       Initial y cell index of particle
+ * @param di        Number of x cells moved {-1,0,1}
+ * @param dj        Number of y cells moved {-1,0,1}
+ * @param x0        Initial x position of particle inside cell
+ * @param y0        Initial y position of particle inside cell
+ * @param x1        Final x position of particle inside cell
+ * @param y1        Final y position of particle inside cell
+ * @param qvx       X current ( q * vx )
+ * @param qvy       Y current ( q * vy )
+ * @param qvz       Z current ( q * vy )
+ * @param current   Electric current density
+ */
 void dep_current_esk( int ix0, int iy0, int di, int dj,
-                             t_part_data x0, t_part_data y0, t_part_data x1, t_part_data y1, 
-                             t_part_data qvx, t_part_data qvy, t_part_data qvz, 
+                             float x0, float y0, float x1, float y1, 
+                             float qvx, float qvy, float qvz, 
                              t_current *current )
 {
-
     int i, j;
-    t_fld S0x[4], S0y[4], S1x[4], S1y[4], DSx[4], DSy[4];
-    t_fld Wx[16], Wy[16], Wz[16];
+    float S0x[4], S0y[4], S1x[4], S1y[4], DSx[4], DSy[4];
+    float Wx[16], Wy[16], Wz[16];
     
     S0x[0] = 0.0f;
     S0x[1] = 1.0f - x0;
@@ -607,10 +665,10 @@ void dep_current_esk( int ix0, int iy0, int di, int dj,
         
     // jx
     const int nrow = current -> nrow;
-    t_vfld* restrict const J = current -> J;
+    float3* restrict const J = current -> J;
     
     for (j=0; j<4; j++) {
-        t_fld c;
+        float c;
         
         c = -qvx * Wx[4*j];
         J[ ix0 - 1 + (iy0 - 1 + j)*nrow ].x += c;
@@ -622,7 +680,7 @@ void dep_current_esk( int ix0, int iy0, int di, int dj,
 
     // jy
     for (i=0; i<4; i++) {
-        t_fld c;
+        float c;
 
         c = -qvy * Wy[i];
         J[ ix0 + i - 1 + (iy0 - 1)*nrow ].y += c;
@@ -642,6 +700,22 @@ void dep_current_esk( int ix0, int iy0, int di, int dj,
     
 }
 
+/**
+ * @brief Deposit single particle current using zamb method
+ * 
+ * @param ix        Initial x cell index of particle
+ * @param iy        Initial y cell index of particle
+ * @param di        Number of x cells moved {-1,0,1}
+ * @param dj        Number of y cells moved {-1,0,1}
+ * @param x0        Initial x position of particle inside cell
+ * @param y0        Initial y position of particle inside cell
+ * @param dx        Particle x motion normalized to cell size
+ * @param dy        Particle y motion normalized to cell size
+ * @param qnx       Normalization for x current (q * x cell size / dt)
+ * @param qny       Normalization for y current (q * y cell size / dt)
+ * @param qvz       Z current ( q * vz )
+ * @param current   Electric current density
+ */
 void dep_current_zamb(int ix, int iy, int di, int dj, 
                       float x0, float y0, float dx, float dy,
                       float qnx, float qny, float qvz,
@@ -753,7 +827,7 @@ void dep_current_zamb(int ix, int iy, int di, int dj,
     // Deposit virtual particle currents
     int k;
     const int nrow = current -> nrow;
-    t_vfld* restrict const J = current -> J;
+    float3* restrict const J = current -> J;
 
     for (k = 0; k < vnp; k++) {
         float S0x[2], S1x[2], S0y[2], S1y[2];
@@ -802,6 +876,15 @@ void dep_current_zamb(int ix, int iy, int di, int dj,
  
  *********************************************************************************************/
 
+/**
+ * @brief Sorts particle buffer.
+ * 
+ * Sorts particles inside the particle buffer according to their cell
+ * index to optimize memory cache use. Note: this is a performance
+ * optimization only and is not required by the algorithm
+ * 
+ * @param spec      Particle species
+ */
 void spec_sort( t_species* spec )
 {
     int *idx, *npic;
@@ -876,12 +959,23 @@ void spec_sort( t_species* spec )
  
  *********************************************************************************************/
 
-
-void interpolate_fld( const t_vfld* restrict const E, const t_vfld* restrict const B, const int nrow, 
-              const t_part* restrict const part, t_vfld* restrict const Ep, t_vfld* restrict const Bp )
+/**
+ * @brief Interpolates EM fields at particle position
+ * 
+ * Routine uses linear interpolation and accounts for a staggered (Yee)
+ * mesh, with the charge at the lower corner of the cell
+ * 
+ * @param E     Electric field grid
+ * @param B     Magnetic field grid
+ * @param part  Particle data
+ * @param Ep    E-field interpolated at particle position
+ * @param Bp    B-field interpolated at particle position
+ */
+void interpolate_fld( const float3* restrict const E, const float3* restrict const B, const int nrow, 
+              const t_part* restrict const part, float3* restrict const Ep, float3* restrict const Bp )
 {
     register int i, j, ih, jh;
-    register t_fld w1, w2, w1h, w2h;
+    register float w1, w2, w1h, w2h;
     
     i = part->ix;
     j = part->iy;
@@ -919,23 +1013,49 @@ void interpolate_fld( const t_vfld* restrict const E, const t_vfld* restrict con
     Bp->z = ( B[ih +     jh*nrow].z * (1.0f - w1h) + B[ih+1 +     jh*nrow].z * w1h ) * (1.0f - w2h ) +
             ( B[ih + (jh+1)*nrow].z * (1.0f - w1h) + B[ih+1 + (jh+1)*nrow].z * w1h ) * w2h;
 
-}	
+}
 
-int ltrim( t_part_data x )
+/**
+ * @brief Returns number of cells moved
+ * 
+ * Note that the particle will move at most 1 cell in either direction
+ * 
+ * @param x         End particle position, normalized to cell size
+ * @return ltrim    Number of cells moved, {-1,0,1}
+ */
+int ltrim( float x )
 {
     return ( x >= 1.0f ) - ( x < 0.0f );
-}	
+}
 
+/**
+ * @brief Advance Particle species 1 timestep
+ * 
+ * Particles are advanced in time using a leap-frog method; the velocity
+ * advance is done using a relativistic Boris pusher. Particle motion is
+ * used to deposit electric current on the grid using an exact charge
+ * conservation method.
+ * 
+ * The routine will also:
+ * 1. Calculate total time-centered kinetic energy for the Species
+ * 2. Apply boundary conditions
+ * 3. Move simulation window
+ * 4. Sort particle buffer
+ * 
+ * @param spec      Particle species
+ * @param emf       EM fields
+ * @param current   Current density
+ */
 void spec_advance( t_species* spec, t_emf* emf, t_current* current )
 {
     int i;
-    t_part_data qnx, qny, qvz;
+    float qnx, qny, qvz;
     
     uint64_t t0 = timer_ticks();
     
-    const t_part_data tem   = 0.5 * spec->dt/spec -> m_q;
-    const t_part_data dt_dx = spec->dt / spec->dx[0]; 
-    const t_part_data dt_dy = spec->dt / spec->dx[1]; 
+    const float tem   = 0.5 * spec->dt/spec -> m_q;
+    const float dt_dx = spec->dt / spec->dx[0]; 
+    const float dt_dy = spec->dt / spec->dx[1]; 
 
     // Auxiliary values for current deposition
     qnx = spec -> q *  spec->dx[0] / spec->dt;
@@ -949,12 +1069,12 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
     // Advance particles
     for (i=0; i<spec->np; i++) {
                 
-        t_vfld Ep, Bp;
-        t_part_data utx, uty, utz;
-        t_part_data ux, uy, uz, rg;
-        t_part_data tem_gamma, otsq;
-        t_part_data utsq, gamma;
-        t_part_data x1, y1;
+        float3 Ep, Bp;
+        float utx, uty, utz;
+        float ux, uy, uz, rg;
+        float tem_gamma, otsq;
+        float utsq, gamma;
+        float x1, y1;
         
         int di, dj;
         float dx, dy; 
@@ -1100,18 +1220,28 @@ void spec_advance( t_species* spec, t_emf* emf, t_current* current )
  
  *********************************************************************************************/
 
-
-void spec_deposit_charge( const t_species* spec, t_part_data* charge )
+/**
+ * @brief Deposits particle species charge density
+ * 
+ * Deposition is done using linear interpolation, charge grid is expected
+ * to have 1 guard cell at the upper boundaries.
+ * 
+ * Used for diagnostics purposes only.
+ * 
+ * @param spec      Particle species
+ * @param charge    Electric charge density
+ */
+void spec_deposit_charge( const t_species* spec, float* charge )
 {
     int i,j;
     
     // Charge array is expected to have 1 guard cell at the upper boundary
     int nrow = spec -> nx[0] + 1;
-    t_part_data q = spec -> q;
+    float q = spec -> q;
     
     for (i=0; i<spec->np; i++) {
         int idx = spec->part[i].ix + nrow*spec->part[i].iy;
-        t_fld w1, w2;
+        float w1, w2;
         
         w1 = spec->part[i].x;
         w2 = spec->part[i].y;
@@ -1144,6 +1274,15 @@ void spec_deposit_charge( const t_species* spec, t_part_data* charge )
  
  *********************************************************************************************/
 
+/**
+ * @brief Saves raw particle data information to disk
+ * 
+ * Saves all particle positions and momenta. Positions are converted to
+ * distance from simulation box corner before saving. Data is saved in the
+ * "PARTICLES/sp_name" directory.
+ *
+ * @param spec 		Particle species
+ */
 void spec_rep_particles( const t_species *spec )
 {
     
@@ -1152,16 +1291,22 @@ void spec_rep_particles( const t_species *spec )
     int i;
     
     const char * quants[] = {
-        "x1","x2",
-        "u1","u2","u3"
+        "x","y",
+        "ux","uy","uz"
     };
 
-    const char * units[] = {
+    const char * qlabels[] = {
+        "x","y",
+        "u_x","u_y","u_z"
+    };
+
+    const char * qunits[] = {
         "c/\\omega_p", "c/\\omega_p",
         "c","c","c"
     };
 
     t_zdf_iteration iter = {
+        .name = "ITERATION",
         .n = spec->iter,
         .t = spec -> iter * spec -> dt,
         .time_units = "1/\\omega_p"
@@ -1171,55 +1316,64 @@ void spec_rep_particles( const t_species *spec )
     
     t_zdf_part_info info = {
         .name = (char *) spec -> name,
+        .label = (char *) spec -> name,
         .nquants = 5,
         .quants = (char **) quants,
-        .units = (char **) units,
+        .qlabels = (char **) qlabels,
+        .qunits = (char **) qunits,
         .np = spec ->np
     };
 
     // Create file and add description
-    zdf_part_file_open( &part_file, &info, &iter, "PARTICLES" );
+    char path[1024];
+    snprintf(path, 1024, "PARTICLES/%s", spec -> name );
+    zdf_open_part_file( &part_file, &info, &iter, path );
 
     // Add positions and generalized velocities
     size_t size = ( spec -> np ) * sizeof( float );
     float* data = malloc( size );
 
-    // x1
+    // x
     for( i = 0; i < spec ->np; i++ )
         data[i] = ( spec -> n_move + spec -> part[i].ix + spec -> part[i].x ) * spec -> dx[0];
-    zdf_part_file_add_quant( &part_file, quants[0], data, spec ->np );
+    zdf_add_quant_part_file( &part_file, quants[0], data, spec ->np );
 
-    // x2
+    // y
     for( i = 0; i < spec ->np; i++ )
         data[i] = (spec -> part[i].iy + spec -> part[i].y ) * spec -> dx[1];
-    zdf_part_file_add_quant( &part_file, quants[1], data, spec ->np );
+    zdf_add_quant_part_file( &part_file, quants[1], data, spec ->np );
 
     // ux
     for( i = 0; i < spec ->np; i++ ) data[i] = spec -> part[i].ux;
-    zdf_part_file_add_quant( &part_file, quants[2], data, spec ->np );
+    zdf_add_quant_part_file( &part_file, quants[2], data, spec ->np );
 
     // uy
     for( i = 0; i < spec ->np; i++ ) data[i] = spec -> part[i].uy;
-    zdf_part_file_add_quant( &part_file, quants[3], data, spec ->np );
+    zdf_add_quant_part_file( &part_file, quants[3], data, spec ->np );
 
     // uz
     for( i = 0; i < spec ->np; i++ ) data[i] = spec -> part[i].uz;
-    zdf_part_file_add_quant( &part_file, quants[4], data, spec ->np );
+    zdf_add_quant_part_file( &part_file, quants[4], data, spec ->np );
 
     free( data );
 
     zdf_close_file( &part_file );
-}	
+}
 
 
+/**
+ * @brief Saves particle species charge density information to disk
+ * 
+ * @param spec      Particle species
+ */
 void spec_rep_charge( const t_species *spec )
 {
-    t_part_data *buf, *charge, *b, *c;
+    float *buffer, *charge, *b, *c;
     size_t size;
     int i, j;
     
     // Add 1 guard cell to the upper boundary
-    size = ( spec -> nx[0] + 1 ) * ( spec -> nx[1] + 1 ) * sizeof( t_part_data );
+    size = ( spec -> nx[0] + 1 ) * ( spec -> nx[1] + 1 ) * sizeof( float );
     charge = malloc( size );
     memset( charge, 0, size );
     
@@ -1228,9 +1382,9 @@ void spec_rep_charge( const t_species *spec )
     
     // Compact the data to save the file (throw away guard cells)
     size = ( spec -> nx[0] ) * ( spec -> nx[1] );
-    buf = malloc( size * sizeof( float ) );
+    buffer = malloc( size * sizeof( float ) );
     
-    b = buf;
+    b = buffer;
     c = charge;
     for( j = 0; j < spec->nx[1]; j++) {
         for ( i = 0; i < spec->nx[0]; i++ ) {
@@ -1244,42 +1398,62 @@ void spec_rep_charge( const t_species *spec )
 
     t_zdf_grid_axis axis[2];
     axis[0] = (t_zdf_grid_axis) {
-        .min = 0.0,
-        .max = spec->box[0],
-        .label = "x_1",
+        .min = spec -> n_move * spec -> dx[0],
+        .max = spec->box[0] + spec -> n_move * spec -> dx[0],
+        .name = "x",
+        .label = "x",
         .units = "c/\\omega_p"
     };
 
     axis[1] = (t_zdf_grid_axis) {
         .min = 0.0,
         .max = spec->box[1],
-        .label = "x_2",
+        .name = "y",
+        .label = "y",
         .units = "c/\\omega_p"
     };
 
+    char name[128], label[128];
+    snprintf(name, 128, "%s-charge", spec -> name);
+    snprintf(label, 128, "%s \\rho", spec -> name);
+
     t_zdf_grid_info info = {
         .ndims = 2,
-        .label = "charge",
+        .name = name,
+        .label = label,
         .units = "n_e",
         .axis  = axis
     };
 
-    info.nx[0] = spec->nx[0];
-    info.nx[1] = spec->nx[1];
+    info.count[0] = spec->nx[0];
+    info.count[1] = spec->nx[1];
 
     t_zdf_iteration iter = {
+        .name = "ITERATION",
         .n = spec->iter,
         .t = spec -> iter * spec -> dt,
         .time_units = "1/\\omega_p"
     };
 
-    zdf_save_grid( buf, &info, &iter, spec->name );	
+    char path[1024];
+    snprintf(path, 1024, "CHARGE/%s", spec -> name );
+    zdf_save_grid( (void *) buffer, zdf_float32, &info, &iter, path );
 
+    free( buffer );
+}
 
-    free( buf );
-}	
-
-
+/**
+ * @brief Gets axis quantity for phasespace density calculation.
+ * 
+ * Depending on the selected quantity, the appropriate data will be copied
+ * or calculated and stored in the output array.
+ * 
+ * @param spec      Particle species
+ * @param i0        Start particle index
+ * @param np        Number of particles to process
+ * @param quant     Quantity for axis {X1, X2, U1, U2, U3}
+ * @param axis      Axis data
+ */
 void spec_pha_axis( const t_species *spec, int i0, int np, int quant, float *axis )
 {
     int i;
@@ -1308,6 +1482,12 @@ void spec_pha_axis( const t_species *spec, int i0, int np, int quant, float *axi
     }
 }
 
+/**
+ * @brief Phasespace density axis units
+ * 
+ * @param quant     Quantity for axis
+ * @return          Units for phasespace density axis
+ */
 const char * spec_pha_axis_units( int quant ) {
     switch (quant) {
         case X1:
@@ -1322,7 +1502,15 @@ const char * spec_pha_axis_units( int quant ) {
     return("");
 }
 
-
+/**
+ * @brief Deposit 2D phasespace density.
+ * 
+ * @param spec      Particle species
+ * @param rep_type  Type of phasespace, use the PHASESPACE macro to define
+ * @param pha_nx    Number of grid points in the phasespace density grid
+ * @param pha_range Physical range of each of the phasespace axis
+ * @param buf       Phasespace density grid
+ */
 void spec_deposit_pha( const t_species *spec, const int rep_type,
               const int pha_nx[], const float pha_range[][2], float* restrict buf )
 {
@@ -1388,12 +1576,17 @@ void spec_deposit_pha( const t_species *spec, const int rep_type,
     }
 }
 
+/**
+ * @brief Saves particle species phasespace density information to disk
+ * 
+ * @param spec      Particle species
+ * @param rep_type  Type of phasespace, use the PHASESPACE macro to define
+ * @param pha_nx    Number of grid points in the phasespace density grid
+ * @param pha_range Physical range of each of the phasespace axis
+ */
 void spec_rep_pha( const t_species *spec, const int rep_type,
               const int pha_nx[], const float pha_range[][2] )
 {
-
-    char const * const pha_ax_name[] = {"x1","x2","x3","u1","u2","u3"};
-    char pha_name[64];
 
     // Allocate phasespace buffer
     float* restrict buf = malloc( pha_nx[0] * pha_nx[1] * sizeof( float ));
@@ -1409,50 +1602,74 @@ void spec_rep_pha( const t_species *spec, const int rep_type,
     const char * pha_ax1_units = spec_pha_axis_units(quant1);
     const char * pha_ax2_units = spec_pha_axis_units(quant2);
 
-    sprintf( pha_name, "%s%s", pha_ax_name[quant1-1], pha_ax_name[quant2-1] );
+    char const * const pha_ax_name[] = {"x1","x2","x3","u1","u2","u3"};
+    char const * const pha_ax_label[] = {"x","y","z","u_x","u_y","u_z"};
 
     t_zdf_grid_axis axis[2];
     axis[0] = (t_zdf_grid_axis) {
         .min = pha_range[0][0],
         .max = pha_range[0][1],
-        .label = (char *) pha_ax_name[ quant1 - 1 ],
+        .name  = (char *) pha_ax_name[ quant1 - 1 ],
+        .label = (char *) pha_ax_label[ quant1 - 1 ],
         .units = (char *) pha_ax1_units
     };
 
     axis[1] = (t_zdf_grid_axis) {
         .min = pha_range[1][0],
         .max = pha_range[1][1],
-        .label = (char *) pha_ax_name[ quant2 - 1 ],
+        .name  = (char *) pha_ax_name[ quant2 - 1 ],
+        .label = (char *) pha_ax_label[ quant2 - 1 ],
         .units = (char *) pha_ax2_units
     };
 
+    char pha_name[64], pha_label[64];
+    
+    snprintf( pha_name, 64,"%s-%s%s", spec -> name, 
+        pha_ax_name[quant1-1], pha_ax_name[quant2-1] );
+    
+    snprintf( pha_label, 64,"%s %s-%s", spec -> name,
+        pha_ax_label[quant1-1], pha_ax_label[quant2-1] );
+
     t_zdf_grid_info info = {
         .ndims = 2,
-        .label = pha_name,
+        .name = pha_name,
+        .label = pha_label,
         .units = "a.u.",
         .axis  = axis
     };
 
-    info.nx[0] = pha_nx[0];
-    info.nx[1] = pha_nx[1];
+    info.count[0] = pha_nx[0];
+    info.count[1] = pha_nx[1];
 
     t_zdf_iteration iter = {
+        .name = "ITERATION",
         .n = spec->iter,
         .t = spec -> iter * spec -> dt,
         .time_units = "1/\\omega_p"
     };
 
-    zdf_save_grid( buf, &info, &iter, spec->name );
+    char path[1024];
+    snprintf(path, 1024, "PHASESPACE/%s", spec -> name );
+    zdf_save_grid( (void *) buf, zdf_float32, &info, &iter, path );
 
     // Free temp. buffer
     free( buf );
 
 }
 
+/**
+ * @brief Saves particle species diagnostic information to disk
+ * 
+ * @param spec      Particle species
+ * @param rep_type  Type of diagnostic information {CHARGE, PHASESPACE(a,b), PARTICLES}
+ * @param pha_nx    Number of grid points in the phasespace density grid, set to NULL for
+ *                  diagnostics other then phasespace density
+ * @param pha_range Physical range of each of the phasespace axis, set to NULL for
+ *                  diagnostics other then phasespace density
+ */
 void spec_report( const t_species *spec, const int rep_type, 
                   const int pha_nx[], const float pha_range[][2] )
 {
-    
     switch (rep_type & 0xF000) {
         case CHARGE:
             spec_rep_charge( spec );
@@ -1466,6 +1683,4 @@ void spec_report( const t_species *spec, const int rep_type,
             spec_rep_particles( spec );
             break;
     }
-    
-    
 }
