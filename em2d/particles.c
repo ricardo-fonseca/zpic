@@ -84,15 +84,69 @@ float one( float x, void *data ) {
  */
 void spec_set_u( t_species* spec, const int start, const int end )
 {
-    int i;    
+#if 0
 
-    for (i = start; i <= end; i++) {
+    for (int i = start; i <= end; i++) {
         spec->part[i].ux = spec -> ufl[0] + spec -> uth[0] * rand_norm(); 
         spec->part[i].uy = spec -> ufl[1] + spec -> uth[1] * rand_norm(); 
         spec->part[i].uz = spec -> ufl[2] + spec -> uth[2] * rand_norm(); 
     }
 
-}	
+#else
+    // Initialize thermal component
+    for (int i = start; i <= end; i++) {
+        spec->part[i].ux = spec -> uth[0] * rand_norm(); 
+        spec->part[i].uy = spec -> uth[1] * rand_norm(); 
+        spec->part[i].uz = spec -> uth[2] * rand_norm(); 
+    }
+
+    // Calculate net momentum in each cell
+    const int size = spec->nx[0] * spec->nx[1];
+    const int stride = spec->nx[1];
+
+    float3 * restrict net_u = (float3 *) malloc( size * sizeof(float3));
+    int * restrict    npc   = (int *) malloc( size * sizeof(int));
+
+    // Zero momentum grids
+    memset(net_u, 0, size * sizeof(float3) );
+    memset(npc, 0, size * sizeof(int) );
+
+    // Accumulate momentum in each cell
+    for (int i = start; i <= end; i++) {
+        const int idx  = spec -> part[i].ix + stride * spec -> part[i].iy ;
+
+        net_u[ idx ].x += spec->part[i].ux;
+        net_u[ idx ].y += spec->part[i].uy;
+        net_u[ idx ].z += spec->part[i].uz;
+
+        npc[ idx ] += 1;
+    }
+
+    // Normalize to the number of particles in each cell to get the
+    // average momentum in each cell
+    for(int i =0; i< size; i++ ) {
+        const float norm = (npc[ i ] > 0) ? 1.0f/npc[i] : 0;
+
+        net_u[ i ].x *= norm;
+        net_u[ i ].y *= norm;
+        net_u[ i ].z *= norm;
+    }
+
+    // Subtract average momentum and add fluid component
+    for (int i = start; i <= end; i++) {
+        const int idx  = spec -> part[i].ix + stride * spec -> part[i].iy ;
+
+        spec->part[i].ux += spec -> ufl[0] - net_u[ idx ].x;
+        spec->part[i].uy += spec -> ufl[1] - net_u[ idx ].y;
+        spec->part[i].uz += spec -> ufl[2] - net_u[ idx ].z;
+    }
+
+    // Free temporary memory
+    free( npc );
+    free( net_u );
+
+#endif
+}
 
 /**
  * @brief Sets initial position of particles according to density profile

@@ -461,7 +461,8 @@ void emf_report( const t_emf *emf, const char field, const int fc )
 
     t_zdf_grid_info info = {
     	.ndims = 2,
-    	.label = vfname,
+		.name = vfname,
+    	.label = vflabel,
     	.units = "m_e c \\omega_p e^{-1}",
     	.axis = axis
     };

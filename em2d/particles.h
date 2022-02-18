@@ -47,6 +47,8 @@ enum density_type {
 	SLAB,		///< Slab-like profile
 	CUSTOM		///< Defined from an external function
 };
+
+
 typedef struct Density {
 
 	float n;						///< reference density (defaults to 1.0, multiplies density profile)
