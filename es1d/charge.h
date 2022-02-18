@@ -16,34 +16,34 @@
 
 typedef struct {
 	
-	// Global charge density
+	/// Global charge density
 	t_scalar_grid rho;
 
-	// Neutralizing background
+	/// Neutralizing background
 	t_scalar_grid neutral;
 	
-	// Fourier transform of rho
+	/// Fourier transform of rho
 	t_cscalar_grid frho;
 
-	// Box size
-	t_fld box;
+	/// Box size
+	float box;
 	
-	// Cell size
-	t_fld dx;
+	/// Cell size
+	float dx;
 
-	// Time step
+	/// Time step
 	float dt;
 
-	// Iteration number
+	/// Iteration number
 	int iter;
 
-	// FFT configuration
+	/// FFT configuration
 	t_fftr_cfg *fft_forward;
 	
 } t_charge;
 
 
-void charge_new( t_charge *charge, int nx, t_fld box, float dt, t_fftr_cfg *fft_forward );
+void charge_new( t_charge *charge, int nx, float box, float dt, t_fftr_cfg *fft_forward );
 void charge_delete( t_charge *charge );
 void charge_zero( t_charge *charge );
 void charge_update( t_charge *charge );

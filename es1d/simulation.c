@@ -1,10 +1,27 @@
+/**
+ * @file simulation.c
+ * @author Ricardo Fonseca
+ * @brief ES1D Simulation
+ * @version 0.2
+ * @date 2022-02-04
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "simulation.h"
 #include "timer.h"
 
-
+/**
+ * @brief Checks if the `sim_report()` function should be called 
+ * 
+ * @param n 		Current iteration
+ * @param ndump 	Diagnostic frequency (number of iterations between diagnostic dumps)
+ * @return 			1 if `sim_report()` function should be called, 0 otherwise
+ */
 int report( int n, int ndump )
 {
 	if (ndump > 0) {
@@ -14,6 +31,17 @@ int report( int n, int ndump )
 	}
 }
 
+/**
+ * @brief Advance simulation 1 iteration
+ * 
+ * A complete iteration consists of:
+ * 1. Zeroing charge density
+ * 2. Advancing particle species and depositing electric charge
+ * 3. Updating electric charge boundary
+ * 4. Advancing the electric field
+ * 
+ * @param sim 	ES1D Simulation
+ */
 void sim_iter( t_simulation* sim ) {
 	// Advance particles and deposit charge
 	charge_zero( &sim -> charge );
@@ -27,7 +55,13 @@ void sim_iter( t_simulation* sim ) {
 	field_advance( &sim -> field, &sim -> charge );
 }
 
-
+/**
+ * @brief Prints out report on simulation timings
+ * 
+ * @param sim 	ES1D Simulaiton
+ * @param t0 	Simulation start time (ticks)
+ * @param t1 	Simulation end time (ticks)
+ */
 void sim_timings( t_simulation* sim, uint64_t t0, uint64_t t1 ){
 
 	fprintf(stderr, "Time for spec. advance = %f s\n", spec_time());
@@ -42,6 +76,19 @@ void sim_timings( t_simulation* sim, uint64_t t0, uint64_t t1 ){
 	}
 }
 
+/**
+ * @brief Initialize simulation object
+ * 
+ * @param sim 			ES1D Simulation
+ * @param nx 			Number of grid points
+ * @param box 			Simulation box size in simulation units
+ * @param dt 			Simulation time step in simulation units
+ * @param tmax 			Final simulation time
+ * @param ndump 		Diagnostic frequency (`report` function will be called every ndump iterations)
+ * 						set to 0 to disable diagnostic reports
+ * @param species 		Array of particle species, may be NULL (no particles)
+ * @param n_species 	Number of particle specis
+ */
 void sim_new( t_simulation* sim, int nx, float box, float dt, float tmax, int ndump, t_species* species, int n_species ){
 
 	sim -> dt = dt;
@@ -49,8 +96,8 @@ void sim_new( t_simulation* sim, int nx, float box, float dt, float tmax, int nd
 	sim -> ndump = ndump;
 
 	// Initialize FFT configurations
-	fftr_init_cfg( &sim -> fft_forward, nx, FFT_FORWARD, FFTR_CCS);
-	fftr_init_cfg( &sim -> fft_backward, nx, FFT_BACKWARD, FFTR_CCS);
+	fftr_init_cfg( &sim -> fft_forward, nx, FFT_FORWARD );
+	fftr_init_cfg( &sim -> fft_backward, nx, FFT_BACKWARD );
 
 	// Initialize simulation data
 	field_new( &sim -> field, nx, box, dt, &sim->fft_backward );
@@ -63,6 +110,14 @@ void sim_new( t_simulation* sim, int nx, float box, float dt, float tmax, int nd
 	// ... Not sure what kind of test can be done here
 }
 
+/**
+ * @brief Adds neutralizing background to the simulation
+ * 
+ * The neutralizing background is calculated by depositing the charge from
+ * all particle species
+ * 
+ * @param sim 	ES1D Simulation
+ */
 void sim_add_neutral_bkg( t_simulation* sim ){
 
 	charge_init_neutral_bkg( &sim -> charge );
@@ -74,7 +129,11 @@ void sim_add_neutral_bkg( t_simulation* sim ){
 
 }
 
-
+/**
+ * @brief Frees dynamic memory 
+ * 
+ * @param sim 		ES1D Simulation
+ */
 void sim_delete( t_simulation* sim ) {
 
 	for (int i = 0; i<sim->n_species; i++) spec_delete( &sim->species[i] );

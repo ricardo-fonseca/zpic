@@ -1,3 +1,14 @@
+/**
+ * @file charge.c
+ * @author Ricardo Fonseca
+ * @brief Electric charge density
+ * @version 0.2
+ * @date 2022-02-18
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -5,8 +16,17 @@
 #include "zdf.h"
 #include "fft.h"
 
-
-void charge_new( t_charge *charge, int nx, t_fld box, float dt, t_fftr_cfg *fft_forward )
+/**
+ * @brief Initializes Electric charge density object
+ * 
+ * @param charge 		Electric charge density
+ * @param nx 			Number of cells
+ * @param box 			Physical box size
+ * @param dt 			Simulation time step
+ * @param fft_forward 	FFT configuration for transforming rho to frho
+ * 						(shared with other objects)
+ */
+void charge_new( t_charge *charge, int nx, float box, float dt, t_fftr_cfg *fft_forward )
 {   
 
 	if ( nx % 2 ) {
@@ -15,7 +35,7 @@ void charge_new( t_charge *charge, int nx, t_fld box, float dt, t_fftr_cfg *fft_
 	}
 
 	// Number of guard cells for linear interpolation
-	unsigned int gc[2] = {1,2}; 
+	int gc[2] = {1,2}; 
 	
 	// Store pointer to required FFT configuration
 	charge -> fft_forward = fft_forward;
@@ -40,13 +60,22 @@ void charge_new( t_charge *charge, int nx, t_fld box, float dt, t_fftr_cfg *fft_
 	charge -> neutral.nx = 0;
 }
 
+/**
+ * @brief Initializes neutralizing background structures
+ * 
+ * @param charge 	Electric charge density
+ */
 void charge_init_neutral_bkg( t_charge *charge )
 {
-	scalar_grid_init( &charge->neutral, charge ->rho.nx,
-					  (unsigned int *) charge ->rho.gc );
+	scalar_grid_init( &charge->neutral, charge ->rho.nx, charge ->rho.gc );
 	scalar_grid_zero( &charge -> neutral );
 }
 
+/**
+ * @brief Frees dynamic memory from electric charge density
+ * 
+ * @param charge 	Electric charge density
+ */
 void charge_delete( t_charge *charge )
 {
 	scalar_grid_cleanup( &charge -> rho );
@@ -58,11 +87,27 @@ void charge_delete( t_charge *charge )
 	
 }
 
+/**
+ * @brief Sets all electric charge density values to zero
+ * 
+ * @param charge 	Electric charge density
+ */
 void charge_zero( t_charge *charge )
 {
 	scalar_grid_zero( &charge -> rho );
 }
 
+/**
+ * @brief Advances electric charge density 1 time step
+ * 
+ * The routine will:
+ * 1. Update the guard cells
+ * 2. Add neutralizing background (if configured)
+ * 3. Get the fourier transform of the charge
+ * 4. Apply spectral filtering
+ *
+ * @param charge 	Electric charge density
+ */
 void charge_update( t_charge *charge )
 {
 	int i;
@@ -105,6 +150,15 @@ void charge_update( t_charge *charge )
 	charge -> iter++;
 }
 
+/**
+ * @brief Updates neutralizing background values
+ * 
+ * The routine expects the charge -> neutral grid to have the charge
+ * density that needs to be neutralized. The routine will update guard
+ * cell values and reverse the sign of the charge.
+ * 
+ * @param charge 
+ */
 void charge_update_neutral_bkg( t_charge *charge )
 {
 	int i;
@@ -129,10 +183,17 @@ void charge_update_neutral_bkg( t_charge *charge )
 
 }
 
-
+/**
+ * @brief Saves electric charge density diagnostic information to disk
+ * 
+ * Saves the charge density to disk in directory "CHARGE"
+ * 
+ * @param charge 	Electric charge density
+ */
 void charge_report( const t_charge *charge )
 {
 	char vfname[] = "charge density";
+	char vflabel[] = "\\rho";
 		
 	float *buf = charge -> rho.s;
 	
@@ -140,25 +201,27 @@ void charge_report( const t_charge *charge )
     axis[0] = (t_zdf_grid_axis) {
     	.min = 0.0,
     	.max = charge->box,
-    	.label = "x_1",
+		.name = "x",
+    	.label = "x",
     	.units = "c/\\omega_p"
     };
 
     t_zdf_grid_info info = {
     	.ndims = 1,
-    	.label = vfname,
+		.name = vfname,
+    	.label = vflabel,
     	.units = "e \\omega_p^2 / c",
     	.axis = axis
     };
 
-    info.nx[0] = charge->rho.nx;
+    info.count[0] = charge->rho.nx;
 
     t_zdf_iteration iter = {
+		.name = "ITERATION",
     	.n = charge->iter,
     	.t = charge -> iter * charge -> dt,
     	.time_units = "1/\\omega_p"
     };
 
-	zdf_save_grid( buf, &info, &iter, "CHARGE" );
-		
+	zdf_save_grid( (void *) buf, zdf_float32, &info, &iter, "CHARGE" );
 }

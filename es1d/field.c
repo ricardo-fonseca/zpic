@@ -1,10 +1,12 @@
-/*
- *  field.c
- *  zpic
- *
- *  Created by Ricardo Fonseca on 10/8/10.
- *  Copyright 2010 Centro de Física dos Plasmas. All rights reserved.
- *
+/**
+ * @file field.c
+ * @author Ricardo Fonseca
+ * @brief Electric Field
+ * @version 0.2
+ * @date 2022-02-18
+ * 
+ * @copyright Copyright (c) 2022
+ * 
  */
 
 #include <stdio.h>
@@ -17,8 +19,14 @@
 #include "zdf.h"
 #include "timer.h"
 
+/// Time spent advancing the electric field
 static double _field_time = 0.0;
 
+/**
+ * @brief Time spent advancing the electric fields
+ * 
+ * @return      Time spent in seconds
+ */
 double field_time()
 {
 	return _field_time;
@@ -30,18 +38,25 @@ double field_time()
  
  *********************************************************************************************/
 
-
-void field_new( t_field *field, int nx, t_fld box, const float dt, 
+/**
+ * @brief Initializes the electric field object
+ * 
+ * @param field 			Electric field object
+ * @param nx 				Number of cells
+ * @param box 				Physical box size
+ * @param dt 				Simulation time step
+ * @param fft_backward 		FFT configuration (shared with other objects)
+ */
+void field_new( t_field *field, int nx, float box, const float dt, 
 	t_fftr_cfg *fft_backward )
-{   	
-
+{
 	if ( nx % 2 ) {
 		fprintf(stderr,"(*error*) Only even grid sizes are supported.");
 		exit(-1);
 	}
 
 	// Number of guard cells for linear interpolation
-	unsigned int gc[2] = {0,1}; 
+	int gc[2] = {0,1}; 
 
 	// Store pointer to required FFT configuration
 	field -> fft_backward = fft_backward;
@@ -66,6 +81,11 @@ void field_new( t_field *field, int nx, t_fld box, const float dt,
 	
 }
 
+/**
+ * @brief Frees dynamic memory from electric field
+ * 
+ * @param field 	Electric field
+ */
 void field_delete( t_field *field )
 {
 	scalar_grid_cleanup( &field->E );
@@ -78,10 +98,18 @@ void field_delete( t_field *field )
  
  *********************************************************************************************/
 
-
+/**
+ * @brief Saves electric field diagnostic information to disk
+ * 
+ * Field will be save in directory "field", guard cell values are
+ * discarded.
+ * 
+ * @param field 	Electric field
+ */
 void field_report( const t_field *field )
 {
 	char fname[] = "E1";
+	char flabel[] = "E_x";
 	
 	float *buf = field -> E.s;
 
@@ -89,27 +117,29 @@ void field_report( const t_field *field )
     axis[0] = (t_zdf_grid_axis) {
     	.min = 0.0,
     	.max = field->box,
-    	.label = "x_1",
+		.name = "x",
+    	.label = "x",
     	.units = "c/\\omega_p"
     };
 
     t_zdf_grid_info info = {
     	.ndims = 1,
-    	.label = fname,
+		.name = fname,
+    	.label = flabel,
     	.units = "m_e c \\omega_p e^{-1}",
     	.axis = axis
     };
 
-    info.nx[0] = field->E.nx;
+    info.count[0] = field->E.nx;
 
     t_zdf_iteration iter = {
+		.name = "ITERATION",
     	.n = field->iter,
     	.t = field -> iter * field -> dt,
     	.time_units = "1/\\omega_p"
     };
 
-	zdf_save_grid( buf, &info, &iter, "field" );	
-		
+	zdf_save_grid( (float *) buf, zdf_float32, &info, &iter, "field" );	
 }
 
 
@@ -119,6 +149,14 @@ void field_report( const t_field *field )
  
  *********************************************************************************************/
 
+/**
+ * @brief Updates electric field from charge density
+ * 
+ * Note: We chose to set the k=0 component to 0
+ * 
+ * @param field 	Electric field
+ * @param charge 	Charge density
+ */
 void update_fE( t_field *field, const t_charge *charge )
 {
     float complex * const restrict frho = charge -> frho.s;
@@ -137,11 +175,15 @@ void update_fE( t_field *field, const t_charge *charge )
 }
 
 
-// This code operates with periodic boundaries
+/**
+ * @brief Updates electric field from Fourier transform
+ * 
+ * It will also update guard cell values for field interpolation.
+ * 
+ * @param field 
+ */
 void field_update( t_field *field )
 {
-	int i;
-
 	// Update E field
    	fftr_c2r( field -> fft_backward, field -> fE.s, field ->E.s );
 
@@ -151,17 +193,26 @@ void field_update( t_field *field )
     const unsigned nx = field -> E.nx;
 
 	// lower
-	for (i = - field->E.gc[0]; i<0; i++) {
+	for (int i = - field->E.gc[0]; i<0; i++) {
 		Ex[ i ] = Ex[ nx + i ];
 	}
 
 	// upper
-	for (i=0; i<field->E.gc[1]; i++) {
+	for (int i=0; i<field->E.gc[1]; i++) {
 		Ex[ nx + i ] = Ex[ i ];
 	}
 	
 }
 
+/**
+ * @brief Advance electric field 1 timestep
+ * 
+ * Field is updated from the charge density. The routine will also update
+ * guard cell values.
+ * 
+ * @param field 
+ * @param charge 
+ */
 void field_advance( t_field *field, const t_charge *charge )
 {
 	uint64_t t0 = timer_ticks();

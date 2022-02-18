@@ -15,41 +15,78 @@
 #include "grid.h"
 #include "charge.h"
 
-
-typedef struct {
+/**
+ * @brief Electric field
+ * 
+ */
+typedef struct Field {
 	
-	// E field
+	/// E field
 	t_scalar_grid E;
 
-	// Fourier transform of E
+	/// Fourier transform of E
 	t_cscalar_grid fE;
 		
 	// Simulation box info
-	t_fld box;
-	t_fld dx;
+	float box;	///< Physical size of simulation box
+	float dx;	///< Grid cell size
 
-	// Time step
+	/// Time step
 	float dt;
 
-	// Iteration number
+	/// Current Iteration number
 	int iter;
 
-	// FFT configuration
+	/// FFT configuration
 	t_fftr_cfg *fft_backward;
 	
 } t_field;
 	
 
-void field_new( t_field *field, int nx, t_fld box, const float dt, t_fftr_cfg *fft_backward );
+/**
+ * @brief Initializes the electric field object
+ * 
+ * @param field 			Electric field object
+ * @param nx 				Number of cells
+ * @param box 				Physical box size
+ * @param dt 				Simulation time step
+ * @param fft_backward 		FFT configuration (shared with other objects)
+ */
+void field_new( t_field *field, int nx, float box, const float dt, t_fftr_cfg *fft_backward );
 
+/**
+ * @brief Frees dynamic memory from electric field
+ * 
+ * @param field 	Electric field
+ */
 void field_delete( t_field *field );
 
+/**
+ * @brief Saves electric field diagnostic information to disk
+ * 
+ * Field will be save in directory "field", guard cell values are
+ * discarded.
+ * 
+ * @param field 	Electric field
+ */
 void field_report( const t_field *field  );
 
+/**
+ * @brief Advance electric field 1 timestep
+ * 
+ * Field is updated from the charge density. The routine will also update
+ * guard cell values.
+ * 
+ * @param field 
+ * @param charge 
+ */
 void field_advance( t_field *field, const t_charge *charge );
 
-void field_update_gc( t_field *field );
-
+/**
+ * @brief Time spent advancing the electric fields
+ * 
+ * @return      Time spent in seconds
+ */
 double field_time( void );
 
 #endif

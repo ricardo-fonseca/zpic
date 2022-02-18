@@ -9,23 +9,27 @@
 #include "field.h"
 #include "charge.h"
 
-typedef struct {
+/**
+ * @brief ES1D PIC 
+ * 
+ */
+typedef struct Simulation {
 	
-	// Time step
-	float dt;
-	float tmax;
+	// Time
+	float dt;		///< Time step
+	float tmax;		///< Final simulation time
 	
-	// Diagnostic frequency
-	int ndump;
+	int ndump;		///< Diagnostic frequency
 
 	// Simulation data
-	int n_species;
-	t_species* species;
-	t_field field;
-	t_charge charge;
+	int n_species;			///< Number of particle species
+	t_species* species;		///< Particle species
+	t_field field;			///< Electric field
+	t_charge charge;		///< Electric charge density
 
 	// FFT
-	t_fftr_cfg fft_forward,fft_backward;
+	t_fftr_cfg fft_forward;		///< Forward (real to complex) FFT configuration
+	t_fftr_cfg fft_backward;	///< Backward (complex to real) FFT configuration
 
 } t_simulation;
 
