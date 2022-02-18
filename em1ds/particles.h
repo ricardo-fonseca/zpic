@@ -74,7 +74,7 @@ typedef struct Density {
  * @brief Set of particles
  * 
  */
-typedef struct {
+typedef struct Species {
 
 	/// Species name
 	char name[MAX_SPNAME_LEN];

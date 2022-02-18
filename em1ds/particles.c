@@ -484,7 +484,7 @@ void spec_grow_buffer( t_species* spec, const int size ) {
  * 
  * @param   spec    Particle species
  * @param   range   Grid range [ix0, ix1] where to inject particles
- **/
+ */
 void spec_inject_particles( t_species* spec, const int range[] )
 {
     int start = spec -> np;
@@ -519,7 +519,7 @@ void spec_inject_particles( t_species* spec, const int range[] )
  * @param box       Simulation box size in simulation units
  * @param dt        Simulation time step, in simulation units
  * @param density   Density profile for particle injection, may be set to NULL
- **/
+ */
 void spec_new( t_species* spec, char name[], const float m_q, const int ppc, 
               const float *ufl, const float * uth,
               const int nx, float box, const float dt, t_density* density )
@@ -947,13 +947,11 @@ void spec_advance( t_species* spec, t_emf* emf, t_charge* charge, t_current* cur
  */
 void spec_deposit_charge( const t_species* spec, float* charge )
 {
-    int i;
-    
     // Charge array is expected to have 1 guard cell at the upper boundary
 
-    float q = spec -> q;
+    const float q = spec -> q;
     
-    for (i=0; i<spec->np; i++) {
+    for (int i=0; i<spec->np; i++) {
 
         int idx = spec->part[i].ix;
         float w1 = spec->part[i].x;
@@ -975,7 +973,7 @@ void spec_deposit_charge( const t_species* spec, float* charge )
  * 
  * Saves all particle positions and momenta. Positions are converted to
  * distance from simulation box corner before saving. Data is saved in the
- * "PARTICLES" directory.
+ * "PARTICLES/species_name" directory.
  *
  * @param spec 		Particle species
  */
@@ -1327,7 +1325,6 @@ void spec_rep_pha( const t_species *spec, const int rep_type,
 void spec_report( const t_species *spec, const int rep_type, 
                   const int pha_nx[], const float pha_range[][2] )
 {
-    
     switch (rep_type & 0xF000) {
         case CHARGE:
             spec_rep_charge( spec );
@@ -1341,6 +1338,4 @@ void spec_report( const t_species *spec, const int rep_type,
             spec_rep_particles( spec );
             break;
     }
-    
-    
 }

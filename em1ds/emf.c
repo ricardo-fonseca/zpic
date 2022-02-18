@@ -1,10 +1,12 @@
-/*
- *  emf.c
- *  zpic
- *
- *  Created by Ricardo Fonseca on 10/8/10.
- *  Copyright 2010 Centro de Física dos Plasmas. All rights reserved.
- *
+/**
+ * @file emf.c
+ * @author Ricardo Fonseca
+ * @brief EM Fields
+ * @version 0.2
+ * @date 2022-02-18
+ * 
+ * @copyright Copyright (c) 2022
+ * 
  */
 
 #include <stdio.h>
@@ -39,7 +41,7 @@ double emf_time()
  *********************************************************************************************/
 
 /**
- * @brief Initializes the EM field objecnt
+ * @brief Initializes the EM field object
  * 
  * @param emf			EM fields object
  * @param nx			Number of cells

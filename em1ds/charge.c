@@ -25,7 +25,7 @@
  * @param dt 			Simulation time step
  * @param fft_forward 	FFT configuration for transforming rho to frho
  * 						(shared with other objects)
- * @param filter 		Spectral filtering parameterso
+ * @param filter 		Spectral filtering parameters
  */
 void charge_new( t_charge *charge, int nx, float box, float dt, t_fftr_cfg *fft_forward,
                  t_filter *filter )

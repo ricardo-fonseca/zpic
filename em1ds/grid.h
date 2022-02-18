@@ -164,8 +164,30 @@ int  vfld_grid_cleanup( t_float3_grid *grid );
  */
 void vfld_grid_zero( t_float3_grid *grid );
 
+/**
+ * @brief Initialize ComplexVector3Grid variable
+ * 
+ * @param grid 		ComplexVector3 grid
+ * @param nx 		Number of points (excludes guard cells)
+ * @param gc 		Number of guard cells (lower/upper), may be set to NULL
+ * 					specifying 0 guard cells
+ * @return			0 on success, -1 on error
+ */
 int  cvfld_grid_init( t_cfloat3_grid *grid, const int nx, const int * gc );
+
+/**
+ * @brief Free dynamic memory from ComplexVector3Grid variable
+ * 
+ * @param grid 	ComplexVector3 grid
+ * @return 		0 on success (always returns 0)
+ */
 int  cvfld_grid_cleanup( t_cfloat3_grid *grid );
+
+/**
+ * @brief Sets all grid values to zero
+ * 
+ * @param grid 	ComplextVector3 grid
+ */
 void cvfld_grid_zero( t_cfloat3_grid *grid );
 
 #endif
