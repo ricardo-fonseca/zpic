@@ -199,7 +199,6 @@ void sim_report_energy( t_simulation* sim )
 
 	printf("Energy (fields | particles | total) = %e %e %e\n",
 		tot_emf, tot_part, tot_emf+tot_part);
-
 }
 
 /**

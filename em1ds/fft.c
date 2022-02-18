@@ -1,3 +1,14 @@
+/**
+ * @file fft.c
+ * @author Ricardo Fonseca
+ * @brief 1D FFT library
+ * @version 0.2
+ * @date 2022-02-17
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include "fft.h"
 #include <math.h>
 #include <stdlib.h>
@@ -443,7 +454,7 @@ void fftr_c2r( t_fftr_cfg* rcfg, const float complex in[], float out[] ) {
     for( i = 1; i <= n/2; i++) {
         float complex z0, z1, s0, s1;
         z0 = in[i];
-        z1 = conjf( in[n-i]);
+        z1 = conjf( in[n-i] );
 
         s0 = z0 + z1;
         s1 = (z0 - z1) * rcfg -> phase[i-1];

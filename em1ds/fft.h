@@ -9,7 +9,7 @@
 #include <complex.h>
 
 #ifndef M_PI
-#define M_PI 3.14159265358979323846264338327950288   ///> pi
+#define M_PI 3.14159265358979323846264338327950288   ///< pi
 #endif
 
 /**
@@ -53,8 +53,8 @@ typedef struct {
  * 
  */
 typedef struct {
-	t_fft_cfg cfg;
-    float complex *phase;
+	t_fft_cfg cfg;          ///< Underlying Complex to Complex FFT configuration
+    float complex *phase;   ///< Phase factor for R2C / C2R transforms
 } t_fftr_cfg;
 
 /**********************************************************************************
@@ -62,6 +62,19 @@ typedef struct {
 ***********************************************************************************/
 /**
  * @brief Perform a Complex-to-Complex FFT
+ * 
+ * When transforming a complex dataset f of size {N} the output will be a
+ * complex dataset F of the same size. The output data is organized as
+ * follows:
+ * 
+ *   * F[ 0 ] : 0 frequency (DC) component
+ *   * F[ 0 < j < N/2 ] : $f = j \times \Delta f$
+ *   * F[ N/2 ] : $f = \pm f_{Nyquist}$
+ *   * F[ N/2 < j < N ] : $f = (j - N) \times \Delta f$
+ * 
+ * Where $f_{Nyquist} = \frac{1}{2 \Delta t}$ and
+ * $\Delta f = \frac{1}{N \Delta t}$ for a signal sampled at $\Delta t$
+ * intervals.
  * 
  * @param cfg   FFT configuration
  * @param in    Input data
@@ -128,8 +141,11 @@ int fftr_cleanup_cfg( t_fftr_cfg* rcfg );
  * $\tilde{F}(\pm f_K)$ must be zero.
  * 
  * Data is stored using a "Complex conjugate storage organization" meaning
- * that for a real dataset with n points we use n/2+1 complex values for
- * the transform, storing only positive frequencies.
+ * that for a real dataset with N points we use N/2+1 complex values for
+ * the transform, storing only positive frequencies:
+ * 
+ *   * F[ 0 ] : 0 frequency (DC) component
+ *   * F[ 0 < j <= N/2 ] : $f = j \times \Delta f$
  * 
  * If negative frequency component values are required they can be obtained
  * by taking the complex conjugate of the positive counterpart:

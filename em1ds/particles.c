@@ -97,8 +97,6 @@ void spec_set_u( t_species* spec, const int start, const int end )
         spec->part[i].uz = spec -> ufl[2] + spec -> uth[2] * rand_norm();
     }
 
-}
-
 #else
 
     // Initialize thermal component
@@ -1122,23 +1120,21 @@ void spec_rep_charge( const t_species *spec )
  */
 void spec_pha_axis( const t_species *spec, int i0, int np, int quant, float *axis )
 {
-    int i;
-    
     switch (quant) {
         case X1:
-            for (i = 0; i < np; i++) 
+            for (int i = 0; i < np; i++) 
                 axis[i] = ( (spec -> part[i0+i].x + 0.5f) + spec -> part[i0+i].ix ) * spec -> dx;
             break;
         case U1:
-            for (i = 0; i < np; i++) 
+            for (int i = 0; i < np; i++) 
                 axis[i] = spec -> part[i0+i].ux;
             break;
         case U2:
-            for (i = 0; i < np; i++) 
+            for (int i = 0; i < np; i++) 
                 axis[i] = spec -> part[i0+i].uy;
             break;
         case U3:
-            for (i = 0; i < np; i++) 
+            for (int i = 0; i < np; i++) 
                 axis[i] = spec -> part[i0+i].uz;
             break;
     }

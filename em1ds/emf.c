@@ -596,6 +596,8 @@ void advance_psatd( t_emf *emf, const t_current *current, const float dt )
  * The routine will apply spectral filtering, if supplied, and update guard
  * cell values. Note that this code operates with periodic boundaries.
  * 
+ * It will also update the guard cell values for field interpolation
+ * 
  * @param emf   EM fields
  */
 void emf_update( t_emf *emf )

@@ -1,9 +1,13 @@
-/*********************************************************************************************
-
- Spectral filter
-
-*********************************************************************************************/
-
+/**
+ * @file filter.c
+ * @author Ricardo Fonseca
+ * @brief Spectral filtering
+ * @version 0.2
+ * @date 2022-02-17
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
 #include "filter.h"
 #include <math.h>
 #include <stdio.h>

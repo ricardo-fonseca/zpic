@@ -103,7 +103,7 @@ void scalar_grid_zero( t_scalar_grid *grid );
  * @brief Copies values from one scalar grid to another
  * 
  * The destination grid needs to be allocated beforehand and must have the
- * same size (including guard cells) as the source grid. Also the source
+ * same size (including guard cells) as the source grid. Also, the source
  * and destination buffers must not overlap, otherwise behavior is
  * undefined
  * 

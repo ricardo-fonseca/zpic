@@ -1,3 +1,13 @@
+/**
+ * @file charge.c
+ * @author Ricardo Fonseca
+ * @brief Electric charge density
+ * @version 0.2
+ * @date 2022-02-16
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -178,7 +188,13 @@ void charge_update_neutral_bkg( t_charge *charge )
 
 }
 
-
+/**
+ * @brief Saves electric charge density diagnostic information to disk
+ * 
+ * Saves the charge density to disk in directory "CHARGE"
+ * 
+ * @param charge 	Electric charge density
+ */
 void charge_report( const t_charge *charge )
 {
 	char vfname[] = "charge_density";
