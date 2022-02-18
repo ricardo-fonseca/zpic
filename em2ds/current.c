@@ -1,10 +1,12 @@
-/*
- *  current.c
- *  zpic
- *
- *  Created by Ricardo Fonseca on 12/8/10.
- *  Copyright 2010 Centro de Física dos Plasmas. All rights reserved.
- *
+/**
+ * @file current.c
+ * @author Ricardo Fonseca
+ * @brief Electric current density
+ * @version 0.2
+ * @date 2022-02-04
+ * 
+ * @copyright Copyright (c) 2022
+ * 
  */
 
 #include "current.h"
@@ -19,9 +21,16 @@
 #include "filter.h"
 #include "zdf.h"
 
-void current_new( t_current *current, const int nx[], t_fld box[], float dt )
+/**
+ * @brief Initializes Electric current density object
+ * 
+ * @param current 		Electric current density
+ * @param nx 			Number of cells
+ * @param box 			Physical box size
+ * @param dt 			Simulation time step
+ */
+void current_new( t_current *current, const int nx[], float box[], float dt )
 {
-
 	if ( nx[0] % 2 || nx[1] % 2 ) {
 		fprintf(stderr,"(*error*) Only even grid sizes are supported.");
 		exit(-1);
@@ -35,8 +44,8 @@ void current_new( t_current *current, const int nx[], t_fld box[], float dt )
 	const unsigned int fnx[2] = { nx[1], nx[0]/2+1 };
 
 	// Initialize grids
-	vfld_grid2d_init( &current->J, (unsigned int *) nx, gc );
-	cvfld_grid2d_init( &current->fJ, fnx, NULL );
+	float3_grid2d_init( &current->J, (unsigned int *) nx, gc );
+	cfloat3_grid2d_init( &current->fJ, fnx, NULL );
 
 	// Initializ FFT transform
 	fftr2d_init_cfg( &current -> fft_forward, nx[0], nx[1],
@@ -58,27 +67,47 @@ void current_new( t_current *current, const int nx[], t_fld box[], float dt )
   // Zero initial current
 
   // This is only relevant for diagnostics, current is always zeroed before deposition
-	vfld_grid2d_zero( &current -> J );
+	float3_grid2d_zero( &current -> J );
 
 }
 
+/**
+ * @brief Frees dynamic memory from electric current density
+ * 
+ * @param current Electric current density object
+ */
 void current_delete( t_current *current )
 {
-	vfld_grid2d_cleanup( &current -> J );
-	cvfld_grid2d_cleanup( &current -> fJ );
+	float3_grid2d_cleanup( &current -> J );
+	cfloat3_grid2d_cleanup( &current -> fJ );
 
 	fftr2d_cleanup_cfg( &current -> fft_forward );
 
 }
 
+/**
+ * @brief Sets all electric current density values to zero
+ * 
+ * @param current Electric current density object
+ */
 void current_zero( t_current *current )
 {
-	vfld_grid2d_zero( &current -> J );
+	float3_grid2d_zero( &current -> J );
 }
 
+/**
+ * @brief Advances electric current density 1 time step
+ * 
+ * The routine will:
+ * 1. Update the guard cells
+ * 2. Calculate the transverse component of J (not needed in 1D)
+ * 3. Get the Fourier transform of the current
+ * 4. Apply spectral filtering
+ * 
+ * @param current Electric current density object
+ */
 void current_update( t_current *current )
 {
-	int i,j;
 	const int nrow = current->J.nrow;
 	float* restrict const Jx = current -> J.x;
 	float* restrict const Jy = current -> J.y;
@@ -94,17 +123,17 @@ void current_update( t_current *current )
 
 
 	// x
-	for (j = -gc10; j < nx1 + gc11; j++) {
+	for (int j = -gc10; j < nx1 + gc11; j++) {
 
 		// lower - add the values from upper boundary ( both gc and inside box )
-		for (i = -gc00; i < gc01; i++) {
+		for (int i = -gc00; i < gc01; i++) {
 			Jx[ i + j*nrow ] += Jx[ nx0 + i + j*nrow ];
 			Jy[ i + j*nrow ] += Jy[ nx0 + i + j*nrow ];
 			Jz[ i + j*nrow ] += Jz[ nx0 + i + j*nrow ];
 		}
 
 		// upper - just copy the values from the lower boundary
-		for (i = -gc00; i < gc01; i++) {
+		for (int i = -gc00; i < gc01; i++) {
 			Jx[ nx0 + i + j*nrow ] = Jx[ i + j*nrow ];
 			Jy[ nx0 + i + j*nrow ] = Jy[ i + j*nrow ];
 			Jz[ nx0 + i + j*nrow ] = Jz[ i + j*nrow ];
@@ -113,17 +142,17 @@ void current_update( t_current *current )
 	}
 
 	// y
-	for (i = -gc00; i < nx0 + gc01; i++) {
+	for (int i = -gc00; i < nx0 + gc01; i++) {
 
 		// lower - add the values from upper boundary ( both gc and inside box )
-		for (j=-gc10; j<gc11; j++) {
+		for (int j=-gc10; j<gc11; j++) {
 			Jx[ i + j*nrow ] += Jx[ i + (nx1+j)*nrow ];
 			Jy[ i + j*nrow ] += Jy[ i + (nx1+j)*nrow ];
 			Jz[ i + j*nrow ] += Jz[ i + (nx1+j)*nrow ];
 		}
 
 		// upper - just copy the values from the lower boundary
-		for (j=-gc10; j<gc11; j++) {
+		for (int j=-gc10; j<gc11; j++) {
 			Jx[ i + (nx1+j)*nrow ] = Jx[ i + j*nrow ];
 			Jy[ i + (nx1+j)*nrow ] = Jy[ i + j*nrow ];
 			Jz[ i + (nx1+j)*nrow ] = Jz[ i + j*nrow ];
@@ -149,33 +178,43 @@ void current_update( t_current *current )
 
 }
 
+/**
+ * @brief Saves electric current density diagnostic information to disk
+ * 
+ * Saves the selected current density component to disk in directory
+ * "CURRENT". Guard cell values are discarded.
+ * 
+ * @param current Electric current object
+ * @param jc Current component to save, must be one of {0,1,2}
+ */
 void current_report( const t_current *current, const char jc )
 {
-	float *f;
-	float *buf, *p;
-	char vfname[3];
-
-
-	vfname[0] = 'J';
+	float *f, *buf, *p;
+	char comp;
 
 	switch (jc) {
 		case 0:
 			f = current->J.x;
-			vfname[1] = '1';
+			comp = 'x';
 			break;
 		case 1:
 			f = current->J.y;
-			vfname[1] = '2';
+			comp = 'y';
 			break;
 		case 2:
 			f = current->J.z;
-			vfname[1] = '3';
+			comp = 'z';
 			break;
 		default:
 			fprintf(stderr,"(*error*) Invalid current component selected, returning\n");
 			return;
 	}
-	vfname[2] = 0;
+
+	char vfname[16];	// Dataset name
+	char vflabel[16];	// Dataset label (for plots)
+
+    snprintf( vfname, 3, "J%1d", jc );
+    snprintf(vflabel,4,"J_%c",comp);
 
 	// Pack the information
 	buf = malloc( current->J.nx[0]*current->J.nx[1]*sizeof(float) );
@@ -193,34 +232,38 @@ void current_report( const t_current *current, const char jc )
   axis[0] = (t_zdf_grid_axis) {
   	.min = 0.0,
   	.max = current->box[0],
-  	.label = "x_1",
+  	.name = "x",
+	.label = "x",
   	.units = "c/\\omega_p"
   };
 
   axis[1] = (t_zdf_grid_axis) {
   	.min = 0.0,
   	.max = current->box[1],
-  	.label = "x_2",
+  	.name = "y",
+	.label = "y",
   	.units = "c/\\omega_p"
   };
 
   t_zdf_grid_info info = {
   	.ndims = 2,
-  	.label = vfname,
+  	.name = vfname,
+	.label = vflabel,
   	.units = "e \\omega_p^2 / c",
   	.axis = axis
   };
 
-  info.nx[0] = current->J.nx[0];
-  info.nx[1] = current->J.nx[1];
+  info.count[0] = current->J.nx[0];
+  info.count[1] = current->J.nx[1];
 
   t_zdf_iteration iter = {
+	.name = "ITERATION",
   	.n = current->iter,
   	.t = current -> iter * current -> dt,
   	.time_units = "1/\\omega_p"
   };
 
-	zdf_save_grid( buf, &info, &iter, "CURRENT" );
+	zdf_save_grid( (void *) buf, zdf_float32, &info, &iter, "CURRENT" );
 
 	// free local data
 	free( buf );

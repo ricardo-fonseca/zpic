@@ -1,3 +1,14 @@
+/**
+ * @file fft.c
+ * @author Ricardo Fonseca
+ * @brief 1D/2D FFT library
+ * @version 0.1
+ * @date 2022-02-17
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include "fft.h"
 #include <math.h>
 #include <stdlib.h>
@@ -8,37 +19,45 @@
  1D FFT of complex data
 ****************************************************************************************/
 
+/**
+ * @brief Performs a DFT of size 2
+ * 
+ * @param out       DFT input/output
+ * @param stride    Data access stride
+ * @param phase     Input data
+ * @param m         Number of points
+ */
 void butterfly2( float complex * restrict const out, const unsigned int stride,
     const float complex * restrict const phase, const unsigned int m)
 {
-    unsigned int i;
-    float complex t0, t1;
-
-    for( i = 0; i < m; i++) {
-        t0 = out[i    ];
-        t1 = out[i + m] * phase[i*stride];
+    for( unsigned int i = 0; i < m; i++) {
+        float complex t0 = out[i    ];
+        float complex t1 = out[i + m] * phase[i*stride];
         out[i    ] = t0 + t1;
         out[i + m] = t0 - t1;
     }
 }
 
-
+/**
+ * @brief Performs a DFT of size 3
+ * 
+ * @param out       DFT input/output
+ * @param stride    Data access stride
+ * @param phase     Input data
+ * @param m         Number of points
+ */
 void butterfly3( float complex * restrict const out, const unsigned int stride,
     const float complex * restrict const phase, const unsigned int m)
 {
-    float complex t0, t1, t2;
-    float complex s0, s1;
-    unsigned int i;
-
     const float complex ima = I * cimag(phase[ stride * m ]);
 
-    for( i = 0; i<m; i++) {
-        t0 = out[i      ];
-        t1 = out[i +   m] * phase[     i * stride ];
-        t2 = out[i + 2*m] * phase[ 2 * i * stride ];
+    for( unsigned int i = 0; i<m; i++) {
+        float complex t0 = out[i      ];
+        float complex t1 = out[i +   m] * phase[     i * stride ];
+        float complex t2 = out[i + 2*m] * phase[ 2 * i * stride ];
 
-        s0 = t1 + t2;
-        s1 = t1 - t2;
+        float complex s0 = t1 + t2;
+        float complex s1 = t1 - t2;
 
         out[i      ] = t0 + s0;
         out[i +   m] = t0 - 0.5f * s0 + ima * s1;
@@ -46,26 +65,31 @@ void butterfly3( float complex * restrict const out, const unsigned int stride,
     }
 }
 
+/**
+ * @brief Performs a DFT of size 4
+ * 
+ * @param out       DFT input/output
+ * @param stride    Data access stride
+ * @param phase     Input data
+ * @param m         Number of points 
+ * @param direction Direction of transform {FFT_BACKWARD, FFT_FORWARD}
+ */
 void butterfly4( float complex * restrict const out, const unsigned int stride,
     const float complex * restrict const phase, const unsigned int m,
     const enum fft_direction direction )
 {
-    unsigned int i;
-    float complex t0,t1,t2,t3;
-    float complex s0, s1, s2, s3;
-
     const float complex p = ( direction == FFT_BACKWARD )? I : -I;
 
-    for( i = 0; i < m; i++){
-        t0 = out[i      ];
-        t1 = out[i +   m] * phase[     i * stride ];
-        t2 = out[i + 2*m] * phase[ 2 * i * stride ];
-        t3 = out[i + 3*m] * phase[ 3 * i * stride ];
+    for( unsigned int i = 0; i < m; i++){
+        float complex t0 = out[i      ];
+        float complex t1 = out[i +   m] * phase[     i * stride ];
+        float complex t2 = out[i + 2*m] * phase[ 2 * i * stride ];
+        float complex t3 = out[i + 3*m] * phase[ 3 * i * stride ];
 
-        s0 = t1 + t3;
-        s1 = t1 - t3;
-        s2 = t0 + t2;
-        s3 = t0 - t2;
+        float complex s0 = t1 + t3;
+        float complex s1 = t1 - t3;
+        float complex s2 = t0 + t2;
+        float complex s3 = t0 - t2;
 
         out[i      ] = s2 + s0;
         out[i +   m] = s3 + p * s1;
@@ -74,37 +98,41 @@ void butterfly4( float complex * restrict const out, const unsigned int stride,
     }
 }
 
+/**
+ * @brief Performs a DFT of size 5
+ * 
+ * @param out       DFT input/output
+ * @param stride    Data access stride
+ * @param phase     Input data
+ * @param m         Number of points
+ */
 void butterfly5( float complex * restrict const out, const unsigned int stride,
     const float complex * restrict const phase, const unsigned int m)
 {
-    unsigned int i;
-    float complex t0, t1, t2, t3, t4;
-    float complex s0, s1, s2, s3, s4, s5, s6, s7;
-
     const float ra = creal(phase[     stride * m ]);
     const float ia = cimag(phase[     stride * m ]);
 
     const float rb = creal(phase[ 2 * stride * m ]);
     const float ib = cimag(phase[ 2 * stride * m ]);
 
-    for( i = 0; i<m; i++) {
+    for( unsigned int i = 0; i<m; i++) {
 
-        t0 = out[       i ];
-        t1 = out[   m + i ] * phase[     i * stride ];
-        t2 = out[ 2*m + i ] * phase[ 2 * i * stride ];
-        t3 = out[ 3*m + i ] * phase[ 3 * i * stride ];
-        t4 = out[ 4*m + i ] * phase[ 4 * i * stride ];
+        float complex t0 = out[       i ];
+        float complex t1 = out[   m + i ] * phase[     i * stride ];
+        float complex t2 = out[ 2*m + i ] * phase[ 2 * i * stride ];
+        float complex t3 = out[ 3*m + i ] * phase[ 3 * i * stride ];
+        float complex t4 = out[ 4*m + i ] * phase[ 4 * i * stride ];
 
-        s0 = t1 + t4;
-        s1 = t1 - t4;
-        s2 = t2 + t3;
-        s3 = t2 - t3;
+        float complex s0 = t1 + t4;
+        float complex s1 = t1 - t4;
+        float complex s2 = t2 + t3;
+        float complex s3 = t2 - t3;
 
-        s4 = t0 + s0 * ra + s2 * rb;
-        s5 = t0 + s0 * rb + s2 * ra;
+        float complex s4 = t0 + s0 * ra + s2 * rb;
+        float complex s5 = t0 + s0 * rb + s2 * ra;
 
-        s6 = -I * (s1 * ia + s3 * ib);
-        s7 =  I * (s1 * ib - s3 * ia);
+        float complex s6 = -I * (s1 * ia + s3 * ib);
+        float complex s7 =  I * (s1 * ib - s3 * ia);
 
         out[ i       ] = t0 + s0 + s2;
         out[ i +   m ] = s4 - s6;
@@ -114,26 +142,32 @@ void butterfly5( float complex * restrict const out, const unsigned int stride,
     }
 }
 
-
+/**
+ * @brief Performs a DFT of arbitrary size N
+ * 
+ * @param out       DFT input/output
+ * @param stride    Data access stride
+ * @param phase     Input data
+ * @param m         Number of points
+ * @param p         
+ * @param n         
+ */
 void butterflyN(float complex * restrict const out, const unsigned int stride,
     const float complex * restrict const phase, const unsigned int m, const unsigned int p,
     const unsigned int n)
 {
-
     float complex t[p];
 
-    unsigned int i,j,k;
+    for( unsigned int i = 0; i<m; i++) {
 
-    for( i = 0; i<m; i++) {
-
-        for( j = 0; j < p; j++) {
+        for( unsigned int j = 0; j < p; j++) {
             t[j] = out[i + m*j];
         }
 
-        for( j=0; j <p; j++ ) {
+        for( unsigned int j=0; j <p; j++ ) {
             unsigned int tstride = (i + j*m) * stride;
             float complex s = t[0];
-            for( k = 1; k<p; k++){
+            for( unsigned int k = 1; k<p; k++){
                 s += t[k] * phase[ (k*tstride) % n ];
             }
             out[i + j*m] = s;
@@ -142,24 +176,30 @@ void butterflyN(float complex * restrict const out, const unsigned int stride,
 
 }
 
-
+/**
+ * @brief Recursively perform a Complex-to-complex FFT
+ * 
+ * @param in            Input data
+ * @param in_stride     Input data stride
+ * @param out           Output data
+ * @param out_stride    Output data stride
+ * @param factors       Factor decomposition of input data size
+ * @param cfg           Transform configuration
+ */
 void transform( const float complex in[], const unsigned int in_stride,
                 float complex out[],  const unsigned int out_stride,
                 t_fft_factors factors[], t_fft_cfg *cfg )
 
 {
-    int i;
-    int p, m;
-
-    p = factors[0].p;
-    m = factors[0].n;
+    int p = factors[0].p;
+    int m = factors[0].n;
 
     if ( m == 1 ) {
-        for( i = 0; i<p; i++) {
+        for( int i = 0; i<p; i++) {
             out[i] = in[ i * in_stride * out_stride ];
         }
     } else {
-        for( i = 0; i<p; i++) {
+        for( int i = 0; i<p; i++) {
             transform( &in[i * out_stride * in_stride], in_stride,
                        &out[i*m], out_stride * p,
                        &factors[1], cfg);
@@ -180,6 +220,12 @@ void transform( const float complex in[], const unsigned int in_stride,
     }
 }
 
+/**
+ * @brief Factorizes data size
+ * 
+ * @param cfg   FFT configuration variable that will hold the results
+ * @return      0 on success, -1 on error (unable to factorize)
+ */
 int fft_init_factors( t_fft_cfg* cfg )
 {
     unsigned int i, p;
@@ -212,6 +258,14 @@ int fft_init_factors( t_fft_cfg* cfg )
     return 0;
 }
 
+/**
+ * @brief Initialize FFT configuration
+ * 
+ * @param cfg           FFT configuration
+ * @param n             Number of points
+ * @param direction     FFT direction {FFT_FORWARD, FFT_BACKWARD}
+ * @return              0 on success, 1 on error
+ */
 int fft_init_cfg( t_fft_cfg* cfg, unsigned int n, enum fft_direction direction ){
 
     cfg -> n = n;
@@ -231,6 +285,12 @@ int fft_init_cfg( t_fft_cfg* cfg, unsigned int n, enum fft_direction direction )
     return fft_init_factors( cfg );
 }
 
+/**
+ * @brief Cleanup FFT configuration
+ * 
+ * @param cfg   FFT configuration
+ * @return      0 on success (always returns 0)
+ */
 int fft_cleanup_cfg( t_fft_cfg* cfg ){
     free( cfg -> phase );
     cfg -> n = 0;
@@ -238,13 +298,39 @@ int fft_cleanup_cfg( t_fft_cfg* cfg ){
     return 0;
 }
 
-
+/**
+ * @brief Perform a Complex-to-Complex FFT
+ * 
+ * When transforming a complex dataset f of size {N} the output will be a
+ * complex dataset F of the same size. The output data is organized as
+ * follows:
+ * 
+ *   * F[ 0 ] : 0 frequency (DC) component
+ *   * F[ 0 < j < N/2 ] : $f = j \times \Delta f$
+ *   * F[ N/2 ] : $f = \pm f_{Nyquist}$
+ *   * F[ N/2 < j < N ] : $f = (j - N) \times \Delta f$
+ * 
+ * Where $f_{Nyquist} = \frac{1}{2 \Delta t}$ and
+ * $\Delta f = \frac{1}{N \Delta t}$ for a signal sampled at $\Delta t$
+ * intervals.
+ * 
+ * @param cfg   FFT configuration
+ * @param in    Input data
+ * @param out   Output data
+ */
 void fft_c2c( t_fft_cfg* cfg, const float complex in[], float complex out[] ) {
 
     transform( in, 1, out, 1, cfg -> factors, cfg );
 
 }
 
+/**
+ * @brief Gets the spectral spacing (dk) of points in the transform
+ * 
+ * @param n     Number of points in input data
+ * @param dx    Cell size in real space
+ * @return      Cell size in Fourier space
+ */
 float fft_dk( const unsigned int n, const float dx) {
 
     float dk = (2 * M_PI) / ( n * dx );
@@ -256,6 +342,14 @@ float fft_dk( const unsigned int n, const float dx) {
  1D FFT of real data
 ****************************************************************************************/
 
+/**
+ * @brief Initialize real data FFT configuration
+ * 
+ * @param rcfg          Real data FFT configuration
+ * @param nr            Number of points in input (real) data
+ * @param direction     Transform direction {FFT_FORWARD, FFT_BACKWARD}
+ * @return              0 on sucess, -1 on error
+ */
 int fftr_init_cfg( t_fftr_cfg* rcfg, unsigned int nr, enum fft_direction direction )
 {
     unsigned int i, n;
@@ -283,6 +377,12 @@ int fftr_init_cfg( t_fftr_cfg* rcfg, unsigned int nr, enum fft_direction directi
     return 0;
 }
 
+/**
+ * @brief Cleanup real data FFT configuration
+ * 
+ * @param rcfg  Real data FFT configuration
+ * @return      0 on success (always returns 0)
+ */
 int fftr_cleanup_cfg( t_fftr_cfg* rcfg ){
     fft_cleanup_cfg( & rcfg -> cfg );
     free( rcfg -> phase );
@@ -290,6 +390,30 @@ int fftr_cleanup_cfg( t_fftr_cfg* rcfg ){
     return 0;
 }
 
+/**
+ * @brief Performs a real-to-Complex FFT
+ * 
+ * A forward Fourier transform of real data will be a conjugate even
+ * sequence, meaning that:
+ * $\tilde{F}(-k) = \tilde{F}^{*}(k)$
+ * This also implies that the imaginary parts of $\tilde{F}(0)$ and
+ * $\tilde{F}(\pm f_K)$ must be zero.
+ * 
+ * Data is stored using a "Complex conjugate storage organization" meaning
+ * that for a real dataset with n points we use n/2+1 complex values for
+ * the transform, storing only positive frequencies:
+ * 
+ *   * F[ 0 ] : 0 frequency (DC) component
+ *   * F[ 0 < j <= N/2 ] : $f = j \times \Delta f$
+ * 
+ * If negative frequency component values are required they can be obtained
+ * by taking the complex conjugate of the positive counterpart:
+ * F[-j] = conj(F[j])
+ * 
+ * @param rcfg  Real data FFT configuration (must have direction FFT_FORWARD)
+ * @param in    Real data input
+ * @param out   Complex data output
+ */
 void fftr_r2c( t_fftr_cfg* rcfg, const float in[], float complex out[] )
 {
     if ( rcfg -> cfg.direction != FFT_FORWARD ) {
@@ -325,6 +449,16 @@ void fftr_r2c( t_fftr_cfg* rcfg, const float in[], float complex out[] )
 
 }
 
+/**
+ * @brief Perform a Complex to Real FFT
+ * 
+ * Input data is expected to be organized according to the output of the
+ * `fftr_r2c()` routine
+ * 
+ * @param rcfg  Real data FFT configuration (must have direction FFT_BACKWARD)
+ * @param in    Complex data input
+ * @param out   Real data output
+ */
 void fftr_c2r( t_fftr_cfg* rcfg, const float complex in[], float out[] ) {
 
     if ( rcfg -> cfg.direction != FFT_BACKWARD ) {
@@ -366,18 +500,16 @@ void fftr_c2r( t_fftr_cfg* rcfg, const float complex in[], float out[] ) {
  2D FFT of real data
 ****************************************************************************************/
 
-/*
-nx - grid cell size along x
-ny - grid cell size along y
-
-stridey - distance between points along the y direction.
-
-If the input data has "guard cells" along x, the user should set the stridey
-parameter to (nx + #guard cells). Otherwise this value can be set to 0 and it
-will default to nx.
-
-*/
-
+/**
+ * @brief Initialize 2D real data FFT configuration
+ * 
+ * @param rcfg          2D real data FFT configuration
+ * @param nx            Number of x points in input (real) data
+ * @param ny            Number of y points in input (real) data
+ * @param stridey       Data stride along y
+ * @param direction     Transform direction {FFT_FORWARD, FFT_BACKWARD}
+ * @return              0 on sucess, -1 on error
+ */
 int fftr2d_init_cfg( t_fftr2d_cfg* cfg, unsigned int nx, unsigned int ny,
     unsigned int stridey, enum fft_direction direction ) {
 
@@ -403,6 +535,12 @@ int fftr2d_init_cfg( t_fftr2d_cfg* cfg, unsigned int nx, unsigned int ny,
     return(0);
 }
 
+/**
+ * @brief Cleanup 2D real data FFT configuration
+ * 
+ * @param rcfg  Real data FFT configuration
+ * @return      0 on success (always returns 0)
+ */
 int fftr2d_cleanup_cfg( t_fftr2d_cfg* cfg ){
   fftr_cleanup_cfg( &cfg->cfgx);
   fft_cleanup_cfg( &cfg->cfgy);
@@ -411,13 +549,30 @@ int fftr2d_cleanup_cfg( t_fftr2d_cfg* cfg ){
   return(0);
 }
 
-/*
-
-The output of a real to complex 2D transform of {nx,ny} data using fftr2d_r2c
-is a transposed array of dimensions {ny, nx/2+1}
-
-*/
-
+/**
+ * @brief Performs a 2D real-to-Complex FFT
+ * 
+ * The 2D real to complex transform begins by doing a (1D) real to complex
+ * transform of every line along the first dimension, transposing the data
+ * and then doing a complex to complex transform of every line of the
+ * resulting dataset.
+ * 
+ * For an input array f(x,y) of dimensions [Nx,Ny] the ouput data will be
+ * a transposed array F(ky,kx) of dimensions [Ny, Nx/2+1] organized as:
+ * 
+ *   * F[ \*, kx ] : $f_x = kx \times \Delta f_x$
+ *   * F[ 0, \* ]              : $f_y = 0$
+ *   * F[ 0 < ky < Ny/2, \* ]  : $f_y = ky \times \Delta f_y$
+ *   * F[ Ny/2, \* ]           : $f_y = \pm f_{Ny}$
+ *   * F[ Ny/2 < ky < Ny, \* ] : $f_y = (ky - Ny) \times \Delta f_y$
+ *
+ * @see fft_c2c()
+ * @see fftr_r2c()
+ * 
+ * @param rcfg  Real data FFT configuration (must have direction FFT_FORWARD)
+ * @param in    Real data input
+ * @param out   Complex data output
+ */
 void fftr2d_r2c( t_fftr2d_cfg* cfg, const float* in, float complex * out ) {
   unsigned int i,j;
 
@@ -443,6 +598,18 @@ void fftr2d_r2c( t_fftr2d_cfg* cfg, const float* in, float complex * out ) {
   }
 }
 
+/**
+ * @brief Perform a 2D Complex to Real FFT
+ * 
+ * Input data is expected to be organized according to the output of the
+ * `fftr2d_r2c()` routine
+ * 
+ * @see fftr2d_r2c()
+ * 
+ * @param rcfg  Real data FFT configuration (must have direction FFT_BACKWARD)
+ * @param in    Complex data input
+ * @param out   Real data output
+ */
 void fftr2d_c2r( t_fftr2d_cfg* cfg, const float complex* in, float * out ) {
   unsigned int i,j;
 

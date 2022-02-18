@@ -17,8 +17,14 @@
 #include "zdf.h"
 #include "timer.h"
 
+/// Time spent advancing the EM fields
 static double _emf_time = 0.0;
 
+/**
+ * @brief Time spent advancing the EM fields
+ * 
+ * @return      Time spent in seconds
+ */
 double emf_time()
 {
 	return _emf_time;
@@ -30,10 +36,16 @@ double emf_time()
 
  *********************************************************************************************/
 
-
-void emf_new( t_emf *emf, const int nx[], t_fld box[], const float dt )
+/**
+ * @brief Initializes the EM field objecnt
+ * 
+ * @param emf			EM fields object
+ * @param nx			Number of cells
+ * @param box			Physical box size
+ * @param dt			Simulation time step
+ */
+void emf_new( t_emf *emf, const int nx[], float box[], const float dt )
 {
-	unsigned int i;
 
 	if ( nx[0] % 2 || nx[1] % 2 ) {
 		fprintf(stderr,"(*error*) Only even grid sizes are supported.");
@@ -48,27 +60,27 @@ void emf_new( t_emf *emf, const int nx[], t_fld box[], const float dt )
 	const unsigned int fnx[2] = { nx[1], nx[0]/2+1 };
 
 	// Initialize grids
-	vfld_grid2d_init( &emf->E, (unsigned int *) nx, gc );
-	vfld_grid2d_init( &emf->B, (unsigned int *) nx, gc );
+	float3_grid2d_init( &emf->E, (unsigned int *) nx, gc );
+	float3_grid2d_init( &emf->B, (unsigned int *) nx, gc );
 
-	cvfld_grid2d_init( &emf->fEl, fnx, NULL );
-	cvfld_grid2d_init( &emf->fEt, fnx, NULL );
-	cvfld_grid2d_init( &emf->fB,  fnx, NULL );
+	cfloat3_grid2d_init( &emf->fEl, fnx, NULL );
+	cfloat3_grid2d_init( &emf->fEt, fnx, NULL );
+	cfloat3_grid2d_init( &emf->fB,  fnx, NULL );
 
 	// zero fields
-	vfld_grid2d_zero( &emf->E );
-	vfld_grid2d_zero( &emf->B );
+	float3_grid2d_zero( &emf->E );
+	float3_grid2d_zero( &emf->B );
 
-	cvfld_grid2d_zero( &emf->fEl );
-	cvfld_grid2d_zero( &emf->fEt );
-	cvfld_grid2d_zero( &emf->fB  );
+	cfloat3_grid2d_zero( &emf->fEl );
+	cfloat3_grid2d_zero( &emf->fEt );
+	cfloat3_grid2d_zero( &emf->fB  );
 
 	// Initializ FFT transforms
 	fftr2d_init_cfg( &emf -> fft_forward,  nx[0], nx[1], emf -> E.nrow, FFT_FORWARD );
 	fftr2d_init_cfg( &emf -> fft_backward, nx[0], nx[1], emf -> E.nrow, FFT_BACKWARD );
 
 	// Set cell sizes and box limits
-	for(i = 0; i<2; i++){
+	for(int i = 0; i<2; i++){
 		emf -> box[i] = box[i];
 		emf -> dx[i] = box[i] / nx[i];
 	}
@@ -85,19 +97,22 @@ void emf_new( t_emf *emf, const int nx[], t_fld box[], const float dt )
 
 }
 
+/**
+ * @brief Frees dynamic memory from EM fields.
+ * 
+ * @param emf 	EM fields
+ */
 void emf_delete( t_emf *emf )
 {
-	vfld_grid2d_cleanup( &emf->E );
-	vfld_grid2d_cleanup( &emf->B );
+	float3_grid2d_cleanup( &emf->E );
+	float3_grid2d_cleanup( &emf->B );
 
-	cvfld_grid2d_cleanup( &emf->fEl );
-	cvfld_grid2d_cleanup( &emf->fEt );
-	cvfld_grid2d_cleanup( &emf->fB );
+	cfloat3_grid2d_cleanup( &emf->fEl );
+	cfloat3_grid2d_cleanup( &emf->fEt );
+	cfloat3_grid2d_cleanup( &emf->fB );
 
 	fftr2d_cleanup_cfg( &emf -> fft_backward );
 	fftr2d_cleanup_cfg( &emf -> fft_forward );
-
-
 }
 
 /*********************************************************************************************
@@ -106,36 +121,70 @@ void emf_delete( t_emf *emf )
 
 *********************************************************************************************/
 
-
-t_fld gauss_phase( const t_emf_laser* const laser, const t_fld z_, const t_fld r )
+/**
+ * @brief Gaussian laser pulse phase and transverse envelope
+ * 
+ * @param laser 	Laser pulse parameters
+ * @param z_ 		Longitudinal position
+ * @param r 		Radial position (distance from propagation axis)
+ * @return 			Gaussian phase
+ */
+float gauss_phase( const t_emf_laser* const laser, const float z_, const float r )
 {
-	t_fld z = z_ - laser -> focus;
-	t_fld z0   = laser -> omega0 * ( laser->W0 * laser->W0 ) / 2;
-	t_fld rho2 = r*r;
-	t_fld curv = rho2 * z / (z0*z0 + z*z);
-	t_fld rWl2 = (z0*z0)/(z0*z0 + z*z);
-	t_fld gouy_shift = atan2( z, z0 );
+	float z = z_ - laser -> focus;
+	float z0   = laser -> omega0 * ( laser->W0 * laser->W0 ) / 2;
+	float rho2 = r*r;
+	float curv = rho2 * z / (z0*z0 + z*z);
+	float rWl2 = (z0*z0)/(z0*z0 + z*z);
+	float gouy_shift = atan2( z, z0 );
 
 	return sqrt( sqrt(rWl2) ) *
 	exp( - rho2 * rWl2/(laser->W0 * laser->W0) ) *
 	cos( laser -> omega0*( z + curv ) - gouy_shift );
 }
 
-
-t_fld lon_env( const t_emf_laser* const laser, const t_fld z )
+/**
+ * @brief Determines longitudinal envelope value of laser pulse
+ * 
+ * @param laser 	Laser pulse parameters
+ * @param z 		Longitudinal position
+ * @return lon_env	Envelope value
+ */
+float lon_env( const t_emf_laser* const laser, const float z )
 {
-	if ( z > -2*laser->fwhm && z < 2*laser->fwhm ) {
-		t_fld e = cos( M_PI_4 * z / laser->fwhm );
-		return e*e;
-	} else {
+	if ( z > laser -> start ) {
+		// Ahead of laser
 		return 0.0;
+	} else if ( z > laser -> start - laser -> rise ) {
+		// Laser rise
+		float csi = z - laser -> start;
+		float e = sin( M_PI_2 * csi / laser->rise );
+		return e*e;
+	} else if ( z > laser -> start - (laser -> rise + laser -> flat) ) {
+		// Flat-top
+		return 1.0;
+	} else if ( z > laser -> start - (laser -> rise + laser -> flat + laser -> fall) ) {
+		// Laser fall
+		float csi = z - (laser -> start - laser -> rise - laser -> flat - laser -> fall);
+		float e = sin( M_PI_2 * csi / laser->fall );
+		return e*e;
 	}
+
+	// Before laser
+	return 0.0;
 }
 
-void div_corr_x( t_cvfld_grid2d *fld, const float dk[] )
+/**
+ * @brief Ensures div E = div B = 0 for the whole grid by modifying the 
+ * 		x component of E and B
+ * 
+ * This is used to calculate the longitudinal fields associated with a 
+ * laser pulse
+ * 
+ * @param emf 		EM fields
+ */
+void div_corr_x( t_cfloat3_grid2d *fld, const float dk[] )
 {
-	int i, j;
-
     float complex * const restrict fldx = fld->x;
     float complex * const restrict fldy = fld->y;
 
@@ -144,27 +193,33 @@ void div_corr_x( t_cvfld_grid2d *fld, const float dk[] )
 	// Calculates the x component of the field by enforcing div(fld) = 0
 
 	// no work is required for kx = 0
-	for ( i = 1; i < fld->nx[1]; i++) {
+	for ( int i = 1; i < fld->nx[1]; i++) {
 		float kx = i * dk[0];
-		for( j = 0; j < fld->nx[0]; j++) {
+		for( int j = 0; j < fld->nx[0]; j++) {
 			float ky = ((j <= fld->nx[0]/2) ? j : (j - (int) fld->nx[0]) ) * dk[1];
 
 			fldx[ i * fnrow + j ] = - ky * fldy[ i * fnrow + j ] / kx;
 		}
 	}
-
-
-
 }
 
+/**
+ * @brief Add laser pulse to simulation.
+ * 
+ * Laser pulses are superimposed on top of existing E and B fields. 
+ * Currently only 1 gaussian pulse can be added
+ * 
+ * @param emf 		EM fields
+ * @param laser 	Laser pulse parameters
+ */
 void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
 {
 	int i, j, nrow;
 
-	t_fld z_center, r_center, z, r;
-	t_fld amp, lenv, k;
-	t_fld dx, dy;
-	t_fld cos_pol, sin_pol;
+	float z_center, r_center, z, r;
+	float amp, lenv, k;
+	float dx, dy;
+	float cos_pol, sin_pol;
 
 	float* Ey = (float *) malloc( emf->E.nx[0] * emf->E.nx[1] * sizeof(float));
 	float* Ez = (float *) malloc( emf->E.nx[0] * emf->E.nx[1] * sizeof(float));
@@ -231,9 +286,9 @@ void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
 	}
 
 	// Buffer to hold Fourier transform of laser field
-	t_cvfld_grid2d buffer;
-	cvfld_grid2d_init( &buffer, (unsigned int *) emf->fEt.nx, NULL);
-	cvfld_grid2d_zero( &buffer );
+	t_cfloat3_grid2d buffer;
+	cfloat3_grid2d_init( &buffer, (unsigned int *) emf->fEt.nx, NULL);
+	cfloat3_grid2d_zero( &buffer );
 
 	t_fftr2d_cfg fft_forward;
 	fftr2d_init_cfg( &fft_forward, emf->E.nx[0], emf->E.nx[1],
@@ -298,7 +353,7 @@ void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
 	fftr2d_cleanup_cfg( &fft_forward );
 
 	// Cleanup temporary values
-	cvfld_grid2d_cleanup( &buffer );
+	cfloat3_grid2d_cleanup( &buffer );
 
 	free( Bz );
 	free( By );
@@ -314,7 +369,6 @@ void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
    	fftr2d_c2r( &emf -> fft_backward, emf -> fB.x, emf ->B.x );
    	fftr2d_c2r( &emf -> fft_backward, emf -> fB.y, emf ->B.y );
    	fftr2d_c2r( &emf -> fft_backward, emf -> fB.z, emf ->B.z );
-
 }
 
 /*********************************************************************************************
@@ -323,22 +377,40 @@ void emf_add_laser( t_emf* const emf, const t_emf_laser* const laser )
 
  *********************************************************************************************/
 
-
-void emf_report( const t_emf *emf, const char field, const char fc )
+/**
+ * @brief Saves EM fields diagnostic information to disk
+ * 
+ * Saves the selected type / density component to disk in directory
+ * "EMF". Guard cell values are discarded.
+ *
+ * @param emf 		EM Fields
+ * @param field 	Which field to save (E, B, Epart, Bpart)
+ * @param fc 		Field component to save, must be one of {0,1,2}
+ */
+void emf_report( const t_emf *emf, const char field, const int fc )
 {
-	int i, j;
-	char vfname[3];
+	char vfname[16];	// Dataset name
+	char vflabel[16];	// Dataset label (for plots)
+
+	char comp[] = {'x','y','z'};
+
+	if ( fc < 0 || fc > 2 ) {
+		fprintf(stderr, "(*error*) Invalid field component (fc) selected, returning\n");
+		return;
+	}
 
 	// Choose field to save
-	const t_vfld_grid2d * vfld;
+	const t_float3_grid2d * vfld;
 	switch (field) {
 		case EFLD:
 			vfld = &emf->E;
-			vfname[0] = 'E';
+            snprintf(vfname,16,"E%1d",fc);
+            snprintf(vflabel,16,"E_%c",comp[fc]);
 			break;
 		case BFLD:
 			vfld = &emf->B;
-			vfname[0] = 'B';
+            snprintf(vfname,16,"B%1d",fc);
+            snprintf(vflabel,16,"B_%c",comp[fc]);
 			break;
 		default:
 			fprintf(stderr,"(*error*) Invalid field type selected, returning\n");
@@ -353,24 +425,20 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 	switch (fc) {
 		case 0:
 			f = vfld->x;
-			vfname[1] = '1';
 			break;
 		case 1:
 			f = vfld->y;
-			vfname[1] = '2';
 			break;
 		case 2:
 			f = vfld->z;
-			vfname[1] = '3';
 			break;
 		default:
 			fprintf(stderr,"(*error*) Invalid field component selected, returning\n");
 			return;
 	}
-	vfname[2] = 0;
 
-	for( j = 0; j < vfld->nx[1]; j++) {
-		for ( i = 0; i < vfld->nx[0]; i++ ) {
+	for( int j = 0; j < vfld->nx[1]; j++) {
+		for ( int i = 0; i < vfld->nx[0]; i++ ) {
 			p[i] = f[i];
 		}
 		p += vfld->nx[0];
@@ -382,34 +450,38 @@ void emf_report( const t_emf *emf, const char field, const char fc )
     axis[0] = (t_zdf_grid_axis) {
     	.min = 0.0,
     	.max = emf->box[0],
-    	.label = "x_1",
+		.name = "x",
+    	.label = "x",
     	.units = "c/\\omega_p"
     };
 
     axis[1] = (t_zdf_grid_axis) {
     	.min = 0.0,
     	.max = emf->box[1],
-    	.label = "x_2",
+		.name = "y",
+    	.label = "y",
     	.units = "c/\\omega_p"
     };
 
     t_zdf_grid_info info = {
     	.ndims = 2,
-    	.label = vfname,
+		.name = vfname,
+    	.label = vflabel,
     	.units = "m_e c \\omega_p e^{-1}",
     	.axis = axis
     };
 
-    info.nx[0] = vfld->nx[0];
-    info.nx[1] = vfld->nx[1];
+    info.count[0] = vfld->nx[0];
+    info.count[1] = vfld->nx[1];
 
     t_zdf_iteration iter = {
+		.name = "ITERATION",
     	.n = emf->iter,
     	.t = emf -> iter * emf -> dt,
     	.time_units = "1/\\omega_p"
     };
 
-	zdf_save_grid( buf, &info, &iter, "EMF" );
+	zdf_save_grid( (float *) buf, zdf_float32, &info, &iter, "EMF" );
 
 	// free local data
 	free( buf );
@@ -423,11 +495,14 @@ void emf_report( const t_emf *emf, const char field, const char fc )
 
  *********************************************************************************************/
 
-
+/**
+ * @brief Advance the magnetic field using a PSTD algorithm
+ * 
+ * @param emf   EM fields
+ * @param dt    Time step
+ */
 void advance_fB( t_emf *emf, const float dt )
 {
-	int i,j;
-
     float complex * const restrict fBx = emf -> fB.x;
     float complex * const restrict fBy = emf -> fB.y;
     float complex * const restrict fBz = emf -> fB.z;
@@ -442,9 +517,9 @@ void advance_fB( t_emf *emf, const float dt )
 	const int fnrow = emf->fB.nrow;
 
 	// Canonical implementation
-	for (i = 0; i < emf -> fB.nx[1]; i++) {
+	for (int i = 0; i < emf -> fB.nx[1]; i++) {
 		float kx = i * dkx;
-		for (j = 0; j < emf -> fB.nx[0]; j++) {
+		for (int j = 0; j < emf -> fB.nx[0]; j++) {
 			float ky = ((j <= emf -> fB.nx[0]/2) ? j : ( j - (int) emf -> fB.nx[0] ) ) * dky;
 			const unsigned int idx = i * fnrow + j;
 
@@ -455,6 +530,13 @@ void advance_fB( t_emf *emf, const float dt )
 	}
 }
 
+/**
+ * @brief Advance the transverse component of the Electric field using a PSTD algorithm
+ * 
+ * @param emf       EM fields
+ * @param current   Electric current density
+ * @param dt        Time step
+ */
 void advance_fEt( t_emf *emf, const t_current *current, const float dt )
 {
 
@@ -474,7 +556,6 @@ void advance_fEt( t_emf *emf, const t_current *current, const float dt )
 	const float dky = fft_dk( emf->E.nx[1], emf->dx[1] );
 
 	const int fnrow = emf->fEt.nrow;
-	int i,j;
 
 	// kx = 0, ky = 0
 	/*
@@ -492,7 +573,7 @@ void advance_fEt( t_emf *emf, const t_current *current, const float dt )
 	}
 
 	// kx = 0, ky != 0
-	for (j = 1; j < emf -> fEt.nx[0]; j++) {
+	for (int j = 1; j < emf -> fEt.nx[0]; j++) {
 		const float ky = ((j <= emf -> fEt.nx[0]/2) ? j : (j - (int) emf -> fEt.nx[0]) ) * dky;
 
 		// Get transverse current
@@ -508,9 +589,9 @@ void advance_fEt( t_emf *emf, const t_current *current, const float dt )
 
 
 	// kx = 0, ky != 0
-	for (i = 1; i < emf -> fEt.nx[1]; i++) {
+	for (int i = 1; i < emf -> fEt.nx[1]; i++) {
 		const float kx = i * dkx;
-		for (j = 0; j < emf -> fEt.nx[0]; j++) {
+		for (int j = 0; j < emf -> fEt.nx[0]; j++) {
 			const float ky = ((j <= emf -> fEt.nx[0]/2) ? j : (j - (int) emf -> fEt.nx[0]) ) * dky;
 			const unsigned int idx = i * fnrow + j;
 
@@ -529,6 +610,14 @@ void advance_fEt( t_emf *emf, const t_current *current, const float dt )
 	}
 }
 
+/**
+ * @brief Update longitudinal Electric field from charge density
+ * 
+ * Note: We chose to set the k=0 components to 0
+ * 
+ * @param emf       EM Fields
+ * @param charge    Charge density
+ */
 void update_fEl( t_emf *emf, const t_charge *charge )
 {
 	float complex * const restrict frho = charge -> frho.s;
@@ -541,7 +630,6 @@ void update_fEl( t_emf *emf, const t_charge *charge )
 	const float dky = fft_dk( emf->E.nx[1], emf->dx[1] );
 
 	const int fnrow = emf->fEl.nrow;
-	int i,j;
 
 	// Calculates the longitudinal component of E from the
 	// charge density:
@@ -553,7 +641,7 @@ void update_fEl( t_emf *emf, const t_charge *charge )
 	fElz[0] = 0;
 
 	// Take care of special cases kx = 0
-	for (j = 1; j < emf -> fEl.nx[0]; j++) {
+	for (int j = 1; j < emf -> fEl.nx[0]; j++) {
 		const float ky = ((j <= emf -> fEl.nx[0]/2) ? j : (j - (int) emf -> fEl.nx[0]) ) * dky;
 
 		fElx[j] = 0;
@@ -562,9 +650,9 @@ void update_fEl( t_emf *emf, const t_charge *charge )
 	}
 
 	// Solve remaining cases
-	for (i = 1; i < emf -> fEl.nx[1]; i++) {
+	for (int i = 1; i < emf -> fEl.nx[1]; i++) {
 		float kx = i * dkx;
-		for (j = 0; j < emf -> fEl.nx[0]; j++) {
+		for (int j = 0; j < emf -> fEl.nx[0]; j++) {
 			const float ky = ((j <= emf -> fEl.nx[0]/2) ? j : (j - (int) emf -> fEl.nx[0] )) * dky;
 			const float k2 = kx*kx + ky*ky;
 
@@ -573,11 +661,8 @@ void update_fEl( t_emf *emf, const t_charge *charge )
 			fElx[idx] = -I * kx * frho[idx] / k2;
 			fEly[idx] = -I * ky * frho[idx] / k2;
 			fElz[idx] = 0 ;
-
 		}
 	}
-
-
 }
 
 /*********************************************************************************************
@@ -585,16 +670,14 @@ void update_fEl( t_emf *emf, const t_charge *charge )
  Pseudo-spectral Analytical time domain field solver
 
  *********************************************************************************************/
-/*
 
-Field advance equations are:
-
-\vec{E}_T^{n+1} = C \vec{E}_T^n + i S \frac{\vec{k} \times \vec{B}^n}{k} - \frac{S}{k}\vec{J_T}
-
+/**
+ * @brief Advance transverse E and B using the PSATD algorithm
+ * 
+ * @param emf       EM fields
+ * @param current   Electric current density
+ * @param dt        Time step
  */
-
-
-
 void advance_psatd( t_emf *emf, const t_current *current, const float dt )
 {
 
@@ -728,21 +811,22 @@ void advance_psatd( t_emf *emf, const t_current *current, const float dt )
 
 		}
 	}
-
 }
 
 
-
-
-// This code operates with periodic boundaries
+/**
+ * @brief Updates real electric and magnetic field from Fourier transforms
+ * 
+ * It will also update the guard cell values for field interpolation
+ * 
+ * @param emf   EM fields
+ */
 void emf_update( t_emf *emf )
 {
-	int i,j;
-
 	// Update E field
 
 	// Add transverse and longitudinal components
-	cvfld_grid2d_add( &emf -> fEl, &emf -> fEt );
+	cfloat3_grid2d_add( &emf -> fEl, &emf -> fEt );
 
    	// Transform to real fields
    	fftr2d_c2r( &emf -> fft_backward, emf -> fEl.x, emf -> E.x );
@@ -774,10 +858,10 @@ void emf_update( t_emf *emf )
 	int const gc11 = emf -> E.gc[1][1];
 
 	// x
-	for (j = -gc10; j < nx1 + gc11; j++) {
+	for (int j = -gc10; j < nx1 + gc11; j++) {
 
 		// lower
-		for (i = -gc00; i < 0; i++) {
+		for (int i = -gc00; i < 0; i++) {
 			Ex[ i + j*nrow ] = Ex[ nx0 + i + j*nrow ];
 			Ey[ i + j*nrow ] = Ey[ nx0 + i + j*nrow ];
 			Ez[ i + j*nrow ] = Ez[ nx0 + i + j*nrow ];
@@ -788,7 +872,7 @@ void emf_update( t_emf *emf )
 		}
 
 		// upper
-		for (i = 0; i < gc01; i++) {
+		for (int i = 0; i < gc01; i++) {
 			Ex[ nx0 + i + j*nrow ] = Ex[ i + j*nrow ];
 			Ey[ nx0 + i + j*nrow ] = Ey[ i + j*nrow ];
 			Ez[ nx0 + i + j*nrow ] = Ez[ i + j*nrow ];
@@ -802,10 +886,10 @@ void emf_update( t_emf *emf )
 
 
 	// y
-	for (i = -gc00; i < nx0 + gc01; i++) {
+	for (int i = -gc00; i < nx0 + gc01; i++) {
 
 		// lower
-		for (j=-gc10; j<0; j++) {
+		for (int j=-gc10; j<0; j++) {
 			Ex[ i + j*nrow ] = Ex[ i + (nx1+j)*nrow ];
 			Ey[ i + j*nrow ] = Ey[ i + (nx1+j)*nrow ];
 			Ez[ i + j*nrow ] = Ez[ i + (nx1+j)*nrow ];
@@ -816,7 +900,7 @@ void emf_update( t_emf *emf )
 		}
 
 		// upper
-		for (j=0; j<gc11; j++) {
+		for (int j=0; j<gc11; j++) {
 			Ex[ i + (nx1+j)*nrow ] = Ex[ i + j*nrow ];
 			Ey[ i + (nx1+j)*nrow ] = Ey[ i + j*nrow ];
 			Ez[ i + (nx1+j)*nrow ] = Ez[ i + j*nrow ];
@@ -825,12 +909,21 @@ void emf_update( t_emf *emf )
 			By[ i + (nx1+j)*nrow ] = By[ i + j*nrow ];
 			Bz[ i + (nx1+j)*nrow ] = Bz[ i + j*nrow ];
 		}
-
 	}
-
 }
 
-
+/**
+ * @brief Advance EM fields 1 timestep
+ * 
+ * Fields are advanced in time using a spectral algorithm. The routine will also:
+ * 1. Update guard cell values / apply boundary conditions
+ * 2. Apply spectral filtering, if configured
+ * 3. Update "particle" fields if using external fields
+ * 
+ * @param emf 		EM fields
+ * @param charge    Electric charge density
+ * @param current 	Electric current density
+ */
 void emf_advance( t_emf *emf, const t_charge *charge, const t_current *current )
 {
 	uint64_t t0 = timer_ticks();
@@ -861,9 +954,14 @@ void emf_advance( t_emf *emf, const t_charge *charge, const t_current *current )
 	_emf_time += timer_interval_seconds(t0, timer_ticks());
 }
 
+/**
+ * @brief Calculate total EM field energy
+ *
+ * @param[in] emf EM field
+ * @param[out] energy Energy values vector
+ */
 void emf_get_energy( const t_emf *emf, double energy[] )
 {
-	int i,j;
 
 	float* restrict const Ex = emf -> E.x;
 	float* restrict const Ey = emf -> E.y;
@@ -875,10 +973,10 @@ void emf_get_energy( const t_emf *emf, double energy[] )
 
     const int nrow = emf -> E.nrow;
 
-	for( i = 0; i<6; i++) energy[i] = 0;
+	for( int i = 0; i<6; i++) energy[i] = 0;
 
-	for( j = 0; i < emf -> E.nx[1]; j ++ ) {
-		for( i = 0; i < emf -> E.nx[0]; i ++ ) {
+	for( int j = 0; j < emf -> E.nx[1]; j ++ ) {
+		for( int i = 0; i < emf -> E.nx[0]; i ++ ) {
 			energy[0] += Ex[i + j*nrow] * Ex[i + j*nrow];
 			energy[1] += Ey[i + j*nrow] * Ey[i + j*nrow];
 			energy[2] += Ez[i + j*nrow] * Ez[i + j*nrow];
@@ -888,6 +986,5 @@ void emf_get_energy( const t_emf *emf, double energy[] )
 		}
 	}
 
-	for( i = 0; i<6; i++) energy[i] *= 0.5 * emf -> dx[0] * emf -> dx[1];
-
+	for( int i = 0; i<6; i++) energy[i] *= 0.5 * emf -> dx[0] * emf -> dx[1];
 }

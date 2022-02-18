@@ -6,9 +6,15 @@
 #include "fft.h"
 #include "filter.h"
 
-
-
-void charge_new( t_charge *charge, const int nx[], t_fld box[], float dt)
+/**
+ * @brief Initializes Electric charge density object
+ * 
+ * @param charge 	Electric charge density
+ * @param nx 		Number of cells [x,y]
+ * @param box 		Physical box size [x,y]
+ * @param dt 		Simulation time step
+ */
+void charge_new( t_charge *charge, const int nx[], float box[], float dt)
 {
 
 	if (( nx[0] % 2 ) || ( nx[1] % 2 )) {
@@ -20,7 +26,7 @@ void charge_new( t_charge *charge, const int nx[], t_fld box[], float dt)
 	const unsigned int gc[2][2] = {{1,2},
 		                           {1,2}};
 
-	// The FFT result will be transposed
+	// The FFT result will be transposed [ky, kx]
 	const unsigned int fnx[2] = { nx[1], nx[0]/2+1 };
 
 	// Initialize grids
@@ -49,6 +55,11 @@ void charge_new( t_charge *charge, const int nx[], t_fld box[], float dt)
 	charge -> neutral.nx[0] = 0;
 }
 
+/**
+ * @brief Initializes neutralizing background structures
+ * 
+ * @param charge 	Electric charge density
+ */
 void charge_init_neutral_bkg( t_charge *charge )
 {
 	scalar_grid2d_init( &charge->neutral, (unsigned int *) charge ->rho.nx,
@@ -56,6 +67,11 @@ void charge_init_neutral_bkg( t_charge *charge )
 	scalar_grid2d_zero( &charge -> neutral );
 }
 
+/**
+ * @brief Frees dynamic memory from electric charge density
+ * 
+ * @param charge 	Electric charge density
+ */
 void charge_delete( t_charge *charge )
 {
 	scalar_grid2d_cleanup( &charge -> rho );
@@ -69,11 +85,27 @@ void charge_delete( t_charge *charge )
 
 }
 
+/**
+ * @brief Sets all electric charge density values to zero
+ * 
+ * @param charge 	Electric charge density
+ */
 void charge_zero( t_charge *charge )
 {
 	scalar_grid2d_zero( &charge -> rho );
 }
 
+/**
+ * @brief Advances electric charge density 1 time step
+ * 
+ * The routine will:
+ * 1. Update the guard cells
+ * 2. Add neutralizing background (if configured)
+ * 3. Get the fourier transform of the charge
+ * 4. Apply spectral filtering
+ * 
+ * @param charge 	Electric charge density
+ */
 void charge_update( t_charge *charge )
 {
 	int i, j;
@@ -121,7 +153,6 @@ void charge_update( t_charge *charge )
 
 	}
 
-
 	// Add neutralizing background
 	// This is preferable to initializing rho to this value before charge deposition
 	// because it leads to less roundoff errors
@@ -135,10 +166,18 @@ void charge_update( t_charge *charge )
 	const float cutoff[2] = {0.5f,0.5f};
 	cscalar2d_r2c_filter( &charge -> frho, cutoff );
 
-
 	charge -> iter++;
 }
 
+/**
+ * @brief Updates neutralizing background values
+ * 
+ * The routine expects the charge -> neutral grid to have the charge
+ * density that needs to be neutralized. The routine will update guard
+ * cell values and reverse the sign of the charge.
+ * 
+ * @param charge 
+ */
 void charge_update_neutral_bkg( t_charge *charge )
 {
 	int i,j;
@@ -193,10 +232,17 @@ void charge_update_neutral_bkg( t_charge *charge )
 
 }
 
-
+/**
+ * @brief Saves electric charge density diagnostic information to disk
+ * 
+ * Saves the charge density to disk in directory "CHARGE"
+ * 
+ * @param charge 	Electric charge density
+ */
 void charge_report( const t_charge *charge )
 {
 	char vfname[] = "charge density";
+	char vflabel[] = "\\rho";
 
 	float *buf, *p, *f;
 
@@ -213,41 +259,42 @@ void charge_report( const t_charge *charge )
 		f += charge->rho.nrow;
 	}
 
-
     t_zdf_grid_axis axis[2];
     axis[0] = (t_zdf_grid_axis) {
     	.min = 0.0,
     	.max = charge->box[0],
-    	.label = "x_1",
+		.name = "x",
+    	.label = "x",
     	.units = "c/\\omega_p"
     };
     axis[1] = (t_zdf_grid_axis) {
     	.min = 0.0,
     	.max = charge->box[1],
-    	.label = "x_1",
+		.name = "y",
+    	.label = "y",
     	.units = "c/\\omega_p"
     };
 
     t_zdf_grid_info info = {
     	.ndims = 2,
-    	.label = vfname,
+		.name = vfname,
+    	.label = vflabel,
     	.units = "e \\omega_p^2 / c",
     	.axis = axis
     };
 
-    info.nx[0] = charge->rho.nx[0];
-    info.nx[1] = charge->rho.nx[1];
+    info.count[0] = charge->rho.nx[0];
+    info.count[1] = charge->rho.nx[1];
 
     t_zdf_iteration iter = {
+		.name = "ITERATION",
     	.n = charge->iter,
     	.t = charge -> iter * charge -> dt,
     	.time_units = "1/\\omega_p"
     };
 
-	zdf_save_grid( buf, &info, &iter, "CHARGE" );
+	zdf_save_grid( (void *) buf, zdf_float32, &info, &iter, "CHARGE" );
 
 	// free local data
 	free( buf );
-
-
 }

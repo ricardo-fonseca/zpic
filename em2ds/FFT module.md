@@ -45,15 +45,11 @@ float df = 1.0f / (N * dt);
 float f = j * df;
 ```
 
-
-
 If negative frequency component values are required they can be obtained by taking the complex conjugate of the positive counterpart:
 
 F[-j] = conj(F[j])
 
-
 ## 2D FFT routines
-
 
 ### 2D Real to Complex FFT routines
 
