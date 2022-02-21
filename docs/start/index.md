@@ -2,7 +2,7 @@
 title: Getting started
 
 #usemathjax: true
-permalink: /start
+permalink: /start/
 
 layout: single
 toc: true
