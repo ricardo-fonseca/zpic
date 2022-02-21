@@ -48,7 +48,10 @@ enum density_type {
 	CUSTOM		///< Defined from an external function
 };
 
-
+/**
+ * @brief Density profile parameters
+ * 
+ */
 typedef struct Density {
 
 	float n;						///< reference density (defaults to 1.0, multiplies density profile)

@@ -14,6 +14,10 @@
 #include "grid2d.h"
 #include "fft.h"
 
+/**
+ * @brief Charge density
+ * 
+ */
 typedef struct Charge {
 	
 	/// Global charge density

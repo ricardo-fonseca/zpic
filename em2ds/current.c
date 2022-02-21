@@ -171,7 +171,7 @@ void current_update( t_current *current )
 
 	// Filter current
 	const float cutoff[2] = {0.5f,0.5f};
-	cvfld2d_r2c_filter( &current -> fJ, cutoff );
+	cfloat32d_r2c_filter( &current -> fJ, cutoff );
 
 	// Advance iteration counter
 	current -> iter++;

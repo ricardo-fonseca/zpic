@@ -25,7 +25,7 @@
 void butterfly2( float complex * restrict const out, const unsigned int stride, 
     const float complex * restrict const phase, const unsigned int m)
 {
-    for( int i = 0; i < m; i++) {
+    for( unsigned int i = 0; i < m; i++) {
         float complex t0 = out[i    ];
         float complex t1 = out[i + m] * phase[i*stride];
         out[i    ] = t0 + t1;
@@ -46,7 +46,7 @@ void butterfly3( float complex * restrict const out, const unsigned int stride,
 {
     const float complex ima = I * cimag(phase[ stride * m ]);
 
-    for( int i = 0; i<m; i++) {
+    for( unsigned int i = 0; i<m; i++) {
         float complex t0 = out[i      ];
         float complex t1 = out[i +   m] * phase[     i * stride ];
         float complex t2 = out[i + 2*m] * phase[ 2 * i * stride ];
@@ -75,7 +75,7 @@ void butterfly4( float complex * restrict const out, const unsigned int stride,
 {
     const float complex p = ( direction == FFT_BACKWARD )? I : -I;
 
-    for( int i = 0; i < m; i++){
+    for( unsigned int i = 0; i < m; i++){
         float complex t0 = out[i      ];
         float complex t1 = out[i +   m] * phase[     i * stride ];
         float complex t2 = out[i + 2*m] * phase[ 2 * i * stride ];
@@ -110,7 +110,7 @@ void butterfly5( float complex * restrict const out, const unsigned int stride,
     const float rb = creal(phase[ 2 * stride * m ]);
     const float ib = cimag(phase[ 2 * stride * m ]);
 
-    for( int i = 0; i<m; i++) {
+    for( unsigned int i = 0; i<m; i++) {
         float complex t0 = out[       i ];
         float complex t1 = out[   m + i ] * phase[     i * stride ];
         float complex t2 = out[ 2*m + i ] * phase[ 2 * i * stride ];
@@ -153,16 +153,16 @@ void butterflyN(float complex * restrict const out, const unsigned int stride,
 
     float complex t[p];
 
-    for( int i = 0; i<m; i++) {
+    for( unsigned int i = 0; i<m; i++) {
 
-        for( int j = 0; j < p; j++) {
+        for( unsigned int j = 0; j < p; j++) {
             t[j] = out[i + m*j];
         }
 
-        for( int j=0; j <p; j++ ) {
+        for( unsigned int j=0; j <p; j++ ) {
             unsigned int tstride = (i + j*m) * stride;
             float complex s = t[0];
-            for( int k = 1; k<p; k++){
+            for( unsigned int k = 1; k<p; k++){
                 s += t[k] * phase[ (k*tstride) % n ];
             }
             out[i + j*m] = s;

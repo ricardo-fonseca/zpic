@@ -650,7 +650,8 @@ void deposit_charge( t_scalar_grid2d * rho, const t_part* restrict const part, c
  * @param part  Particle data
  * @param q     Species charge per particle
  * @param rg    Particle $1 / \gamma$
- * @param dx    Cell size
+ * @param dx    x cell size
+ * @param dy    y cell size
  */
 void deposit_current( t_float3_grid2d* J, const t_part* restrict const part, const float q, const float rg, 
     const float dx, const float dy )

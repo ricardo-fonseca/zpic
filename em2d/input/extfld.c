@@ -14,12 +14,12 @@
  */
 
 
-t_vfld ext_B( int ix, float dx, int iy, float dy, void *data ) {
+float3 ext_B( int ix, float dx, int iy, float dy, void *data ) {
     // Wire position
     const float x0 = 6.4;
     const float y0 = 6.4;
 
-	t_vfld b;
+	float3 b;
     float x, y, r2;
 
     // Field components must be calculated in the correct positions
@@ -74,7 +74,7 @@ void sim_init( t_simulation* sim ){
 	sim_new( sim, nx, box, dt, tmax, ndump, species, n_species );
 
     t_emf_ext_fld ext_fld = {
-		.B_type = EMF_EXT_FLD_CUSTOM,
+		.B_type = EMF_FLD_TYPE_CUSTOM,
 		.B_custom = &ext_B,
 	};
 	sim_set_ext_fld( sim, &ext_fld );

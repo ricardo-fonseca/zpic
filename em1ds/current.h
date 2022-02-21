@@ -88,6 +88,6 @@ void current_update( t_current *current );
  * @param current Electric current density object
  * @param jc Current component to save, must be one of {0,1,2}
  */
-void current_report( const t_current *current, const char jc );
+void current_report( const t_current *current, const int jc );
 
 #endif

@@ -34,6 +34,10 @@ enum emf_solver {
 	EMF_SOLVER_PSATD	///< Pseudo-spectral analytic time domain
 };
 
+/**
+ * @brief EM Fields
+ * 
+ */
 typedef struct EMF {
 
 	// E and B fields
@@ -90,9 +94,9 @@ typedef struct EMF_Laser {
 	
 	float polarization; ///< Polarization angle in radians
 	
-	float W0;		// Gaussian beam waist, in simulation units
-	float focus;	// Focal plane position, in simulation units
-	float axis;     // Position of optical axis, in simulation units
+	float W0;		///< Gaussian beam waist, in simulation units
+	float focus;	///< Focal plane position, in simulation units
+	float axis;     ///< Position of optical axis, in simulation units
 	
 } t_emf_laser;
 

@@ -96,7 +96,7 @@ typedef struct Species {
 	/// Number of particles per cell
 	int ppc;
 
-	// Density profile to inject
+	/// Density profile to inject
 	t_density density;
 
 	// Initial momentum of particles

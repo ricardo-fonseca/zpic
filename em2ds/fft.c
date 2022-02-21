@@ -503,7 +503,7 @@ void fftr_c2r( t_fftr_cfg* rcfg, const float complex in[], float out[] ) {
 /**
  * @brief Initialize 2D real data FFT configuration
  * 
- * @param rcfg          2D real data FFT configuration
+ * @param cfg           2D real data FFT configuration
  * @param nx            Number of x points in input (real) data
  * @param ny            Number of y points in input (real) data
  * @param stridey       Data stride along y
@@ -538,7 +538,7 @@ int fftr2d_init_cfg( t_fftr2d_cfg* cfg, unsigned int nx, unsigned int ny,
 /**
  * @brief Cleanup 2D real data FFT configuration
  * 
- * @param rcfg  Real data FFT configuration
+ * @param cfg   Real data FFT configuration
  * @return      0 on success (always returns 0)
  */
 int fftr2d_cleanup_cfg( t_fftr2d_cfg* cfg ){
@@ -569,7 +569,7 @@ int fftr2d_cleanup_cfg( t_fftr2d_cfg* cfg ){
  * @see fft_c2c()
  * @see fftr_r2c()
  * 
- * @param rcfg  Real data FFT configuration (must have direction FFT_FORWARD)
+ * @param cfg   Real data FFT configuration (must have direction FFT_FORWARD)
  * @param in    Real data input
  * @param out   Complex data output
  */
@@ -606,7 +606,7 @@ void fftr2d_r2c( t_fftr2d_cfg* cfg, const float* in, float complex * out ) {
  * 
  * @see fftr2d_r2c()
  * 
- * @param rcfg  Real data FFT configuration (must have direction FFT_BACKWARD)
+ * @param cfg   Real data FFT configuration (must have direction FFT_BACKWARD)
  * @param in    Complex data input
  * @param out   Real data output
  */

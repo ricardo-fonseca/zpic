@@ -73,20 +73,20 @@ void emf_new( t_emf *emf, int nx, float box, const float dt, t_fftr_cfg *fft_for
     emf -> filter = filter;
 
     // Allocate arrays
-    vfld_grid_init( &emf->E, nx, gc );
-    vfld_grid_init( &emf->B, nx, gc );
+    float3_grid_init( &emf->E, nx, gc );
+    float3_grid_init( &emf->B, nx, gc );
 
-    cvfld_grid_init( &emf->fEl, nx/2+1, NULL );
-    cvfld_grid_init( &emf->fEt, nx/2+1, NULL );
-    cvfld_grid_init( &emf->fB,  nx/2+1, NULL );
+    cfloat3_grid_init( &emf->fEl, nx/2+1, NULL );
+    cfloat3_grid_init( &emf->fEt, nx/2+1, NULL );
+    cfloat3_grid_init( &emf->fB,  nx/2+1, NULL );
 
     // zero fields
-    vfld_grid_zero( &emf->E );
-    vfld_grid_zero( &emf->B );
+    float3_grid_zero( &emf->E );
+    float3_grid_zero( &emf->B );
 
-    cvfld_grid_zero( &emf->fEl );
-    cvfld_grid_zero( &emf->fEt );
-    cvfld_grid_zero( &emf->fB  );
+    cfloat3_grid_zero( &emf->fEl );
+    cfloat3_grid_zero( &emf->fEt );
+    cfloat3_grid_zero( &emf->fB  );
 
     // Set cell sizes and box limits
     emf -> box = box;
@@ -120,19 +120,19 @@ void emf_new( t_emf *emf, int nx, float box, const float dt, t_fftr_cfg *fft_for
  */
 void emf_delete( t_emf *emf )
 {
-    vfld_grid_cleanup( &emf->E );
-    vfld_grid_cleanup( &emf->B );
+    float3_grid_cleanup( &emf->E );
+    float3_grid_cleanup( &emf->B );
 
-    cvfld_grid_cleanup( &emf->fEl );
-    cvfld_grid_cleanup( &emf->fEt );
-    cvfld_grid_cleanup( &emf->fB );
+    cfloat3_grid_cleanup( &emf->fEl );
+    cfloat3_grid_cleanup( &emf->fEt );
+    cfloat3_grid_cleanup( &emf->fB );
 
     if ( emf -> ext_fld.E_type > EMF_FLD_TYPE_NONE ) {
-        vfld_grid_cleanup( &emf->ext_fld.E_part_buf );
+        float3_grid_cleanup( &emf->ext_fld.E_part_buf );
     }
 
     if ( emf -> ext_fld.B_type > EMF_FLD_TYPE_NONE ) {
-        vfld_grid_cleanup( &emf->ext_fld.B_part_buf );
+        float3_grid_cleanup( &emf->ext_fld.B_part_buf );
     }
 
     emf -> filter = NULL;
@@ -305,7 +305,7 @@ void emf_add_laser( t_emf* const emf, t_emf_laser* const laser )
  * @param field 	Which field to save (E, B, Epart, Bpart)
  * @param fc 		Field component to save, must be one of {0,1,2}
  */
-void emf_report( const t_emf *emf, const char field, const char fc )
+void emf_report( const t_emf *emf, const char field, const int fc )
 {
 	char vfname[16];	// Dataset name
 	char vflabel[16];	// Dataset label (for plots)
@@ -781,7 +781,7 @@ void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
         }
 
         // Allocate space for additional field grids
-        vfld_grid_init( &emf -> ext_fld.E_part_buf, emf -> E.nx, emf -> E.gc );
+        float3_grid_init( &emf -> ext_fld.E_part_buf, emf -> E.nx, emf -> E.gc );
         emf->E_part = &emf->ext_fld.E_part_buf;
     }
 
@@ -807,7 +807,7 @@ void emf_set_ext_fld( t_emf* const emf, t_emf_ext_fld* ext_fld ) {
         }
 
         // Allocate space for additional field grids
-        vfld_grid_init( &emf -> ext_fld.B_part_buf, emf -> B.nx, emf -> B.gc );
+        float3_grid_init( &emf -> ext_fld.B_part_buf, emf -> B.nx, emf -> B.gc );
         emf -> B_part = &emf->ext_fld.B_part_buf;
     }
 

@@ -1021,6 +1021,7 @@ void spec_sort( t_species* spec )
  * 
  * @param E     Electric field grid
  * @param B     Magnetic field grid
+ * @param nrow  Y stride
  * @param part  Particle data
  * @param Ep    E-field interpolated at particle position
  * @param Bp    B-field interpolated at particle position

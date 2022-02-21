@@ -1,10 +1,12 @@
-/*
- *  grid.c
- *  zpic
- *
- *  Created by Ricardo Fonseca on 12/8/10.
- *  Copyright 2010 Centro de Física dos Plasmas. All rights reserved.
- *
+/**
+ * @file grid.c
+ * @author Ricardo Fonseca
+ * @brief Scalar and vector grids
+ * @version 0.2
+ * @date 2022-02-21
+ * 
+ * @copyright Copyright (c) 2022
+ * 
  */
 
 #include "grid.h"
@@ -186,7 +188,7 @@ void cscalar_grid_zero( t_cscalar_grid *grid ) {
  * 					specifying 0 guard cells
  * @return			0 on success, -1 on error
  */
-int vfld_grid_init( t_float3_grid *grid, const int nx, const int * gc )
+int float3_grid_init( t_float3_grid *grid, const int nx, const int * gc )
 {
 	// store nx and gc values
 	grid->nx = nx;
@@ -220,7 +222,7 @@ int vfld_grid_init( t_float3_grid *grid, const int nx, const int * gc )
  * @param grid 	Vector3 grid
  * @return 		0 on success (always returns 0)
  */
-int vfld_grid_cleanup( t_float3_grid *grid )
+int float3_grid_cleanup( t_float3_grid *grid )
 {
 	free( grid -> buffer );
 
@@ -239,7 +241,7 @@ int vfld_grid_cleanup( t_float3_grid *grid )
  * 
  * @param grid 	Vector3 grid
  */
-void vfld_grid_zero( t_float3_grid *grid ) {
+void float3_grid_zero( t_float3_grid *grid ) {
 	size_t size = 3 * (grid->gc[0] + grid->nx + grid->gc[1]) * sizeof(float);
 	memset( grid -> buffer, 0, size );
 }
@@ -257,7 +259,7 @@ void vfld_grid_zero( t_float3_grid *grid ) {
  * 					specifying 0 guard cells
  * @return			0 on success, -1 on error
  */
-int cvfld_grid_init( t_cfloat3_grid *grid, const int nx, const int * gc )
+int cfloat3_grid_init( t_cfloat3_grid *grid, const int nx, const int * gc )
 {
 	// store nx and gc values
 	grid->nx = nx;
@@ -292,7 +294,7 @@ int cvfld_grid_init( t_cfloat3_grid *grid, const int nx, const int * gc )
  * @param grid 	Complex vector grid
  * @return 		0 on success (always returns 0)
  */
-int cvfld_grid_cleanup( t_cfloat3_grid *grid )
+int cfloat3_grid_cleanup( t_cfloat3_grid *grid )
 {
 	free( grid -> buffer );
 
@@ -311,7 +313,7 @@ int cvfld_grid_cleanup( t_cfloat3_grid *grid )
  * 
  * @param grid 	Complex vector grid
  */
-void cvfld_grid_zero( t_cfloat3_grid *grid ) {
+void cfloat3_grid_zero( t_cfloat3_grid *grid ) {
 	size_t size = 3 * (grid->gc[0] + grid->nx + grid->gc[1]) * sizeof(float complex);
 	memset( grid -> buffer, 0, size );
 }

@@ -1,10 +1,12 @@
-/*
- *  grid.c
- *  zpic
- *
- *  Created by Ricardo Fonseca on 12/8/10.
- *  Copyright 2010 Centro de Física dos Plasmas. All rights reserved.
- *
+/**
+ * @file grid.c
+ * @author Ricardo Fonseca
+ * @brief Scalar grids
+ * @version 0.2
+ * @date 2022-02-21
+ * 
+ * @copyright Copyright (c) 2022
+ * 
  */
 
 #include "grid.h"

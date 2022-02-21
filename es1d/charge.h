@@ -14,7 +14,11 @@
 #include "grid.h"
 #include "fft.h"
 
-typedef struct {
+/**
+ * @brief Charge density
+ * 
+ */
+typedef struct Charge {
 	
 	/// Global charge density
 	t_scalar_grid rho;

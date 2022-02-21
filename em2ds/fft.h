@@ -41,7 +41,8 @@ enum fft_direction {
  * factor will always have n = 1.
  */
 typedef struct {
-	unsigned int p, n;
+	unsigned int p; ///< p factor (FFT size will be p * n)
+    unsigned int n; ///< n factor (FFT size will be p * n)
 } t_fft_factors;
 
 /**

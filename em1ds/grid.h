@@ -147,7 +147,7 @@ void cscalar_grid_zero( t_cscalar_grid *grid );
  * 					specifying 0 guard cells
  * @return			0 on success, -1 on error
  */
-int  vfld_grid_init( t_float3_grid *grid, const int nx, const int * gc );
+int  float3_grid_init( t_float3_grid *grid, const int nx, const int * gc );
 
 /**
  * @brief Free dynamic memory from Vector3Grid variable
@@ -155,14 +155,14 @@ int  vfld_grid_init( t_float3_grid *grid, const int nx, const int * gc );
  * @param grid 	Vector3 grid
  * @return 		0 on success (always returns 0)
  */
-int  vfld_grid_cleanup( t_float3_grid *grid );
+int  float3_grid_cleanup( t_float3_grid *grid );
 
 /**
  * @brief Sets all grid values to zero
  * 
  * @param grid 	Vector3 grid
  */
-void vfld_grid_zero( t_float3_grid *grid );
+void float3_grid_zero( t_float3_grid *grid );
 
 /**
  * @brief Initialize ComplexVector3Grid variable
@@ -173,7 +173,7 @@ void vfld_grid_zero( t_float3_grid *grid );
  * 					specifying 0 guard cells
  * @return			0 on success, -1 on error
  */
-int  cvfld_grid_init( t_cfloat3_grid *grid, const int nx, const int * gc );
+int  cfloat3_grid_init( t_cfloat3_grid *grid, const int nx, const int * gc );
 
 /**
  * @brief Free dynamic memory from ComplexVector3Grid variable
@@ -181,13 +181,13 @@ int  cvfld_grid_init( t_cfloat3_grid *grid, const int nx, const int * gc );
  * @param grid 	ComplexVector3 grid
  * @return 		0 on success (always returns 0)
  */
-int  cvfld_grid_cleanup( t_cfloat3_grid *grid );
+int  cfloat3_grid_cleanup( t_cfloat3_grid *grid );
 
 /**
  * @brief Sets all grid values to zero
  * 
  * @param grid 	ComplextVector3 grid
  */
-void cvfld_grid_zero( t_cfloat3_grid *grid );
+void cfloat3_grid_zero( t_cfloat3_grid *grid );
 
 #endif

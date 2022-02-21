@@ -44,6 +44,10 @@ typedef struct EMF_ExternalField {
 	float3 *B_part_buf; ///< B field seen by particles
 } t_emf_ext_fld;
 
+/**
+ * @brief EM initial field parameters
+ * 
+ */
 typedef struct EMF_InitialField {
 
     enum emf_fld_type E_type;   ///< Type of initial E field
@@ -72,6 +76,10 @@ enum emf_diag {
     BPART   ///< Magnetic field as seen by the particles
 };
 
+/**
+ * @brief Electro-Magnetic fields
+ * 
+ */
 typedef struct EMF {
 	
 	float3 *E;  ///< Pointer to grid cell [0,0] of E field
@@ -141,9 +149,9 @@ typedef struct EMF_Laser {
 	
 	float polarization; ///< Polarization angle in radians
 	
-	float W0;		// Gaussian beam waist, in simulation units
-	float focus;	// Focal plane position, in simulation units
-	float axis;     // Position of optical axis, in simulation units
+	float W0;		///< Gaussian beam waist, in simulation units
+	float focus;	///< Focal plane position, in simulation units
+	float axis;     ///< Position of optical axis, in simulation units
 	
 } t_emf_laser;
 

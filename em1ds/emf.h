@@ -191,7 +191,7 @@ void emf_delete( t_emf *emf );
  * @param field 	Which field to save (E, B, Epart, Bpart)
  * @param fc 		Field component to save, must be one of {0,1,2}
  */
-void emf_report( const t_emf *emf, const char field, const char fc );
+void emf_report( const t_emf *emf, const char field, const int fc );
 
 /**
  * @brief Add laser pulse to simulation.

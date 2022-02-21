@@ -6,7 +6,11 @@
 #include "emf.h"
 #include "current.h"
 
-typedef struct {
+/**
+ * @brief EM2DS Simulation
+ * 
+ */
+typedef struct Simulation {
 
 	// Time
 	float dt;		///< Time step

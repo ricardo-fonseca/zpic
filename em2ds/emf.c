@@ -1,10 +1,12 @@
-/*
- *  emf.c
- *  zpic
- *
- *  Created by Ricardo Fonseca on 10/8/10.
- *  Copyright 2010 Centro de Física dos Plasmas. All rights reserved.
- *
+/**
+ * @file emf.c
+ * @author Ricardo Fonseca
+ * @brief EM fields
+ * @version 0.2
+ * @date 2022-02-04
+ * 
+ * @copyright Copyright (c) 2022
+ * 
  */
 
 #include <stdio.h>
@@ -181,7 +183,8 @@ float lon_env( const t_emf_laser* const laser, const float z )
  * This is used to calculate the longitudinal fields associated with a 
  * laser pulse
  * 
- * @param emf 		EM fields
+ * @param fld 		E or B fields
+ * @param dk		k space cell size
  */
 void div_corr_x( t_cfloat3_grid2d *fld, const float dk[] )
 {

@@ -22,6 +22,6 @@ void cscalar2d_r2c_filter( t_cscalar_grid2d * grid, const float cutoff[] );
  * @param cutoff	Cutoff frequency [kcx, kcy] as a fraction of the
  * 					Nyquist frequency
  */
-void cvfld2d_r2c_filter( t_cfloat3_grid2d * grid, const float cutoff[] );
+void cfloat32d_r2c_filter( t_cfloat3_grid2d * grid, const float cutoff[] );
 
 #endif

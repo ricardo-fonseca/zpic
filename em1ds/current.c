@@ -1,10 +1,12 @@
-/*
- *  current.c
- *  zpic
- *
- *  Created by Ricardo Fonseca on 12/8/10.
- *  Copyright 2010 Centro de Física dos Plasmas. All rights reserved.
- *
+/**
+ * @file current.c
+ * @author Ricardo Fonseca
+ * @brief Electric current density
+ * @version 0.2
+ * @date 2022-02-21
+ * 
+ * @copyright Copyright (c) 2022
+ * 
  */
 
 #include "current.h"
@@ -45,8 +47,8 @@ void current_new( t_current *current, int nx, float box, float dt,
 	current -> filter = filter;
 
 	// Initialize grids
-	vfld_grid_init( &current->J, nx, gc );
-	cvfld_grid_init( &current->fJ, nx/2+1, NULL );
+	float3_grid_init( &current->J, nx, gc );
+	cfloat3_grid_init( &current->fJ, nx/2+1, NULL );
 
 	// Set cell sizes and box limits
 	current -> box = box;
@@ -59,10 +61,10 @@ void current_new( t_current *current, int nx, float box, float dt,
     // Zero initial current
 
     // This is only relevant for diagnostics, current is always zeroed before deposition
-	vfld_grid_zero( &current -> J );
+	float3_grid_zero( &current -> J );
 
 	// This avoids setting the fJ.x to zero in current update
-	cvfld_grid_zero( &current -> fJ );
+	cfloat3_grid_zero( &current -> fJ );
 }
 
 /**
@@ -72,8 +74,8 @@ void current_new( t_current *current, int nx, float box, float dt,
  */
 void current_delete( t_current *current )
 {
-	vfld_grid_cleanup( &current -> J );
-	cvfld_grid_cleanup( &current -> fJ );
+	float3_grid_cleanup( &current -> J );
+	cfloat3_grid_cleanup( &current -> fJ );
 }
 
 /**
@@ -83,7 +85,7 @@ void current_delete( t_current *current )
  */
 void current_zero( t_current *current )
 {
-	vfld_grid_zero( &current -> J );
+	float3_grid_zero( &current -> J );
 }
 
 /**
@@ -160,7 +162,7 @@ void current_update( t_current *current )
  * @param current Electric current object
  * @param jc Current component to save, must be one of {0,1,2}
  */
-void current_report( const t_current *current, const char jc )
+void current_report( const t_current *current, const int jc )
 {
 	float *buf = NULL;
 	

@@ -15,6 +15,10 @@
 #include "fft.h"
 #include "filter.h"
 
+/**
+ * @brief Charge density object
+ * 
+ */
 typedef struct Charge {
 	
 	/// Global charge density

@@ -38,8 +38,9 @@ typedef struct Current {
 	/// Current iteration number
 	int iter;
 
-	/// FFT configuration
-	t_fftr2d_cfg fft_forward, fft_backward;
+	// FFT configuration
+	t_fftr2d_cfg fft_forward;	///< Forward (real to complex) 2D FFT configuration
+	t_fftr2d_cfg fft_backward;	///< Backward (complex to real) 2D FFT configuration
 
 } t_current;
 
