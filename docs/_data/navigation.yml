@@ -1,10 +1,10 @@
 main:
   - title: "About ZPIC"
-    url: /about/
+    url: /about
   - title: "Getting started"
-    url: /start/
+    url: /start
   - title: "Documentation"
-    url: /documentation/
+    url: /documentation
   - title: "Examples"
     url: /examples
 
@@ -21,38 +21,38 @@ docs:
 
 
   - title: "Using ZPIC with Python"
-    url: /documentation/python/
+    url: /documentation/python
     children:
     - title: "Getting started with Python"
-      url: /documentation/python/start/
+      url: /documentation/python/start
     - title: "Particle species"
-      url: /documentation/python/particles/
+      url: /documentation/python/particles
     - title: "Simulation data"
-      url: /documentation/python/data/
+      url: /documentation/python/data
     - title: "Saving output"
-      url: /documentation/python/save/
+      url: /documentation/python/save
     - title: "Laser pulses"
-      url: /documentation/python/laser/
+      url: /documentation/python/laser
     - title: "Moving simulation window"
-      url: /documentation/python/movwindow/
+      url: /documentation/python/movwindow
     - title: "Current smoothing"
-      url: /documentation/python/smooth/
+      url: /documentation/python/smooth
     - title: "Initial EM fields"
-      url: /documentation/python/eminit/
+      url: /documentation/python/eminit
     - title: "External EM fields"
-      url: /documentation/python/emext/
+      url: /documentation/python/emext
     - title: "Spectral EM field solver"
-      url: /documentation/python/spectralsolver/
+      url: /documentation/python/spectralsolver
     - title: "Python API reference"
-      url: /documentation/python/api/
+      url: /documentation/python/api
 
   - title: "Using ZPIC with C"
-    url: /documentation/c/
+    url: /documentation/c
     children:
     - title: "Getting started with C"
-      url: /documentation/c/start/
+      url: /documentation/c/start
     - title: "Particle species"
-      url: /documentation/c/particles/
+      url: /documentation/c/particles
     - title: "Simulation diagnostics"
       url: /documentation/c/diag
     - title: "Laser pulses"
@@ -61,6 +61,8 @@ docs:
       url: /documentation/c/movwindow
     - title: "Current smoothing"
       url: /documentation/c/smooth
+    - title: "C API reference"
+      url: /documentation/c/api
 
   - title: "Examples"
     url: /examples

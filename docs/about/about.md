@@ -11,4 +11,3 @@ Particle-in-Cell (PIC) codes are used in almost all areas of plasma physics, suc
 
 The ZPIC codes can work as standalone programs, requiring only a C99 compiler (gcc works great!), or used as Python modules, in particular in Jupyter notebook environments. ZPIC codes do not depend on any external library, and have very modest hardware requirements, requiring only a standard laptop/desktop computer to be used.
 
-Learn more about the PIC algorithms and the ZPIC implementation [here](/about/implementation).

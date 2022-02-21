@@ -27,6 +27,6 @@ $ E' = e \frac{c / \omega_n }{m_e c^2} E $
 
 $ B' = e \frac{c / \omega_n }{m_e c^2} B $
 
-## Laser pulses
+## A note on laser pulses
 
-When using laser pulses in ZPIC simulations the laser frequency is set using the normalized units. This means that if the laser frequency is chosen to be 1, then the normalization frequency ($\omega_n$) is the laser frequency and the density is normalized to the critical densify (for that laser frequency)
+When using laser pulses in ZPIC simulations the laser frequency is set using the normalized units. This means that if the laser frequency is chosen to be 1, then the normalization frequency ($\omega_n$) is the laser frequency and the density is normalized to the critical density (for that laser frequency).

@@ -17,7 +17,7 @@ To run a ZPIC simulation in C users must first choose which code version is to b
 * `em2d`, `em2ds` - 2D electromagnetic code using a finite difference field solver (`em2d`) or a spectral field solver (`em2ds`)
 * `es1d` - 1D electrostatic code using a spectral field solver
 
-Each top level directory (em1d, em2d, etc.) has a self-contained version of the code, with no additional dependencies. Just navigate to the required directory and run `make`. Detailed instruction on compiling the code(s) can be found in the [Compiling](/start/compile) page.
+Each top level directory (`em1d`, `em2d`, etc.) has a self-contained version of the code, with no additional dependencies. Just navigate to the required directory and run `make`. Detailed instruction on compiling the code(s) can be found in the [Compiling](/start/compile) page.
 
 ## Initializing the simulation
 

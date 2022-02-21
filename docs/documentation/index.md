@@ -20,7 +20,7 @@ feature_row:
     btn_class: "btn--primary"
   - title: "C"
     excerpt: "Documentation of the ZPIC C interface."
-    url: "/documentation/python"
+    url: "/documentation/c"
     btn_label: "C documentation"
     btn_class: "btn--primary"
   - title: "Algorithm"
