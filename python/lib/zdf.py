@@ -475,7 +475,7 @@ def info( file_name ):
     Parameters
     ----------
     file_name : str
-        File name to use, should include path
+        File name of ZDF data file, should include path
     
     Returns
     -------
@@ -513,6 +513,7 @@ def read( file_name ):
     Parameters
     ----------
     file_name : str
+        File name of ZDF data file, should include path
     
     Returns
     -------
@@ -552,6 +553,19 @@ def read( file_name ):
     return (data,info)
 
 def list(file_name, printRec=False):
+    """list( printRec=False )
+
+    Gets a list of file contents and optionally print it to screen
+
+    Parameters
+    ----------
+    file_name : str
+        File name of ZDF data file, should include path
+        
+    printRec : bool, optional
+        If set to True will print all records found in the file,
+        defaults to False.
+    """
     zdf = ZDFfile(file_name)
     zdf.list(printRec)
     zdf.close()
