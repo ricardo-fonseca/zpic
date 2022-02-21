@@ -5,7 +5,7 @@ subtitle                 : "PIC codes for plasma physics education"
 description              : "Suite of Particle-in-Cell codes for plasma physics education"
 
 
-#baseurl                  : "/zpic"
+baseurl                  : "/zpic"
 repository               : "ricardo-fonseca/zpic"
 
 #remote_theme: pages-themes/cayman
