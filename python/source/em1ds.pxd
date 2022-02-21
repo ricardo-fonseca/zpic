@@ -22,12 +22,12 @@ cdef extern from "../../em1ds/grid.h":
 		int nx
 		int gc[2]
 
-	ctypedef struct t_vfld:
+	ctypedef struct float3:
 		float x
 		float y
 		float z
 
-	ctypedef struct t_vfld_grid:
+	ctypedef struct t_float3_grid:
 		float *x
 		float *y
 		float *z
@@ -35,7 +35,7 @@ cdef extern from "../../em1ds/grid.h":
 		int nx
 		int gc[2]
 
-	ctypedef struct t_cvfld_grid:
+	ctypedef struct t_cfloat3_grid:
 		float complex *x
 		float complex *y
 		float complex *z
@@ -183,8 +183,8 @@ cdef extern from "../../em1ds/charge.h":
 cdef extern from "../../em1ds/current.h":
 
 	ctypedef struct t_current:
-		t_vfld_grid J
-		t_cvfld_grid fJt
+		t_float3_grid J
+		t_cfloat3_grid fJt
 		float box
 		float dx
 		float dt
@@ -205,22 +205,22 @@ cdef extern from "../../em1ds/emf.h":
 	ctypedef struct t_emf_ext_fld:
 		emf_fld_type E_type
 		emf_fld_type B_type
-		t_vfld E_0
-		t_vfld B_0
-		t_vfld (*E_custom)(int, float, void*)
-		t_vfld (*B_custom)(int, float, void*)
+		float3 E_0
+		float3 B_0
+		float3 (*E_custom)(int, float, void*)
+		float3 (*B_custom)(int, float, void*)
 		void *E_custom_data
 		void *B_custom_data
-		t_vfld_grid E_part_buf
-		t_vfld_grid B_part_buf
+		t_float3_grid E_part_buf
+		t_float3_grid B_part_buf
 
 	ctypedef struct t_emf_init_fld:
 		emf_fld_type E_type
 		emf_fld_type B_type
-		t_vfld E_0
-		t_vfld B_0
-		t_vfld (*E_custom)(int, float, void*)
-		t_vfld (*B_custom)(int, float, void*)
+		float3 E_0
+		float3 B_0
+		float3 (*E_custom)(int, float, void*)
+		float3 (*B_custom)(int, float, void*)
 		void *E_custom_data
 		void *B_custom_data
 
@@ -231,11 +231,11 @@ cdef extern from "../../em1ds/emf.h":
 		EMF_SOLVER_PSTD, EMF_SOLVER_PSATD
 
 	ctypedef struct t_emf:
-		t_vfld_grid E
-		t_vfld_grid B
-		t_cvfld_grid fEl
-		t_cvfld_grid fEt
-		t_cvfld_grid fB
+		t_float3_grid E
+		t_float3_grid B
+		t_cfloat3_grid fEl
+		t_cfloat3_grid fEt
+		t_cfloat3_grid fB
 		float box
 		float dx
 		float dt
@@ -243,8 +243,8 @@ cdef extern from "../../em1ds/emf.h":
 		t_fftr_cfg *fft_forward
 		t_fftr_cfg *fft_backward
 		t_filter *filter
-		t_vfld_grid *E_part
-		t_vfld_grid *B_part
+		t_float3_grid *E_part
+		t_float3_grid *B_part
 		t_emf_ext_fld ext_fld
 		int solver_type
 

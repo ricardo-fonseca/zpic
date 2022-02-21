@@ -6,7 +6,7 @@ cdef extern from "../../em2d/random.h":
 	void set_rand_seed( uint32_t m_z_, uint32_t m_w_ )
 
 cdef extern from "../../em2d/zpic.h":
-	ctypedef struct t_vfld:
+	ctypedef struct float3:
 		float x
 		float y
 		float z
@@ -101,22 +101,22 @@ cdef extern from "../../em2d/emf.h":
 	ctypedef struct t_emf_ext_fld:
 		emf_fld_type E_type
 		emf_fld_type B_type
-		t_vfld E_0
-		t_vfld B_0
-		t_vfld (*E_custom)(int, float, int, float, void*)
-		t_vfld (*B_custom)(int, float, int, float, void*)
+		float3 E_0
+		float3 B_0
+		float3 (*E_custom)(int, float, int, float, void*)
+		float3 (*B_custom)(int, float, int, float, void*)
 		void *E_custom_data
 		void *B_custom_data
-		t_vfld *E_part_buf
-		t_vfld *B_part_buf
+		float3 *E_part_buf
+		float3 *B_part_buf
 
 	ctypedef struct t_emf_init_fld:
 		emf_fld_type E_type
 		emf_fld_type B_type
-		t_vfld E_0
-		t_vfld B_0
-		t_vfld (*E_custom)(int, float, int, float, void*)
-		t_vfld (*B_custom)(int, float, int, float, void*)
+		float3 E_0
+		float3 B_0
+		float3 (*E_custom)(int, float, int, float, void*)
+		float3 (*B_custom)(int, float, int, float, void*)
 		void *E_custom_data
 		void *B_custom_data
 
@@ -124,12 +124,12 @@ cdef extern from "../../em2d/emf.h":
 		EFLD, BFLD, EPART, BPART
 
 	ctypedef struct t_emf:
-		t_vfld *E
-		t_vfld *B
-		t_vfld *E_buf
-		t_vfld *B_buf
-		t_vfld *E_part
-		t_vfld *B_part
+		float3 *E
+		float3 *B
+		float3 *E_buf
+		float3 *B_buf
+		float3 *E_part
+		float3 *B_part
 		int nx[2]
 		int nrow
 		int gc[2][2]
@@ -178,8 +178,8 @@ cdef extern from "../../em2d/current.h":
 		int ylevel
 
 	ctypedef struct t_current:
-		t_vfld *J
-		t_vfld *J_buf
+		float3 *J
+		float3 *J_buf
 		int nx[2]
 		int nrow
 		int gc[2][2]

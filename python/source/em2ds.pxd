@@ -24,12 +24,12 @@ cdef extern from "../../em2ds/grid2d.h":
 		int nrow
 		int gc[2][2]
 
-	ctypedef struct t_vfld:
+	ctypedef struct float3:
 		float x
 		float y
 		float z
 
-	ctypedef struct t_vfld_grid2d:
+	ctypedef struct t_float3_grid2d:
 		float *x
 		float *y
 		float *z
@@ -38,7 +38,7 @@ cdef extern from "../../em2ds/grid2d.h":
 		int nrow
 		int gc[2][2]
 
-	ctypedef struct t_cvfld_grid2d:
+	ctypedef struct t_cfloat3_grid2d:
 		float complex *x
 		float complex *y
 		float complex *z
@@ -177,8 +177,8 @@ cdef extern from "../../em2ds/charge.h":
 cdef extern from "../../em2ds/current.h":
 
 	ctypedef struct t_current:
-		t_vfld_grid2d J
-		t_cvfld_grid2d fJt
+		t_float3_grid2d J
+		t_cfloat3_grid2d fJt
 		float box[2]
 		float dx[2]
 		float dt
@@ -197,11 +197,11 @@ cdef extern from "../../em2ds/emf.h":
 		EFLD, BFLD
 
 	ctypedef struct t_emf:
-		t_vfld_grid2d E
-		t_vfld_grid2d B
-		t_cvfld_grid2d fEl
-		t_cvfld_grid2d fEt
-		t_cvfld_grid2d fB
+		t_float3_grid2d E
+		t_float3_grid2d B
+		t_cfloat3_grid2d fEl
+		t_cfloat3_grid2d fEt
+		t_cfloat3_grid2d fB
 		float box[2]
 		float dx[2]
 		float dt

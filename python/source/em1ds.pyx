@@ -451,21 +451,21 @@ cdef class Species:
 			return
 		self._thisptr.n_sort = value
 
-cdef t_vfld custom_ext_E( int ix, float dx, void *f ):
+cdef float3 custom_ext_E( int ix, float dx, void *f ):
 	"""Internal auxiliary function for using external E fields"""
 	cdef ExternalField ext = <object> f
 	val = ext.custom_func_E(ix,dx)
-	cdef t_vfld e
+	cdef float3 e
 	e.x = val[0]
 	e.y = val[1]
 	e.z = val[2]
 	return e
 
-cdef t_vfld custom_ext_B( int ix, float dx, void *f ):
+cdef float3 custom_ext_B( int ix, float dx, void *f ):
 	"""Internal auxiliary function for using external B fields"""
 	cdef ExternalField ext = <object> f
 	val = ext.custom_func_B(ix,dx)
-	cdef t_vfld b
+	cdef float3 b
 	b.x = val[0]
 	b.y = val[1]
 	b.z = val[2]
@@ -660,21 +660,21 @@ cdef class ExternalField:
 		self._thisptr.B_custom_data = <void *> self
 
 
-cdef t_vfld custom_init_E( int ix, float dx, void *f ):
+cdef float3 custom_init_E( int ix, float dx, void *f ):
 	"""Internal auxiliary function for using initial E fields"""
 	cdef InitialField init = <object> f
 	val = init.custom_func_E(ix,dx)
-	cdef t_vfld e
+	cdef float3 e
 	e.x = val[0]
 	e.y = val[1]
 	e.z = val[2]
 	return e
 
-cdef t_vfld custom_init_B( int ix, float dx, void *f ):
+cdef float3 custom_init_B( int ix, float dx, void *f ):
 	"""Internal auxiliary function for using initial B fields"""
 	cdef InitialField init = <object> f
 	val = init.custom_func_B(ix,dx)
-	cdef t_vfld b
+	cdef float3 b
 	b.x = val[0]
 	b.y = val[1]
 	b.z = val[2]
