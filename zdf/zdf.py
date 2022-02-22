@@ -28,15 +28,22 @@ class ZDF_Record:
         self.id = 0
         self.name = ""
         self.len = 0
+    def version(self):
+        return( self.id & 0x0000FFFF )
+
+    def typeid(self):
+        return( self.id & 0xFFFF0000 )
 
 class ZDF_Iteration:
     def __init__( self ):
+        self.name = ""
         self.n = 0
         self.t = 0.
         self.tunits = ""
 
 class ZDF_Grid_Axis:
     def __init__( self ):
+        self.name = ''
         self.type = 0
         self.min = 0.
         self.max = 0.
@@ -45,6 +52,7 @@ class ZDF_Grid_Axis:
 
 class ZDF_Grid_Info:
     def __init__( self ):
+        self.name = ''
         self.ndims = 0
         self.nx = []
         self.label = ''
@@ -55,22 +63,24 @@ class ZDF_Grid_Info:
 class ZDF_Part_Info:
     def __init__( self ):
         self.name = ''
+        self.label = ''
         self.nquants = 0
         self.quants = []
-        self.labels = dict()
-        self.units = dict()
+        self.qlabels = dict()
+        self.qunits = dict()
         self.nparts = 0
 
 class ZDF_Tracks_Info:
     def __init__( self ):
         self.name = ''
+        self.label = ''
         self.ntracks = 0
         self.ndump = 0
         self.niter = 0
         self.nquants = 0
         self.quants = []
-        self.labels = []
-        self.units = []
+        self.qlabels = []
+        self.qunits = []
         
 class ZDFfile:
     def __init__(self, file_name):
@@ -255,6 +265,7 @@ class ZDFfile:
         if ( rec is False ):
             rec = self.read_record()
         iteration = ZDF_Iteration()
+        iteration.name = rec.name
         iteration.n = self.__read_int32()
         iteration.t = self.__read_float64()
         iteration.tunits = self.__read_string()
@@ -267,7 +278,20 @@ class ZDFfile:
     def read_grid_info(self, rec = False):
         if ( rec is False ):
             rec = self.read_record()
+
+        # Maximum supported version
+        max_version = 0x00000001
+
+        # Get version
+        version = rec.version()
+        if ( version > max_version ):
+            print( '(*error*) ZDF: Grid info version is higher than supported.' , file=sys.stderr)
+            print( '(*error*) ZDF: Please update the code to a newer version.' , file=sys.stderr)
+            return False
+
         info = ZDF_Grid_Info()
+        
+        info.name = rec.name
         info.ndims = self.__read_uint32()
         info.nx = self.__read_uint64_arr( info.ndims )
 
@@ -278,6 +302,10 @@ class ZDFfile:
         if ( info.has_axis ):
             for i in range(info.ndims):
                 ax = ZDF_Grid_Axis()
+                if (version > 0):
+                    ax.name = self.__read_string()
+                else:
+                    ax.name = 'axis_{}'.format(i)
                 ax.type  = self.__read_int32()
                 ax.min   = self.__read_float64()
                 ax.max   = self.__read_float64()
@@ -296,17 +324,18 @@ class ZDFfile:
             rec = self.read_record()
 
         # Maximum supported version
-        max_version = 0x00000001
+        max_version = 0x00000002
 
         # Get version
-        version = rec.id & 0x0000FFFF
+        version = rec.version()
         if ( version > max_version ):
             print( '(*error*) ZDF: Particles info version is higher than supported.' , file=sys.stderr)
             print( '(*error*) ZDF: Please update the code to a newer version.' , file=sys.stderr)
             return False
         
         info      = ZDF_Part_Info()
-        info.name = self.__read_string()
+        info.name = rec.name
+        info.label = self.__read_string()
         
         if ( version >= 1 ):
             # version 1
@@ -315,12 +344,10 @@ class ZDFfile:
             
             for i in range(info.nquants):
                 info.quants.append( self.__read_string() )
-            
             for q in info.quants:
-                info.labels[q] = self.__read_string()
-            
+                info.qlabels[q] = self.__read_string()            
             for q in info.quants:
-                info.units[q] = self.__read_string()
+                info.qunits[q] = self.__read_string()
             
         else:
             # version 0
@@ -331,10 +358,10 @@ class ZDFfile:
 
             # version 0 does not have label information
             for q in info.quants:
-                info.labels[q] = q
+                info.qlabels[q] = q
 
             for q in info.quants:
-                info.units[q] = self.__read_string()
+                info.qunits[q] = self.__read_string()
 
             info.nparts = self.__read_uint64()
 
@@ -350,10 +377,10 @@ class ZDFfile:
             rec = self.read_record()
         
         # Maximum supported version
-        max_version = 0x00000000
+        max_version = 0x00000001
         
         # Get version
-        version = rec.id & 0x0000FFFF
+        version = rec.version()
         if ( version > max_version ):
             print( '(*error*) ZDF: Tracks info version is higher than supported.' , file=sys.stderr)
             print( '(*error*) ZDF: Please update the code to a newer version.' , file=sys.stderr)
@@ -361,7 +388,8 @@ class ZDFfile:
         
         info = ZDF_Tracks_Info()
 
-        info.name    = self.__read_string()
+        info.name = rec.name
+        info.label    = self.__read_string()
         info.ntracks = self.__read_uint32()
         info.ndump   = self.__read_uint32()
         info.niter   = self.__read_uint32()
@@ -371,17 +399,17 @@ class ZDFfile:
             info.quants.append( self.__read_string() )
 
         for i in range(info.nquants):
-            info.labels.append( self.__read_string() )
+            info.qlabels.append( self.__read_string() )
 
         for i in range(info.nquants):
-            info.units.append( self.__read_string() )
+            info.qunits.append( self.__read_string() )
         
         # Iteration data is not supported so remove it from metadata
         info.nquants -= 1
         
         info.quants.pop(0)
-        info.labels.pop(0)
-        info.units.pop(0)
+        info.qlabels.pop(0)
+        info.qunits.pop(0)
 
         return info
 
@@ -401,10 +429,10 @@ class ZDFfile:
             
         
         # Maximum supported version
-        max_version = 0x00000001
+        max_version = 0x00000002
         
         # Get version
-        version = rec.id & 0x0000FFFF
+        version = rec.version()
         if ( version > max_version ):
             print( '(*error*) ZDF: Dataset version is higher than supported.' , file=sys.stderr)
             print( '(*error*) ZDF: Please update the code to a newer version.' , file=sys.stderr)
@@ -517,7 +545,7 @@ class ZDFfile:
 # Read arbitrary ZDF element
 # -----------------------------------------------------------------------------
 
-    def read_element( self, rec = False, name = False):
+    def read_element( self, rec = False, name = False, type_id = False):
         if ( rec is False ):
             rec = self.read_record()
         
@@ -530,7 +558,14 @@ class ZDFfile:
         else:
             name = rec.name
         
-        type_id = self.record_type(rec.id)
+        if ( type_id ):
+            if (type_id != self.record_type(rec.id) ):
+                print("(*warning*) Requested type does not match record type", file=sys.stderr)
+                print("(*warning*) expected '{}', found '{}".format(type_id, self.record_type(rec.id)), file=sys.stderr)
+                self.__record_skip(rec)
+                return False
+        else:
+            type_id = self.record_type(rec.id)
         
         if ( type_id == "int" ):
             data = self.__read_int32()
