@@ -3,6 +3,8 @@ layout: single
 title: Data structures in ZPIC
 permalink: /about/data
 
+usemathjax: true
+
 sidebar:
   nav: "about"
 

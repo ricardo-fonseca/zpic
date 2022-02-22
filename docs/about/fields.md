@@ -14,7 +14,7 @@ sidebar:
 
 ## Field Advance
 
-After advancing the particles and depositing the charge/current density, the field quantities are then advanced from time $t$ to time $t + \Delta t$. In ZPIC codes the can either be achieved using a finite difference method (`em1d`, `em2d`) or a spectral method (`em1ds`, `em2ds`).
+After advancing the particles and depositing the charge/current density, the field quantities are then advanced from time $t$ to time $t + \Delta t$. In ZPIC codes this can either be achieved using a finite difference method (`em1d`, `em2d`) or a spectral method (`em1ds`, `em2ds`).
 
 ### Finite-difference field solver
 
