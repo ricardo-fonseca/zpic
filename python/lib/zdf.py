@@ -38,11 +38,11 @@ class ZDF_Record:
     len : uint64
         Additional record length in bytes
     """
-    def __init__( self, pos, id, name, len ):
-        self.pos   = pos
-        self.id    = id
-        self.name  = name
-        self.len   = len
+    def __init__( self ):
+        self.pos   = -1
+        self.id    = -1
+        self.name  = ''
+        self.len   = -1
     
     def version( self ):
         """version()
@@ -90,6 +90,8 @@ class ZDF_Iteration:
 
     Attributes
     ----------
+    name : str
+        Name for iteration metadata (usually set to 'ITERATION')
     n : int
         Iteration value
     t : float
@@ -98,6 +100,7 @@ class ZDF_Iteration:
         Units used for time value
     """
     def __init__( self ):
+        self.name = ""
         self.n = 0
         self.t = 0.0
         self.tunits = ""
@@ -109,6 +112,8 @@ class ZDF_Grid_Axis:
 
     Attributes
     ----------
+    name : str
+        Axis name
     type : {0,1,2}
         Axis type, must be one of 0 (linear), 1 (log10) or 2 (log2)
     min : float
@@ -121,6 +126,7 @@ class ZDF_Grid_Axis:
         Axis values data units
     """
     def __init__( self ):
+        self.name = ''
         self.type = 0
         self.min = 0.
         self.max = 0.
@@ -148,6 +154,7 @@ class ZDF_Grid_Info:
         Information on each axis, when available
     """
     def __init__( self ):
+        self.name = ''
         self.ndims = 0
         self.nx = []
         self.label = ''
@@ -164,20 +171,26 @@ class ZDF_Part_Info:
     ----------
     name : str
         Particle dataset name
+    label : str
+        Particle dataset label
     nquants : int
         Number of quantities per particle
     quants : list of str (nquants)
         Name of individual quantities
-    units : dictionary
+    qlabels : dictionary
+        Labels for each quantity
+    qunits : dictionary
         Units for each quantity
     nparts: int
         Number of particles in dataset
     """
     def __init__( self ):
         self.name = ''
+        self.label = ''
         self.nquants = 0
         self.quants = []
-        self.units = dict()
+        self.qlabels = dict()
+        self.qunits = dict()
         self.nparts = 0
 
 class ZDFfile:
@@ -245,8 +258,93 @@ class ZDFfile:
 
         return fstring
 
+    def record_type(self, typeTag):
+        version = typeTag & 0x0000FFFF
+        typeID = typeTag & 0xFFFF0000
+
+        types = {0x00010000: "int",
+                 0x00020000: "double",
+                 0x00030000: "string",
+                 0x00100000: "dataset",
+                 0x00110000: "cdset_start",
+                 0x00120000: "cdset_chunk",
+                 0x00130000: "cdset_end",
+                 0x00200000: "iteration",
+                 0x00210000: "grid_info",
+                 0x00220000: "part_info",
+                 0x00230000: "track_info", }
+
+        if (typeID in types):
+            return types[typeID]
+        else:
+            return "unknown"
+
+# -----------------------------------------------------------------------------
+# Array datatypes
+# -----------------------------------------------------------------------------
+    
+    def __read_int32_arr(self, nx):
+        size = np.prod(nx)
+        data = np.fromfile(self.__file,dtype='<i4',count=size)
+        data.shape = np.flip(nx)
+        return data
+
+    def __read_uint32_arr(self, nx):
+        size = np.prod(nx)
+        data = np.fromfile(self.__file,dtype='<u4',count=size)
+        data.shape = np.flip(nx)
+        return data
+
+    def __read_int64_arr(self, nx):
+        size = np.prod(nx)
+        data = np.fromfile(self.__file,dtype='<i8',count=size)
+        data.shape = np.flip(nx)
+        return data
+
+    def __read_uint64_arr(self, nx):
+        size = np.prod(nx)
+        data = np.fromfile(self.__file,dtype='<u8',count=size)
+        data.shape = np.flip(nx)
+        return data
+
+    def __read_float32_arr(self, nx):
+        size = np.prod(nx)
+        data = np.fromfile(self.__file,dtype='<f4',count=size)
+        data.shape = np.flip(nx)
+        return data
+
+    def __read_float64_arr(self, nx):
+        size = np.prod(nx)
+        data = np.fromfile(self.__file,dtype='<f8',count=size)
+        data.shape = np.flip(nx)
+        return data
+    
+    def __read_arr( self, dtype, nx ):
+        
+        if ( dtype == 5 ):
+            data = self.__read_int32_arr(nx)           
+        elif ( dtype == 3 ):
+            data = self.__read_uint32_arr(nx)           
+        elif ( dtype == 7 ):
+            data = self.__read_int64_arr(nx)           
+        elif ( dtype == 8 ):
+            data = self.__read_uint64_arr(nx)           
+        elif ( dtype == 9 ):
+            data = self.__read_float32_arr(nx)           
+        elif ( dtype == 10 ):
+            data = self.__read_float64_arr(nx)           
+        else:
+            print( '(*error*) ZDF: Data type not yet supported.' , file=sys.stderr)
+            data = False
+        
+        return data
+        
 # -----------------------------------------------------------------------------
 # Low level interfaces
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# Read record header
 # -----------------------------------------------------------------------------
 
     def read_record(self, skip=False):
@@ -261,73 +359,119 @@ class ZDFfile:
             header data
         """
 
-        pos = self.__file.tell()
+        rec = ZDF_Record()
+        rec.pos = self.__file.tell()
 
         # Read record id and check for EOF
-        id = self.__read_uint32()
+        rec.id = self.__read_uint32()
 
-        if (id is False):
+        if (rec.id is False):
             # If end of file return false
             return False
 
-        # Read record ID
-        name = self.__read_string()
-        len = self.__read_uint64()
-        rec = ZDF_Record( pos, id, name, len )
+        # Read name and length
+        rec.name = self.__read_string()
+        rec.len  = self.__read_uint64()
 
         # If requested, skip over to next record
         if (skip):
             self.__file.seek(rec.len, 1)
 
         return rec
+    
+    def __record_skip( self, rec ):
+        self.__file.seek(rec.len, 1)
 
-    def read_string(self):
-        """read_string()
+# -----------------------------------------------------------------------------
+# Read string
+# -----------------------------------------------------------------------------
+
+    def read_string(self, rec = False):
+        """read_string(rec = False)
 
         Reads string record from data file
+        
+        Parameters
+        ----------
+        rec : ZDF_Record, optional
+            If not set the routine will read the record before reading the data
 
         Returns
         -------
         string : str
             String data
         """
-        rec = self.read_record()
+        if ( rec is False ):
+            rec = self.read_record()
+        
         fstring = self.__read_string()
         return fstring
 
-    def read_iteration(self):
-        """read_iteration()
+# -----------------------------------------------------------------------------
+# Read iteration
+# -----------------------------------------------------------------------------
+
+    def read_iteration(self, rec = False):
+        """read_iteration( rec = False )
 
         Read iteration record from data file
+
+        Parameters
+        ----------
+        rec : ZDF_Record, optional
+            If not set the routine will read the record before reading the data
 
         Returns
         -------
         iteration : ZDF_Iteration()
             Iteration data
         """
-        rec = self.read_record()
+        if ( rec is False ):
+            rec = self.read_record()
         iteration = ZDF_Iteration()
+        iteration.name = rec.name
         iteration.n = self.__read_int32()
         iteration.t = self.__read_float64()
         iteration.tunits = self.__read_string()
         return iteration
 
-    def read_grid_info(self):
-        """read_grid_info()
+# -----------------------------------------------------------------------------
+# Read grid info
+# -----------------------------------------------------------------------------
+
+    def read_grid_info(self, rec = False):
+        """read_grid_info( rec = False )
 
         Read grid information record from data file
 
+        Parameters
+        ----------
+        rec : ZDF_Record, optional
+            If not set the routine will read the record before reading the data
+
         Returns
         -------
-        iteration : ZDF_Grid_Info()
+        info : ZDF_Grid_Info()
             Grid information data
         """
-        rec = self.read_record()
-        info = ZDF_Grid_Info()
-        info.ndims = self.__read_uint32()
+        if ( rec is False ):
+            rec = self.read_record()
 
-        for i in range(info.ndims):
-            info.nx.append(self.__read_uint64())
+        # Maximum supported version
+        max_version = 0x00000001
+
+        # Get version
+        version = rec.version()
+        if ( version > max_version ):
+            print( '(*error*) ZDF: Grid info version is higher than supported.' , file=sys.stderr)
+            print( '(*error*) ZDF: Please update the code to a newer version.' , file=sys.stderr)
+            return False
+
+        info = ZDF_Grid_Info()
+        
+        info.name = rec.name
+        info.ndims = self.__read_uint32()
+        info.nx = self.__read_uint64_arr( info.ndims )
 
         info.label = self.__read_string()
         info.units = self.__read_string()
@@ -336,6 +480,10 @@ class ZDFfile:
         if ( info.has_axis ):
             for i in range(info.ndims):
                 ax = ZDF_Grid_Axis()
+                if (version > 0):
+                    ax.name  = self.__read_string()
+                else:
+                    ax.name = 'axis_{}'.format(i)
                 ax.type  = self.__read_int32()
                 ax.min   = self.__read_float64()
                 ax.max   = self.__read_float64()
@@ -345,68 +493,126 @@ class ZDFfile:
 
         return info
 
-    def read_part_info(self):
-        """read_part_info()
+# -----------------------------------------------------------------------------
+# Read particle info
+# -----------------------------------------------------------------------------
+    
+    def read_part_info(self, rec = False):
+        """read_part_info( rec = False )
 
         Read particle information record from data file
+
+        Parameters
+        ----------
+        rec : ZDF_Record, optional
+            If not set the routine will read the record before reading the data
 
         Returns
         -------
         iteration : ZDF_Part_Info()
             Iteration data
         """
-        rec = self.read_record()
+        if ( rec is False ):
+            rec = self.read_record()
 
+        # Maximum supported version
+        max_version = 0x00000002
+
+        # Get version
+        version = rec.version()
+        if ( version > max_version ):
+            print( '(*error*) ZDF: Particles info version is higher than supported.' , file=sys.stderr)
+            print( '(*error*) ZDF: Please update the code to a newer version.' , file=sys.stderr)
+            return False
+        
         info = ZDF_Part_Info()
-        info.name    = self.__read_string()
-        info.nquants = self.__read_uint32()
+        info.name = rec.name
+        info.label = self.__read_string()
+        
+        if ( version >= 1 ):
+            # version 1
+            info.nparts = self.__read_uint64()
+            info.nquants = self.__read_uint32()
+            
+            for i in range(info.nquants):
+                info.quants.append( self.__read_string() )
+            for q in info.quants:
+                info.qlabels[q] = self.__read_string()            
+            for q in info.quants:
+                info.qunits[q] = self.__read_string()
+            
+        else:
+            # version 0
+            info.nquants = self.__read_uint32()
 
-        for i in range(info.nquants):
-            info.quants.append(self.__read_string())
+            for i in range(info.nquants):
+                info.quants.append( self.__read_string() )
 
-        for q in info.quants:
-            info.units[q] = self.__read_string()
+            # version 0 does not have label information
+            for q in info.quants:
+                info.qlabels[q] = q
 
-        info.nparts = self.__read_uint64()
+            for q in info.quants:
+                info.qunits[q] = self.__read_string()
+
+            info.nparts = self.__read_uint64()
 
         return info
 
-    def read_dataset(self):
+# -----------------------------------------------------------------------------
+# Read dataset
+# -----------------------------------------------------------------------------
+
+    def read_dataset(self, rec = False):
         """read_dataset()
 
         Read dataset from data file
+
+        Parameters
+        ----------
+        rec : ZDF_Record, optional
+            If not set the routine will read the record before reading the data
 
         Returns
         -------
         data : numpy.ndarray
             Numpy ndarray with data
         """
-        rec = self.read_record()
-
+        if ( rec is False ):
+            rec = self.read_record()
+            
+        if ( self.record_type(rec.id) != 'dataset' ):
+            print( '(*error*) ZDF: Expected dataset record but found {} instead.'.format(self.record_type(rec.id)),
+                  file=sys.stderr)
+            return False
+            
+        
+        # Maximum supported version
+        max_version = 0x00000002
+        
+        # Get version
+        version = rec.version()
+        if ( version > max_version ):
+            print( '(*error*) ZDF: Dataset version is higher than supported.' , file=sys.stderr)
+            print( '(*error*) ZDF: Please update the code to a newer version.' , file=sys.stderr)
+            return False
+        
+        # Version 0x0001 includes id tag
+        if ( version >= 1 ):
+            id = self.__read_uint32()
+        else:
+            id = 0
+        
         data_type = self.__read_int32()
         ndims = self.__read_uint32()
-        nx = []
-        size = np.uint64(1)
-
-        for i in range(ndims):
-            nx.append(self.__read_uint64())
-            size *= nx[i]
-
-        # Read dataset and convert it to a numpy array
-        # 9 - float32, 10 - float64
-        if (data_type == 9):
-            data = np.fromfile(self.__file,dtype='float32',count=size)
-        elif (data_type == 10):
-            data = np.fromfile(self.__file,dtype='float64',count=size)
-        else:
-            print('Unsupported datatype', file=sys.stderr)
-            return False
-
-        # Reshape dataset to the supplied dimensions
-        nx.reverse()
-        data.shape = nx
+        nx        = self.__read_uint64_arr(ndims)
+        data      = self.__read_arr( data_type, nx )
 
         return data
+
+# -----------------------------------------------------------------------------
+# Retrieve list of file contents / print file contents
+# -----------------------------------------------------------------------------
 
     def list(self, printRec=False):
         """list( printRec=False )
@@ -432,11 +638,12 @@ class ZDFfile:
 
         if (printRec and (len(rec_list) > 0)):
             print('Position     Size(bytes)  Type        Name')
-            print('-------------------------------------------------')
+            print('-----------------------------------------------------')
             for rec in rec_list:
-                print('{:#010x}   {:#010x}   {:10}  {}'.format(
+                print('{:#010x}   {:#010x}   {:11}  {}'.format(
                     rec.pos, rec.len,
-                    self.record_type(rec.id), rec.name))
+                    self.record_type(rec.id), rec.name)
+                     )
 
         return rec_list
 

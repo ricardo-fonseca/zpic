@@ -18,7 +18,7 @@ The library is provided in source code format. To use the ZDF library in your pr
 
 ### Low-level data formats
 
-The library provides routines to portably write the following scalar types. As mentioned before these are written to file in little-endian format. 
+The library provides routines to portably write the following scalar types. As mentioned before these are written to file in little-endian format.
 
 * int32 (signed 32 bit integer)
 * uint32 (unsigned 32 bit integer)

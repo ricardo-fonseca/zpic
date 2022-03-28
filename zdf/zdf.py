@@ -1,4 +1,6 @@
 """
+Python module for reading ZDF data files
+
 Copyright (C) 2017 Instituto Superior Tecnico
 
 This file is part of the ZPIC Educational code suite
@@ -17,31 +19,115 @@ You should have received a copy of the GNU Affero General Public License
 along with the ZPIC Educational code suite. If not, see <http://www.gnu.org/licenses/>.
 """
 
-#!/usr/bin/python
 import sys
 import numpy as np
-import matplotlib.pyplot as plt
 
 class ZDF_Record:
-    def __init__( self ):
-        self.pos = 0
-        self.id = 0
-        self.name = ""
-        self.len = 0
-    def version(self):
-        return( self.id & 0x0000FFFF )
+    """ZDF_Record()
 
-    def typeid(self):
-        return( self.id & 0xFFFF0000 )
+    ZDF Datafile record information
+
+    Attributes
+    ----------
+    pos : int64
+        Position in ZDF file
+    id : int
+        Type id
+    name : str
+        Record name
+    len : uint64
+        Additional record length in bytes
+    """
+    def __init__( self ):
+        self.pos   = -1
+        self.id    = -1
+        self.name  = ''
+        self.len   = -1
+    
+    def version( self ):
+        """version()
+
+        Gets record version number
+
+        Returns
+        -------
+        version : int
+            Record version number
+        """
+        return self.id & 0x0000FFFF
+
+    def type( self ):
+        """type( )
+
+        Gets record type name from tag
+
+        Returns
+        -------
+        type : str
+            Type of record name
+        """
+        types = {0x00010000: "int",
+                 0x00020000: "double",
+                 0x00030000: "string",
+                 0x00100000: "dataset",
+                 0x00110000: "cdset_start",
+                 0x00120000: "cdset_chunk",
+                 0x00130000: "cdset_end",
+                 0x00200000: "iteration",
+                 0x00210000: "grid_info",
+                 0x00220000: "part_info",
+                 0x00230000: "track_info", }
+
+        typeID = self.id & 0xFFFF0000
+
+        if (typeID in types):
+            return types[typeID]
+        else:
+            return "unknown"
+
 
 class ZDF_Iteration:
+    """ZDF_Iteration()
+    
+    Class describing iteration information.
+
+    Attributes
+    ----------
+    name : str
+        Name for iteration metadata (usually set to 'ITERATION')
+    n : int
+        Iteration value
+    t : float
+        Time value
+    tunits : str
+        Units used for time value
+    """
     def __init__( self ):
         self.name = ""
         self.n = 0
-        self.t = 0.
+        self.t = 0.0
         self.tunits = ""
 
 class ZDF_Grid_Axis:
+    """ZDF_Grid_Axis()
+
+    Class describing grid axis
+
+    Attributes
+    ----------
+    name : str
+        Axis name
+    type : {0,1,2}
+        Axis type, must be one of 0 (linear), 1 (log10) or 2 (log2)
+    min : float
+        Minimum axis value
+    max : float
+        Maximum axis value
+    label : str
+        Axis label
+    units : str
+        Axis values data units
+    """
     def __init__( self ):
         self.name = ''
         self.type = 0
@@ -51,6 +137,25 @@ class ZDF_Grid_Axis:
         self.units = ''
 
 class ZDF_Grid_Info:
+    """ZDF_Grid_Info()
+
+    Grid dataset information
+
+    Attributes
+    ----------
+    ndims : int
+        Dimensionality of dataset
+    nx : list of int (ndims)
+        Number of grid points in each direction
+    label : str
+        Dataset label
+    units : str
+        Dataset units
+    has_axis : bool
+        True if the dataset includes axis information
+    axis : list of ZDF_Grid_Axis (ndims)
+        Information on each axis, when available
+    """
     def __init__( self ):
         self.name = ''
         self.ndims = 0
@@ -61,6 +166,27 @@ class ZDF_Grid_Info:
         self.axis = []
 
 class ZDF_Part_Info:
+    """ZDF_Part_Info()
+
+    Particle dataset information
+
+    Attributes
+    ----------
+    name : str
+        Particle dataset name
+    label : str
+        Particle dataset label
+    nquants : int
+        Number of quantities per particle
+    quants : list of str (nquants)
+        Name of individual quantities
+    qlabels : dictionary
+        Labels for each quantity
+    qunits : dictionary
+        Units for each quantity
+    nparts: int
+        Number of particles in dataset
+    """
     def __init__( self ):
         self.name = ''
         self.label = ''
@@ -71,6 +197,31 @@ class ZDF_Part_Info:
         self.nparts = 0
 
 class ZDF_Tracks_Info:
+    """ZDF_Tracks_Info()
+
+    Tracks dataset information
+
+    Attributes
+    ----------
+    name : str
+        Tracks dataset name
+    label : str
+        Tracks dataset label
+    ntracks : int
+        Number of tracks in dataset
+    ndump : int
+        Number of iterations between data dumps
+    niter : int
+        Number of iterations between data points
+    nquants : int
+        Number of quantities per track
+    quants : list of str (nquants)
+        Name of individual quantitities
+    qlabels : dictionary
+        Labels for each quantity
+    qunits : dictionary
+        Units for each quantity
+    """
     def __init__( self ):
         self.name = ''
         self.label = ''
@@ -79,10 +230,19 @@ class ZDF_Tracks_Info:
         self.niter = 0
         self.nquants = 0
         self.quants = []
-        self.qlabels = []
-        self.qunits = []
+        self.qlabels = dict()
+        self.qunits = dict()
         
 class ZDFfile:
+    """ZDFfile( file_name )
+    
+    ZDF data file class
+
+    Parameters
+    ----------
+    file_name : str
+        File name of ZDF data file, should include path
+    """
     def __init__(self, file_name):
         self.__file = open(file_name, "rb")
 
@@ -93,6 +253,10 @@ class ZDFfile:
             self.__file.close
 
     def close(self):
+        """close()
+
+        Closes ZDF file
+        """
         self.__file.close
 
     def __read_uint32(self):
@@ -133,27 +297,6 @@ class ZDFfile:
             fstring = ""
 
         return fstring
-
-    def record_type(self, typeTag):
-        version = typeTag & 0x0000FFFF
-        typeID = typeTag & 0xFFFF0000
-
-        types = {0x00010000: "int",
-                 0x00020000: "double",
-                 0x00030000: "string",
-                 0x00100000: "dataset",
-                 0x00110000: "cdset_start",
-                 0x00120000: "cdset_chunk",
-                 0x00130000: "cdset_end",
-                 0x00200000: "iteration",
-                 0x00210000: "grid_info",
-                 0x00220000: "part_info",
-                 0x00230000: "track_info", }
-
-        if (typeID in types):
-            return types[typeID]
-        else:
-            return "unknown"
 
 # -----------------------------------------------------------------------------
 # Array datatypes
@@ -224,6 +367,16 @@ class ZDFfile:
 # -----------------------------------------------------------------------------
 
     def read_record(self, skip=False):
+        """read_record(skip=False)
+
+        Reads current record information from file
+
+        Parameters
+        ----------
+        skip : bool, optional
+            If set to True, skip to next record after reading record
+            header data
+        """
 
         rec = ZDF_Record()
         rec.pos = self.__file.tell()
@@ -239,6 +392,7 @@ class ZDFfile:
         rec.name = self.__read_string()
         rec.len  = self.__read_uint64()
 
+        # If requested, skip over to next record
         if (skip):
             self.__file.seek(rec.len, 1)
 
@@ -252,6 +406,20 @@ class ZDFfile:
 # -----------------------------------------------------------------------------
 
     def read_string(self, rec = False):
+        """read_string(rec = False)
+
+        Reads string record from data file
+        
+        Parameters
+        ----------
+        rec : ZDF_Record, optional
+            If not set the routine will read the record before reading the data
+
+        Returns
+        -------
+        string : str
+            String data
+        """
         if ( rec is False ):
             rec = self.read_record()
         fstring = self.__read_string()
@@ -262,6 +430,20 @@ class ZDFfile:
 # -----------------------------------------------------------------------------
 
     def read_iteration(self, rec = False):
+        """read_iteration( rec = False )
+
+        Read iteration record from data file
+
+        Parameters
+        ----------
+        rec : ZDF_Record, optional
+            If not set the routine will read the record before reading the data
+
+        Returns
+        -------
+        iteration : ZDF_Iteration()
+            Iteration data
+        """
         if ( rec is False ):
             rec = self.read_record()
         iteration = ZDF_Iteration()
@@ -276,6 +458,20 @@ class ZDFfile:
 # -----------------------------------------------------------------------------
 
     def read_grid_info(self, rec = False):
+        """read_grid_info( rec = False )
+
+        Read grid information record from data file
+
+        Parameters
+        ----------
+        rec : ZDF_Record, optional
+            If not set the routine will read the record before reading the data
+
+        Returns
+        -------
+        info : ZDF_Grid_Info()
+            Grid information data
+        """
         if ( rec is False ):
             rec = self.read_record()
 
@@ -320,6 +516,20 @@ class ZDFfile:
 # -----------------------------------------------------------------------------
     
     def read_part_info(self, rec = False):
+        """read_part_info( rec = False )
+
+        Read particle information record from data file
+
+        Parameters
+        ----------
+        rec : ZDF_Record, optional
+            If not set the routine will read the record before reading the data
+
+        Returns
+        -------
+        info : ZDF_Part_Info()
+            Particle information data
+        """
         if ( rec is False ):
             rec = self.read_record()
 
@@ -372,7 +582,20 @@ class ZDFfile:
 # -----------------------------------------------------------------------------
 
     def read_track_info(self, rec = False):
-        
+        """read_track_info( rec = False )
+
+        Read track information record from data file
+
+        Parameters
+        ----------
+        rec : ZDF_Record, optional
+            If not set the routine will read the record before reading the data
+
+        Returns
+        -------
+        info : ZDF_Tracks_Info()
+            Particle information data
+        """
         if ( rec is False ):
             rec = self.read_record()
         
@@ -398,11 +621,11 @@ class ZDFfile:
         for i in range(info.nquants):
             info.quants.append( self.__read_string() )
 
-        for i in range(info.nquants):
-            info.qlabels.append( self.__read_string() )
+        for q in info.quants:
+            info.qlabels[q] = self.__read_string()
 
-        for i in range(info.nquants):
-            info.qunits.append( self.__read_string() )
+        for q in info.quants:
+            info.qunits[q] = self.__read_string()
         
         # Iteration data is not supported so remove it from metadata
         info.nquants -= 1
@@ -418,12 +641,25 @@ class ZDFfile:
 # -----------------------------------------------------------------------------
 
     def read_dataset(self, rec = False):
+        """read_dataset( rec = False )
 
+        Read dataset from data file
+
+        Parameters
+        ----------
+        rec : ZDF_Record, optional
+            If not set the routine will read the record before reading the data
+
+        Returns
+        -------
+        data : numpy.ndarray
+            Numpy ndarray with data
+        """
         if ( rec is False ):
             rec = self.read_record()
             
-        if ( self.record_type(rec.id) != 'dataset' ):
-            print( '(*error*) ZDF: Expected dataset record but found {} instead.'.format(self.record_type(rec.id)),
+        if ( rec.type() != 'dataset' ):
+            print( '(*error*) ZDF: Expected dataset record but found {} instead.'.format(rec.type()),
                   file=sys.stderr)
             return False
             
@@ -455,13 +691,28 @@ class ZDFfile:
 # Read chunked dataset
 # -----------------------------------------------------------------------------
     
-    def read_cdset(self, rec = False, pos = 0 ):
-                
+    def read_cdset(self, rec = False, pos = False ):
+        """read_cdset( rec = False, pos = False )
+
+        Read dataset from data file
+
+        Parameters
+        ----------
+        rec : ZDF_Record, optional
+            If not set the routine will read the record before reading the data
+        pos : bool, optional
+            If set position file pointer at the end of the cdset_start record
+        
+        Returns
+        -------
+        data : numpy.ndarray
+            Numpy ndarray with data
+        """
         if ( rec is False ):
             rec = self.read_record()
 
-        if ( self.record_type(rec.id) != 'cdset_start' ):
-            print( '(*error*) ZDF: Expected cdset_start record but found {} instead.'.format(self.record_type(rec.id)),
+        if ( rec.type() != 'cdset_start' ):
+            print( '(*error*) ZDF: Expected cdset_start record but found {} instead.'.format(rec.type()),
                   file=sys.stderr)
             return False
 
@@ -536,16 +787,37 @@ class ZDFfile:
                 self.__record_skip(rec)
         
         # If requested, position file pointer at the end of the cdset_start record
-        if ( pos == 1 ):
+        if ( pos ):
             self.__file.seek( cdset_start_end )
 
-        return data    
+        return data
 
 # -----------------------------------------------------------------------------
 # Read arbitrary ZDF element
 # -----------------------------------------------------------------------------
 
     def read_element( self, rec = False, name = False, type_id = False):
+        """read_element( rec = False, name = False, type_id = False )
+
+        Read arbitrary ZDF element
+
+        Parameters
+        ----------
+        rec : ZDF_Record, optional
+            If not set the routine will read the record before reading the
+            data
+        name : str, optional
+            If set the routine will check if the element name matches this
+            parameter and return an error if not the case
+        type_id : str, optional
+            If set the routine will check if the element type_id matches
+            this parameter and return an error if not the case
+        
+        Returns
+        -------
+        data : objec | numpy.ndarray
+            ZDF file element
+        """
         if ( rec is False ):
             rec = self.read_record()
         
@@ -559,13 +831,13 @@ class ZDFfile:
             name = rec.name
         
         if ( type_id ):
-            if (type_id != self.record_type(rec.id) ):
+            if (type_id != rec.type() ):
                 print("(*warning*) Requested type does not match record type", file=sys.stderr)
-                print("(*warning*) expected '{}', found '{}".format(type_id, self.record_type(rec.id)), file=sys.stderr)
+                print("(*warning*) expected '{}', found '{}".format(type_id, rec.type()), file=sys.stderr)
                 self.__record_skip(rec)
                 return False
         else:
-            type_id = self.record_type(rec.id)
+            type_id = rec.type()
         
         if ( type_id == "int" ):
             data = self.__read_int32()
@@ -605,7 +877,21 @@ class ZDFfile:
 # -----------------------------------------------------------------------------
     
     def read_part_data( self, quants ):
-        
+        """read_part_data( quants )
+
+        Read particle data from data file
+
+        Parameters
+        ----------
+        quants : list of str
+            Particle quantitites stored in the file
+
+        Returns
+        -------
+        data : dictionary
+            Particle data
+        """
+
         # Read all quantities
         data = dict()
         
@@ -618,13 +904,13 @@ class ZDFfile:
                     q, rec.name ) )
                       
             # Particle data can be either a standard dataset or a chunked dataset
-            type_id = self.record_type(rec.id)
+            type_id = rec.type()
             if ( type_id == "dataset" ):
                 data[q] = self.read_dataset( rec = rec )
             elif ( type_id == "cdset_start" ):
                 # Read chunked dataset and position file pointer after the
                 # cdset_start record
-                data[q] = self.read_cdset( rec = rec, pos = 1 )
+                data[q] = self.read_cdset( rec = rec, pos = True )
             else:
                 print("(*error*) Unable to read particle data, {} record found".format(type_id),
                       file=sys.stderr)
@@ -637,12 +923,25 @@ class ZDFfile:
 # -----------------------------------------------------------------------------
     
     def read_track_data( self, trackInfo ):
-        
+        """read_track_data( trackInfo )
+
+        Read track data from data file
+
+        Parameters
+        ----------
+        trackInfo : ZDF_Tracks_Info
+            Tracks information
+
+        Returns
+        -------
+        data : list
+            Track data (1 numpy.ndarray per track)
+        """
         rec  = self.read_record()
         if ( rec.name != 'itermap' ):
                 print("(*error*) Expecting itermap record, {} found".format(rec.name ) ,
                       file=sys.stderr)
-        itermap = self.read_cdset( rec = rec, pos = 1 )
+        itermap = self.read_cdset( rec = rec, pos = True )
 
         rec  = self.read_record()
         if ( rec.name != 'data' ):
@@ -674,8 +973,18 @@ class ZDFfile:
 # -----------------------------------------------------------------------------
 # Retrieve list of file contents / print file contents
 # -----------------------------------------------------------------------------
-    
-    def list(self, printRec = False):
+
+    def list(self, printRec=False):
+        """list( printRec=False )
+
+        Gets a list of file contents and optionally prints it to screen
+
+        Parameters
+        ----------
+        printRec : bool, optional
+            If set to True will print all records found in the file,
+            defaults to False.
+        """
         # Position file after magic number
         self.__file.seek(4)
 
@@ -693,8 +1002,8 @@ class ZDFfile:
             for rec in rec_list:
                 print('{:#010x}   {:#010x}   {:11}  {}'.format(
                     rec.pos, rec.len,
-                    self.record_type(rec.id), rec.name)
-                     )
+                    rec.type(), rec.name)
+                    )
 
         return rec_list
     
@@ -703,7 +1012,21 @@ class ZDFfile:
 # -----------------------------------------------------------------------------
 
 class ZDF_Info:
-    """ZDF File information"""
+    """ZDF_Info()
+    ZDF File information
+
+    Attributes
+    ----------
+    type : {'grid','particles'}
+        Type of ZDF file
+    grid : ZDF_Grid_Info
+        Grid information for grid files
+    particles : ZDF_Part_Info
+        Particle information for particle files
+    iteration : ZDF_Iteration
+        Iteration information
+
+    """
     def __init__(self):
         self.type = ""
         self.grid = None
@@ -713,6 +1036,20 @@ class ZDF_Info:
 
 
 def info( file_name ):
+    """info( file_name )
+
+    Gets metadata for a ZDF file
+
+    Parameters
+    ----------
+    file_name : str
+        File name of ZDF data file, should include path
+    
+    Returns
+    -------
+    info : ZDF_Info
+        File information. If file is invalid False is returned.
+    """
     # Open file
     zdf = ZDFfile( file_name )
 
@@ -738,6 +1075,23 @@ def info( file_name ):
     return info
 
 def read( file_name ):
+    """read( file_name )
+
+    Reads all data in a ZDF file
+
+    Parameters
+    ----------
+    file_name : str
+        File name of ZDF data file, should include path
+    
+    Returns
+    -------
+    (data, info) : ( numpy.ndarray | dictionary, ZDF_Info )
+        Tuple containing file data and metadata. Data will be a
+        numpy.ndarray for grid data, and a dictionary of numpy.array for
+        particle data (one entry per quantity). Metadata is returned as a
+        ZDF_Info object. If file is invalid False is returned.
+    """
     # Open file
     zdf = ZDFfile( file_name )
 
@@ -767,6 +1121,15 @@ def read( file_name ):
     return (data,info)
 
 def list(file_name):
+    """list( )
+
+    Print a list of file contents
+
+    Parameters
+    ----------
+    file_name : str
+        File name of ZDF data file, should include path
+    """
     zdf = ZDFfile(file_name)
     zdf.list(True)
     zdf.close()
