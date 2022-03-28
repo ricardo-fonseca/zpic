@@ -38,7 +38,8 @@ RUN apt-get update && apt-get install -yq --no-install-recommends \
 # use notebook-friendly backends in these images
 RUN conda install --quiet --yes \
     'ipywidgets=7.6*' \
-    'matplotlib=3.4*' \
+    'ipympl' \
+    'matplotlib=3.5*' \
     'cython=0.29*' \
     'scipy' \
     && \
@@ -48,6 +49,10 @@ RUN conda install --quiet --yes \
     echo "c.NotebookApp.token = ''" >> /home/$NB_USER/.jupyter/jupyter_notebook_config.py && \
     # Activate ipywidgets extension in the environment that runs the notebook server
     jupyter nbextension enable --py widgetsnbextension --sys-prefix && \
+    jupyter labextension install @jupyter-widgets/jupyterlab-manager && \
+    jupyter labextension install jupyter-matplotlib && \
+    jupyter labextension enable @jupyter-widgets/jupyterlab-manager && \
+    jupyter labextension enable jupyter-matplotlib && \
     npm cache clean --force && \
     rm -rf $CONDA_DIR/share/jupyter/lab/staging && \
     rm -rf /home/$NB_USER/.cache/yarn && \
@@ -97,9 +102,5 @@ USER $NB_UID
 
 # Add ZPIC modules to Python searchpath
 ENV PYTHONPATH /opt/zpic/lib
-
-# Make Jupyter lab the default
-ENV JUPYTER_ENABLE_LAB yes
-
 
 
