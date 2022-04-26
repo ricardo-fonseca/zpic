@@ -127,4 +127,13 @@ void sim_set_smooth( t_simulation* sim,  t_smooth* smooth );
  */
 void sim_set_ext_fld( t_simulation* sim, t_emf_ext_fld* ext_fld );
 
+/**
+ * @brief Checks if the `sim_report()` function should be called 
+ * 
+ * @param n 		Current iteration
+ * @param ndump 	Diagnostic frequency (number of iterations between diagnostic dumps)
+ * @return 			1 if `sim_report()` function should be called, 0 otherwise
+ */
+int report( int n, int ndump );
+
 #endif
