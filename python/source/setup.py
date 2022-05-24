@@ -8,7 +8,7 @@ from setuptools.command.build_ext import build_ext
 cflags = sysconfig.get_config_var('CFLAGS')
 cflags = cflags.replace(' -g', '')
 cflags = cflags.replace('-O3', '-Ofast')
-cflags += ' -std=c99'
+cflags += ' -std=c99 -fPIC'
 
 cc = sysconfig.get_config_var('CC')
 
