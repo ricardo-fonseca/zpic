@@ -1,0 +1,5 @@
+# Exit shell on error and print trace
+set -ex
+
+# Compile ZPIC python extensions
+cd python && make
