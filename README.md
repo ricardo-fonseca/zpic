@@ -2,8 +2,6 @@
 
 Particle-in-Cell (PIC) codes are used in almost all areas of plasma physics, such as fusion energy research, plasma accelerators, space physics, ion propulsion, and plasma processing, and many other areas. Leveraging on our expertise and experience from the development and use of the OSIRIS PIC code, we have developed a suite of 1D/2D fully relativistic electromagnetic PIC codes, as well as 1D electrostatic. These codes are self-contained and require only a standard laptop/desktop computer with a C compiler to be run. The output files are written in a new file format called ZDF that can be easily read using the supplied routines in a number of languages, such as Python, and IDL. The code suite also includes a number of example problems that can be used to illustrate several textbook and advanced plasma mechanisms, including instructions for parameter space exploration. We also invite contributions to this repository of test problems that will be made freely available to the community provided the input files comply with the format defined by the ZPIC team.
 
-Please see the [doc](https://github.com/zambzamb/zpic/tree/master/doc) folder for documentation on using the code.
-
 The directory structure is organized as follows:
 * [**em1d**](https://github.com/zambzamb/zpic/tree/master/em1d) - 1D electromagnetic (finite difference)
 * [**em1ds**](https://github.com/zambzamb/zpic/tree/master/em1ds) - 1D electromagnetic (spectral)
@@ -13,26 +11,13 @@ The directory structure is organized as follows:
 * [**mods**](https://github.com/zambzamb/zpic/tree/master/mods)  - Modified versions of the base codes
 * [**python**](https://github.com/zambzamb/zpic/tree/master/python)  - Python interface to ZPIC codes
 
-## Docker container
+## Documentation
 
-ZPIC is also available as a Docker image that allows you to use ZPIC notebooks straightforwardly. The image is available publicly on [Docker Hub](https://hub.docker.com/repository/docker/zamb/zpic) under the name `zamb/zpic`.
+The project now has its own dedicated website on GitHub pages, find all the documentation on: [https://ricardo-fonseca.github.io/zpic/](https://ricardo-fonseca.github.io/zpic/)
 
-### Launching ZPIC Jupyter notebooks from Docker
+## Try ZPIC now on mybinder.org
 
-If you have Docker installed you can run this image by doing:
+Just launch a JupyterLab session using the button below, and choose any of the available notebooks:
 
-```bash
-docker run -p 8888:8888 -t --rm zamb/zpic
-```
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ricardo-fonseca/zpic/HEAD?urlpath=/lab/tree/python/notebooks)
 
-And then launching a web browser and pointing it to `http://localhost:8888/`
-
-### Retaining file changes
-
-If you want to retain any file changes that happen in this session you need to mount a local directory on the docker container, e.g.
-
-```bash
-docker run -p 8888:8888 -t --rm -v $PWD:/home/jovyan/work zamb/zpic
-```
-
-All the data saved to `/home/jovyan/work` in the Docker session will be kept after the session is finished.
