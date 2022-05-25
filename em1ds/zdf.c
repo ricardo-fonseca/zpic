@@ -32,6 +32,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h>
 
 /**
  * On Windows we cannot use the POSIX.1 mkdir command, so use _mkdir instead
@@ -1252,18 +1253,18 @@ size_t zdf_add_dataset( t_zdf_file* zdf, t_zdf_dataset* dataset ){
         .length     = length
     };
 
-    size_t reclen;
-    if ( !( reclen = zdf_record_write( zdf, &rec ) ) ) return(0);
+  size_t reclen;
+  if ( !( reclen = zdf_record_write( zdf, &rec ) ) ) return(0);
 
-    dataset -> id = ++ zdf -> ndatasets;
-    if ( !zdf_dataset_header_write( zdf, dataset ) ) return(0);
+  dataset -> id = ++ zdf -> ndatasets;
+  if ( !zdf_dataset_header_write( zdf, dataset ) ) return(0);
 
-    size_t count = 1;
-    for( unsigned i=0; i < dataset -> ndims; i++) count *= dataset -> count[i];
+  size_t count = 1;
+  for( unsigned i=0; i < dataset -> ndims; i++) count *= dataset -> count[i];
 
-    if ( !zdf_vector_write( zdf, dataset -> data, dataset -> data_type, count ) ) return(0);
+     if ( !zdf_vector_write( zdf, dataset -> data, dataset -> data_type, count ) ) return(0);
 
-    return( reclen + length );
+     return( reclen + length );
 }
 
 /**
@@ -1314,7 +1315,7 @@ size_t size_zdf_chunk_header(const t_zdf_dataset* dataset) {
 size_t zdf_write_chunk_header( t_zdf_file* zdf, t_zdf_dataset* dataset, t_zdf_chunk* chunk ){
 
     char name[16];
-    snprintf( name, 16, "%08llx-chunk", dataset -> id);
+    snprintf( name, 16, "%08"PRIx64"-chunk", dataset -> id);
 
     size_t length;
     length = zdf_sizeof( dataset -> data_type );
@@ -1387,7 +1388,7 @@ size_t zdf_write_cdset( t_zdf_file* zdf, t_zdf_dataset* dataset, t_zdf_chunk* ch
 size_t zdf_end_cdset( t_zdf_file* zdf, t_zdf_dataset* dataset ){
 
     char name[16];
-    snprintf( name, 16, "%08llx-end", dataset -> id);
+    snprintf( name, 16, "%08"PRIx64"-end", dataset -> id);
 
     t_zdf_record rec = {
         .id_version = ZDF_CDSET_END_ID,
