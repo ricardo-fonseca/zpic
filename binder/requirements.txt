@@ -2,3 +2,4 @@ numpy==1.21.1
 matplotlib==3.5.1
 cython==0.29.26
 ipywidgets==7.6.5
+jupyter-contrib-nbextensions==0.5.1
