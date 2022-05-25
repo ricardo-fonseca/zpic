@@ -4,7 +4,8 @@ set -ex
 # Compile ZPIC python extensions
 cd python && make
 
-# Enable ipywidgets
-jupyter contrib nbextension install --user
-jupyter nbextension enable --py widgetsnbextension
-jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.38 --minimize=False
+jupyter nbextension enable --py widgetsnbextension --sys-prefix
+jupyter labextension install @jupyter-widgets/jupyterlab-manager
+jupyter labextension install jupyter-matplotlib
+jupyter labextension enable @jupyter-widgets/jupyterlab-manager
+jupyter labextension enable jupyter-matplotlib
