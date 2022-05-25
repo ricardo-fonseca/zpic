@@ -5,4 +5,4 @@ ipywidgets==7.6.5
 ipympl
 scipy
 static-ffmpeg
-
+ffmpeg-python
