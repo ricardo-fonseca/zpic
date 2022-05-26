@@ -5,7 +5,6 @@ set -ex
 cd python && make
 
 jupyter nbextension enable --py widgetsnbextension --sys-prefix
-jupyter labextension install @jupyter-widgets/jupyterlab-manager
-jupyter labextension install jupyter-matplotlib
-jupyter labextension enable @jupyter-widgets/jupyterlab-manager
-jupyter labextension enable jupyter-matplotlib
+
+jupyter labextension install @jupyter-widgets/jupyterlab-manager jupyter-matplotlib
+jupyter labextension enable @jupyter-widgets/jupyterlab-manager jupyter-matplotlib
