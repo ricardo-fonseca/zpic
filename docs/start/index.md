@@ -16,9 +16,9 @@ sidebar:
 
 The quickest way to start using ZPIC and learn about PIC simulations is to use `mybinder.org`:
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ricardo-fonseca/zpic/HEAD?urlpath=/lab/tree/python/notebooks)
+[<i class="fas fa-cloud" aria-hidden="true"></i>  Launch ZPIC binder](https://mybinder.org/v2/gh/ricardo-fonseca/zpic/HEAD?urlpath=/lab/tree/python/notebooks/tutorial/ZPIC.ipynb){: .btn .btn--info}
 
-Just click on the above badge and start with the tutorial notebook available in `tutorial/ZPIC`.
+Just click on the above button to launch a cloud session with the tutorial ZPIC notebook.
 
 ## Using ZPIC
 

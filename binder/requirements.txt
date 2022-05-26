@@ -4,5 +4,4 @@ cython==0.29.26
 ipywidgets==7.6.5
 ipympl
 scipy
-static-ffmpeg
-ffmpeg-python
+
