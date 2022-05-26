@@ -213,7 +213,7 @@ void current_report( const t_current *current, const char jc )
 	char vfname[16];	// Dataset name
 	char vflabel[16];	// Dataset label (for plots)
 
-    snprintf( vfname, 3, "J%1d", jc );
+    snprintf( vfname, 3, "J%1u", jc );
     snprintf(vflabel,4,"J_%c",comp);
 
 	// Pack the information

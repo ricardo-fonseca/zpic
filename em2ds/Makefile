@@ -1,6 +1,6 @@
 # GCC options
 CC = gcc
-CFLAGS = -Ofast -std=c99 -pedantic
+CFLAGS = -Ofast -std=c99 -Wall -pedantic
 LDFLAGS = -lm
 
 # Intel icc compiler

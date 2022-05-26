@@ -62,8 +62,9 @@ void charge_new( t_charge *charge, const int nx[], float box[], float dt)
  */
 void charge_init_neutral_bkg( t_charge *charge )
 {
-	scalar_grid2d_init( &charge->neutral, (unsigned int *) charge ->rho.nx,
-					    (unsigned int (*)[2]) charge ->rho.gc );
+	scalar_grid2d_init( &charge->neutral,
+						(const unsigned int *) charge ->rho.nx,
+					    (const unsigned int (*)[2]) charge ->rho.gc );
 	scalar_grid2d_zero( &charge -> neutral );
 }
 

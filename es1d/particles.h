@@ -74,7 +74,7 @@ typedef struct Density {
 typedef struct {
 	
 	/// Species name
-	char name[MAX_SPNAME_LEN];
+	char name[MAX_SPNAME_LEN+1];
 	
 	// Particle data
 	t_part *part;	///< Particle buffer

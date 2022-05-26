@@ -108,7 +108,7 @@ int create_path( const char path[] )
             case ENOENT : // A component of the path does not exist 
 
                 // get upper path
-                strncpy(uppath, path, 256);
+                strncpy(uppath, path, 255);
                 p = uppath + strlen(uppath);
                 while(*p!='/') p--;
                 *p=0;

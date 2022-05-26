@@ -1,6 +1,6 @@
 # GCC options
 CC = gcc
-CFLAGS = -Ofast -std=c99 -pedantic
+CFLAGS = -Ofast -std=c99 -pedantic -Wall
 LDFLAGS = -lm
 
 #Debug options

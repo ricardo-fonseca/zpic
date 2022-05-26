@@ -1,7 +1,7 @@
 # GCC options
-#CC = gcc
-#CFLAGS = -Ofast -std=c99 -pedantic
-#LDFLAGS = -lm
+CC = gcc
+CFLAGS = -Ofast -std=c99 -Wall -pedantic
+LDFLAGS = -lm
 
 # Intel icc compiler
 #CC = icc
@@ -9,8 +9,8 @@
 #LDFLAGS =
 
 # Clang options
-CC = clang
-CFLAGS = -Ofast -std=c99 -Wall -pedantic
+#CC = clang
+#CFLAGS = -Ofast -std=c99 -Wall -pedantic
 #CFLAGS = -Og -g -std=c99 -Wall -pedantic
 #LDFLAGS = -lm
 
