@@ -14,17 +14,15 @@ sidebar:
 
 ## Quickstart
 
-The quickest way to start using ZPIC and learn about PIC simulations is to use `mybinder.org`:
+The quickest way to start using ZPIC and learn about PIC simulations is to use `mybinder.org`, just click the button below:
 
-[<i class="fas fa-cloud" aria-hidden="true"></i>  Launch ZPIC binder](https://mybinder.org/v2/gh/ricardo-fonseca/zpic/HEAD?urlpath=/lab/tree/python/notebooks/tutorial/ZPIC.ipynb){: .btn .btn--info}
-
-Just click on the above button to launch a cloud session with the tutorial ZPIC notebook.
+[<i class="fas fa-cloud" aria-hidden="true"></i>  Launch ZPIC binder](https://mybinder.org/v2/gh/ricardo-fonseca/zpic/HEAD?urlpath=/lab/tree/python/notebooks/README.ipynb){: .btn .btn--info}
 
 ## Using ZPIC
 
 ZPIC includes a suite of 1D/2D fully relativistic electromagnetic PIC codes, as well as 1D electrostatic. These codes can all be run from a Python environment, and in particular inside Jupyter notebooks, which is the recommended way of using ZPIC. To use ZPIC with Python three options are available:
 
-1. Launch ZPIC in [mybinder.org](https://mybinder.org/v2/gh/ricardo-fonseca/zpic/HEAD?urlpath=/lab/tree/python/notebooks). This is the easiest way to use ZPIC but you will be limited to short sessions. (By the way, mybinder.org rules!)
+1. Launch ZPIC in [mybinder.org](https://mybinder.org/v2/gh/ricardo-fonseca/zpic/HEAD?urlpath=/lab/tree/python/notebooks/README.ipynb). This is the easiest way to use ZPIC but you will be limited to short sessions. (By the way, mybinder.org rules!)
 
 2. Use a [Docker image](docker). This is usually the best option for use in a classroom type environment, as it requires the least amount of configuration (i.e., have Docker installed).
 
