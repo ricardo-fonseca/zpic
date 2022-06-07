@@ -12,13 +12,20 @@ docs:
   - title: "Getting started"
     url: /start
     children:
+      - title: "Running a Docker image"
+        url: /start/docker
       - title: "Download ZPIC"
         url: /start/download
       - title: "Compiling the code"
         url: /start/compile
-      - title: "Running a Docker image"
-        url: /start/docker
-
+      - title: "- Mac OS X"
+        url: /start/compile/macosx
+      - title: "- Linux"
+        url: /start/compile/linux
+      - title: "- Windows (WSL)"
+        url: /start/compile/win64
+      - title: "- Windows (MSYS2)"
+        url: /start/compile/msys2
 
   - title: "Using ZPIC with Python"
     url: /documentation/python

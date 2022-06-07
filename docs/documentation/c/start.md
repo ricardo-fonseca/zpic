@@ -124,7 +124,7 @@ The input parameters may define an arbitrary number of particle species, definin
 
 ## Running the code
 
-Once you have finished compiling your code (including the simulation parameters as described above), you will have a `zpic` binary (`zpic.exe` on Windows) in the source code folder. Executing this binary will run your simulation. Since output files will be written in the same directory where you run your code it is recommended that you do not run the code in the same directory where the binary was created.
+Once you have finished compiling your code (including the simulation parameters as described above), you will have a `zpic` binary in the source code folder. Executing this binary will run your simulation. Since output files will be written in the same directory where you run your code it is recommended that you do not run the code in the same directory where the binary was created.
 
 The following example compiles the `em1d` code () and runs it in a directory named `test`:
 
