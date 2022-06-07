@@ -49,10 +49,8 @@ RUN conda install --quiet --yes \
     echo "c.NotebookApp.token = ''" >> /home/$NB_USER/.jupyter/jupyter_notebook_config.py && \
     # Activate ipywidgets extension in the environment that runs the notebook server
     jupyter nbextension enable --py widgetsnbextension --sys-prefix && \
-    jupyter labextension install @jupyter-widgets/jupyterlab-manager && \
-    jupyter labextension install jupyter-matplotlib && \
-    jupyter labextension enable @jupyter-widgets/jupyterlab-manager && \
-    jupyter labextension enable jupyter-matplotlib && \
+    jupyter labextension install @jupyter-widgets/jupyterlab-manager jupyter-matplotlib && \
+    jupyter labextension enable @jupyter-widgets/jupyterlab-manager jupyter-matplotlib && \
     npm cache clean --force && \
     rm -rf $CONDA_DIR/share/jupyter/lab/staging && \
     rm -rf /home/$NB_USER/.cache/yarn && \
