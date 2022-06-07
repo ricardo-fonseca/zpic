@@ -13,11 +13,11 @@ The directory structure is organized as follows:
 
 ## Documentation
 
-The project now has its own dedicated website on GitHub pages, find all the documentation on: [https://ricardo-fonseca.github.io/zpic/](https://ricardo-fonseca.github.io/zpic/)
+The project now has its own dedicated website on GitHub pages. You can find all the documentation at [https://ricardo-fonseca.github.io/zpic/](https://ricardo-fonseca.github.io/zpic/)
 
 ## Try ZPIC now on mybinder.org
 
 Just launch a JupyterLab session using the button below, and choose any of the available notebooks:
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ricardo-fonseca/zpic/HEAD?urlpath=/lab/tree/python/notebooks)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ricardo-fonseca/zpic/HEAD?urlpath=/lab/tree/python/notebooks/README.ipynb)
 
