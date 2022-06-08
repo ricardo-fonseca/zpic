@@ -12,13 +12,13 @@ sidebar:
 
 ## ZPIC on Windows using WSL
 
-If you plan to use only the C versions of ZPIC then installing `gcc` from [MinGW-w64](https://www.mingw-w64.org) or some other source is sufficient. Running the Python versions, however, is a little more complicated because of incompatibilities between the required compilers and standard Windows python binaries. In our opinion, the easiest way to accomplish this in Windows is to use the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about) (WSL). In this guide we will be using the Ubuntu Linux distribution that is installed with WSL. Other distributions are also known to work.
+The [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/about) (WSL) lets developers run a GNU/Linux environment directly on Windows, unmodified, without the overhead of a traditional virtual machine or dual-boot setup. In this guide we will be using the Ubuntu Linux distribution that is installed with WSL. Other distributions are also known to work.
 
 The instructions provided here were tested with Microsoft __Windows 10 Pro__, Version __20H2__ (OS Build 19042.1706) on June 2022.
 
 ## Installing the Windows Subsystem for Linux + Ubuntu
 
-To install Ubuntu on WSL you should just follow the instructions provided by Microsoft here:
+To install WSL + Ubuntu you should just follow the instructions provided by Microsoft here:
 
 [https://docs.microsoft.com/en-us/windows/wsl/install](https://docs.microsoft.com/en-us/windows/wsl/install)
 

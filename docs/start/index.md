@@ -18,6 +18,8 @@ The quickest way to start using ZPIC and learn about PIC simulations is to use `
 
 [<i class="fas fa-cloud" aria-hidden="true"></i>  Launch ZPIC binder](https://mybinder.org/v2/gh/ricardo-fonseca/zpic/HEAD?urlpath=/lab/tree/python/notebooks/README.ipynb){: .btn .btn--info}
 
+(It takes a few minutes to load)
+
 ## Using ZPIC
 
 ZPIC includes a suite of 1D/2D fully relativistic electromagnetic PIC codes, as well as 1D electrostatic. These codes can all be run from a Python environment, and in particular inside Jupyter notebooks, which is the recommended way of using ZPIC. To use ZPIC with Python three options are available:
