@@ -1,4 +1,4 @@
-numpy==1.21.1
+numpy==1.22
 matplotlib==3.5.1
 cython==0.29.26
 ipywidgets==7.6.5
