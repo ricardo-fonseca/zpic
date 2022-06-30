@@ -44,6 +44,12 @@ The modules can be used from any Python script, but using them in [Jupyter](http
 * Cython
 * ipympl
 
+You can install all of the recommended packages doing:
+
+```bash
+$ sudo pip3 install Jinja2 ipython scipy matplotlib jupyterlab Cython ipympl
+```
+
 Installing the `ffmpeg` library is also useful for generating animations:
 
 ```bash
@@ -124,3 +130,29 @@ $ jupyter lab
 Depending on your configuration, a browser should have opened with your Jupyter session. If not, just copy the URL shown in your terminal (including the token) into the URL bar of any browser.
 
 Be sure to open the `README.ipynb` file first.
+
+## CentOS 9
+
+To use the code on CentOS 9 you follow the same instructions but use the `dnf` installer instead, and install a couple of extra packages (e.g. `python3-devel`)
+
+```bash
+$ sudo dnf group install "Development Tools"
+$ sudo dnf install python3-pip python3-devel nodejs
+```
+
+Installing `ffmpeg` is a little trickier because it is not included in the standard repos:
+
+```bash
+$ sudo dnf install epel-release
+$ sudo dnf install https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-9.noarch.rpm
+$ sudo dnf install ffmpeg ffmpeg-devel
+```
+
+The python modules should now be installed with `pip3`:
+
+```bash
+$ sudo pip3 install Jinja2 ipython scipy matplotlib jupyterlab Cython ipympl
+$ sudo /usr/local/bin/jupyter labextension install @jupyter-widgets/jupyterlab-manager jupyter-matplotlib
+```
+
+And you should now be able to compile the code and launch the notebooks as described above.
